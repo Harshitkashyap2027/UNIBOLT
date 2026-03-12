@@ -2,46 +2,162 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UniBolt Admin - Submissions</title>
+    <link rel="manifest" href="manifest-admin.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/admin-style.css">
+    <style>
+        :root { 
+            --primary: #ff3b30;
+            --bg: #000000; 
+            --surface: #1c1c1e;
+            --surface-highlight: #2c2c2e;
+            --text: #ffffff; 
+            --text-dim: #8e8e93;
+            --border: rgba(255,255,255,0.1); 
+            --radius: 20px;
+            --success: #30d158;
+            --warning: #ff9f0a;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+
+        /* SIDEBAR */
+        .sidebar { width: 280px; background: #000; border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; }
+        .sidebar-header { padding: 30px 24px 10px; flex-shrink: 0; }
+        .sidebar-scroll { flex: 1; overflow-y: auto; padding: 0 14px; }
+        .sidebar-footer { padding: 20px 24px; border-top: 1px solid var(--border); background: #000; flex-shrink: 0; }
+        .brand { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; }
+        .brand i { color: var(--primary); }
+        .nav-item { padding: 14px 16px; color: var(--text-dim); cursor: pointer; border-radius: 14px; margin-bottom: 4px; display: flex; align-items: center; gap: 14px; transition: 0.2s; text-decoration: none; font-size: 15px; font-weight: 500; }
+        .nav-item:hover { background: var(--surface); color: white; }
+        .nav-item.active { background: var(--surface-highlight); color: white; font-weight: 600; }
+        .nav-item i { width: 20px; text-align: center; }
+
+        /* MAIN */
+        .main { flex: 1; padding: 30px; overflow-y: auto; background: var(--bg); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 20px; flex-wrap: wrap; }
+        .header h2 { font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
+        .header p { color: var(--text-dim); margin: 4px 0 0; font-size: 14px; }
+
+        /* TABS */
+        .tab-bar { display: flex; gap: 8px; margin-bottom: 24px; background: var(--surface); padding: 6px; border-radius: 14px; width: fit-content; }
+        .tab-btn { padding: 10px 20px; border-radius: 10px; border: none; background: transparent; color: var(--text-dim); font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        .tab-btn.active { background: var(--surface-highlight); color: white; }
+
+        /* BUTTONS */
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; border: none; background: var(--surface); color: white; }
+        .btn:hover { background: var(--surface-highlight); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #e02d22; }
+        .btn-success { background: var(--success); color: #000; }
+        .btn-danger { background: #ff453a; color: white; }
+
+        /* SUBMISSION CARDS */
+        .sub-card {
+            background: var(--surface); border-radius: var(--radius); padding: 20px;
+            border: 1px solid var(--border); margin-bottom: 12px; transition: border-color 0.2s;
+        }
+        .sub-card:hover { border-color: rgba(255,255,255,0.2); }
+        .sub-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; flex-wrap: wrap; }
+        .sub-meta { display: flex; align-items: center; gap: 12px; }
+        .sub-avatar { width: 44px; height: 44px; border-radius: 12px; background: var(--surface-highlight); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .sub-name { font-weight: 700; font-size: 16px; color: white; }
+        .sub-detail { font-size: 13px; color: var(--text-dim); margin-top: 3px; }
+        .sub-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .badge-pending { background: rgba(255,159,10,0.15); color: var(--warning); border: 1px solid rgba(255,159,10,0.3); }
+        .badge-approved { background: rgba(48,209,88,0.15); color: var(--success); border: 1px solid rgba(48,209,88,0.3); }
+        .badge-rejected { background: rgba(255,69,58,0.15); color: #ff453a; border: 1px solid rgba(255,69,58,0.3); }
+
+        .sub-body { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); }
+        .sub-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 14px; }
+        .sub-row .lbl { color: var(--text-dim); min-width: 120px; flex-shrink: 0; }
+        .sub-row .val { color: white; word-break: break-all; }
+
+        .design-preview { margin-top: 12px; }
+        .design-preview img { max-width: 100%; max-height: 200px; border-radius: 10px; border: 1px solid var(--border); object-fit: cover; }
+        .design-link { display: inline-flex; align-items: center; gap: 6px; color: #0a84ff; font-size: 13px; text-decoration: none; margin-top: 8px; }
+        .design-link:hover { text-decoration: underline; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+        .empty-state i { font-size: 40px; margin-bottom: 15px; opacity: 0.3; }
+
+        .count-badge { background: var(--primary); color: white; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin-left: 6px; }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { display: none; }
+            .main { padding: 20px 15px; height: 100vh; overflow-y: auto; }
+        }
+    </style>
 </head>
 <body>
+
     <div class="sidebar">
-        <div class="brand"><i class="fa-solid fa-bolt" style="color:var(--primary);"></i> UniBolt Admin</div>
-        <a href="admin.html" class="nav-item"><i class="fa-solid fa-users"></i> Students</a>
-        <a href="admin-submissions.html" class="nav-item active"><i class="fa-solid fa-list-check"></i> Submissions</a>
-        <a href="admin-tickets.html" class="nav-item"><i class="fa-solid fa-ticket"></i> Tickets</a>
-        <a href="admin-analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
-        <a href="admin-reports.html" class="nav-item"><i class="fa-solid fa-file-contract"></i> Reports</a>
-        <a href="admin-content.html" class="nav-item"><i class="fa-solid fa-book-open"></i> Content</a>
-        <a href="admin-activity.html" class="nav-item"><i class="fa-solid fa-history"></i> Activity Logs</a>
-        <a href="admin-registrations.html" class="nav-item"><i class="fa-solid fa-address-card"></i> Registrations</a>
-        <a href="admin-settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
-        <a href="admin-notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications</a>
-        <a href="admin-team.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Team</a>
-        <a href="admin-faq.html" class="nav-item"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+        <div class="sidebar-header">
+            <div class="brand"><i class="fa-solid fa-shield-cat"></i> UniBolt Admin</div>
+        </div>
+        <div class="sidebar-scroll">
+            <a href="admin.html" class="nav-item"><i class="fa-solid fa-grid-2"></i> Overview</a>
+            <a href="admin-tickets.html" class="nav-item"><i class="fa-solid fa-ticket"></i> Tickets</a>
+            <a href="admin-analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="admin-reports.html" class="nav-item"><i class="fa-solid fa-file-contract"></i> Reports</a>
+            <a href="admin-content.html" class="nav-item"><i class="fa-solid fa-book-open"></i> Content</a>
+            <a href="admin-activity.html" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Activity</a>
+            <a href="admin-registrations.html" class="nav-item"><i class="fa-solid fa-address-card"></i> Registrations</a>
+            <a href="admin-submissions.html" class="nav-item active"><i class="fa-solid fa-list-check"></i> Submissions</a>
+            <a href="admin-settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="admin-notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications</a>
+            <a href="admin-team.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Team</a>
+            <a href="admin-faq.html" class="nav-item"><i class="fa-solid fa-circle-question"></i> FAQ</a>
             <a href="admin-exam.html" class="nav-item"><i class="fa-solid fa-file-pen"></i> Exam Manager</a>
             <a href="mail-dashboard.html" class="nav-item"><i class="fa-solid fa-envelope"></i> Mail Center</a>
+        </div>
+        <div class="sidebar-footer">
+            <div class="nav-item" onclick="logout()" style="color: #ff453a;"><i class="fa-solid fa-power-off"></i> Sign Out</div>
+        </div>
     </div>
 
     <div class="main">
-        <div class="header animate-entry">
+        <div class="header">
             <div>
-                <h2 style="margin:0;">Task Submissions</h2>
-                <p style="margin:5px 0 0 0; color:#666; font-size:13px;">Review and grade student projects.</p>
+                <h2>Submissions</h2>
+                <p>Review task submissions and app store design requests.</p>
             </div>
-            <button class="btn btn-primary" onclick="loadSubmissions()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+            <button class="btn btn-primary" onclick="refreshAll()"><i class="fa-solid fa-rotate"></i> Refresh</button>
         </div>
 
-        <div id="subs-container" class="animate-entry delay-1">
-            <p style="text-align:center; padding:20px; color:#666;">Scanning student data...</p>
+        <!-- TAB BAR -->
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tab-tasks-btn" onclick="switchTab('tasks')">
+                <i class="fa-solid fa-list-check"></i> Task Submissions <span class="count-badge" id="task-count">0</span>
+            </button>
+            <button class="tab-btn" id="tab-apps-btn" onclick="switchTab('apps')">
+                <i class="fa-brands fa-google-play"></i> App Store Submissions <span class="count-badge" id="app-count">0</span>
+            </button>
+        </div>
+
+        <!-- TASK SUBMISSIONS -->
+        <div id="tab-tasks">
+            <div id="subs-container">
+                <div class="empty-state"><i class="fa-solid fa-circle-notch fa-spin"></i><br>Loading submissions...</div>
+            </div>
+        </div>
+
+        <!-- APP STORE SUBMISSIONS -->
+        <div id="tab-apps" style="display:none;">
+            <div id="app-subs-container">
+                <div class="empty-state"><i class="fa-solid fa-circle-notch fa-spin"></i><br>Loading app submissions...</div>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, getDoc, arrayRemove, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, getDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
@@ -53,12 +169,32 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
 
-        // --- 1. Load Pending Submissions ---
-        // This scans all users' 'completedTasks' array for status: "Pending"
+        onAuthStateChanged(auth, (user) => {
+            if (!user || user.email !== "admin@unibolt.in") {
+                window.location.href = "admin-login.html";
+                return;
+            }
+            loadSubmissions();
+            loadAppSubmissions();
+        });
+
+        window.logout = () => signOut(auth).then(() => window.location.href = "admin-login.html");
+
+        window.switchTab = (tab) => {
+            document.getElementById('tab-tasks').style.display = tab === 'tasks' ? 'block' : 'none';
+            document.getElementById('tab-apps').style.display = tab === 'apps' ? 'block' : 'none';
+            document.getElementById('tab-tasks-btn').classList.toggle('active', tab === 'tasks');
+            document.getElementById('tab-apps-btn').classList.toggle('active', tab === 'apps');
+        };
+
+        window.refreshAll = () => { loadSubmissions(); loadAppSubmissions(); };
+
+        // ========== TASK SUBMISSIONS ==========
         window.loadSubmissions = async () => {
             const container = document.getElementById("subs-container");
-            container.innerHTML = '<p style="text-align:center; color:#666;">Loading...</p>';
+            container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-notch fa-spin"></i><br>Loading...</div>';
 
             try {
                 const snap = await getDocs(collection(db, "users"));
@@ -66,89 +202,191 @@
 
                 snap.forEach(docSnap => {
                     const userData = docSnap.data();
-                    if(userData.completedTasks && Array.isArray(userData.completedTasks)) {
+                    if (userData.completedTasks && Array.isArray(userData.completedTasks)) {
                         userData.completedTasks.forEach(task => {
-                            // Filter for tasks that need review (assuming status 'Pending' or similar)
-                            // If your logic just adds them to array, we show all recent ones.
-                            // Here we assume tasks have a 'status' field. If not, we show all.
-                            if(task.status === "Pending" || !task.status) { 
+                            if (task.status === "Pending" || !task.status) {
                                 allSubs.push({
                                     ...task,
                                     uid: docSnap.id,
                                     studentName: userData.name || userData.email,
-                                    studentEmail: userData.email
+                                    studentEmail: userData.email,
+                                    avatarIcon: userData.avatarIcon || '🧑'
                                 });
                             }
                         });
                     }
                 });
 
-                container.innerHTML = "";
-                if(allSubs.length === 0) {
-                    container.innerHTML = `<div class="card" style="text-align:center; color:#888;">No pending submissions found.</div>`;
+                document.getElementById('task-count').innerText = allSubs.length;
+                container.innerHTML = '';
+
+                if (allSubs.length === 0) {
+                    container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i><br>No pending task submissions.</div>`;
                     return;
                 }
 
                 allSubs.forEach(sub => {
-                    const div = document.createElement("div");
-                    div.className = "card";
-                    div.style.marginBottom = "15px";
+                    const div = document.createElement('div');
+                    div.className = 'sub-card';
                     div.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; align-items:start;">
-                            <div>
-                                <div style="display:flex; gap:10px; align-items:center;">
-                                    <span style="background:var(--primary); font-size:10px; font-weight:bold; padding:2px 6px; border-radius:4px;">DAY ${sub.day || "?"}</span>
-                                    <span style="font-weight:bold;">${sub.title || "Task Submission"}</span>
+                        <div class="sub-card-header">
+                            <div class="sub-meta">
+                                <div class="sub-avatar">${sub.avatarIcon}</div>
+                                <div>
+                                    <div class="sub-name">${escHtml(sub.studentName)}</div>
+                                    <div class="sub-detail">${escHtml(sub.studentEmail)}</div>
                                 </div>
-                                <div style="margin-top:5px; font-size:13px; color:#aaa;">
-                                    Student: <span style="color:white;">${sub.studentName}</span> (${sub.studentEmail})
-                                </div>
-                                ${sub.link ? `<a href="${sub.link}" target="_blank" style="display:inline-block; margin-top:8px; color:#3b82f6; font-size:12px;"><i class="fa-solid fa-external-link-alt"></i> Open Project Link</a>` : '<span style="font-size:12px; color:#666;">No link provided</span>'}
                             </div>
-                            <div style="display:flex; gap:5px;">
-                                <button class="btn btn-primary" onclick="gradeTask('${sub.uid}', '${sub.day}', 'Approved')" style="background:#10b981; border:none;">Approve</button>
-                                <button class="btn btn-delete" onclick="gradeTask('${sub.uid}', '${sub.day}', 'Rejected')">Reject</button>
+                            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                <span class="badge badge-pending"><i class="fa-solid fa-clock"></i> Pending Review</span>
+                                <span style="background:var(--primary); font-size:10px; font-weight:bold; padding:3px 10px; border-radius:20px;">DAY ${escHtml(String(sub.day || '?'))}</span>
                             </div>
+                        </div>
+                        <div class="sub-body">
+                            <div class="sub-row"><span class="lbl">Task:</span><span class="val">${escHtml(sub.title || 'Task Submission')}</span></div>
+                            ${sub.link ? `<div class="sub-row"><span class="lbl">Project Link:</span><span class="val"><a href="${escHtml(sub.link)}" target="_blank" class="design-link"><i class="fa-solid fa-external-link-alt"></i> Open Submission</a></span></div>` : ''}
+                        </div>
+                        <div style="display:flex; gap:8px; margin-top:15px;">
+                            <button class="btn btn-success" onclick="gradeTask('${escHtml(sub.uid)}', '${escHtml(String(sub.day))}', 'Approved')"><i class="fa-solid fa-check"></i> Approve (+50 XP)</button>
+                            <button class="btn btn-danger" onclick="gradeTask('${escHtml(sub.uid)}', '${escHtml(String(sub.day))}', 'Rejected')"><i class="fa-solid fa-xmark"></i> Reject</button>
                         </div>
                     `;
                     container.appendChild(div);
                 });
 
-            } catch(e) { console.error(e); container.innerHTML = "Error loading data."; }
-        };
-
-        // --- 2. Grade Logic ---
-        window.gradeTask = async (uid, day, newStatus) => {
-            if(!confirm(`Mark this task as ${newStatus}?`)) return;
-
-            const userRef = doc(db, "users", uid);
-            const snap = await getDoc(userRef);
-            
-            if(snap.exists()) {
-                const data = snap.data();
-                // We need to remove the old task object and add the updated one
-                // OR map through the array and update the specific item
-                const updatedTasks = data.completedTasks.map(t => {
-                    if(t.day == day) return { ...t, status: newStatus };
-                    return t;
-                });
-
-                await updateDoc(userRef, { completedTasks: updatedTasks });
-                
-                // If Approved, maybe give XP?
-                if(newStatus === 'Approved') {
-                    const currentXP = data.xp || 0;
-                    await updateDoc(userRef, { xp: currentXP + 50 }); // Give 50 XP
-                    alert("Approved & 50 XP Awarded! 🌟");
-                } else {
-                    alert("Task Rejected.");
-                }
-                
-                loadSubmissions();
+            } catch(e) {
+                console.error(e);
+                container.innerHTML = `<div class="empty-state" style="color:#ff453a;"><i class="fa-solid fa-triangle-exclamation"></i><br>Error loading data.</div>`;
             }
         };
 
-        loadSubmissions();
+        window.gradeTask = async (uid, day, newStatus) => {
+            if (!confirm(`Mark this task as ${newStatus}?`)) return;
+            try {
+                const userRef = doc(db, "users", uid);
+                const snap = await getDoc(userRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    const updatedTasks = data.completedTasks.map(t => {
+                        if (String(t.day) === String(day)) return { ...t, status: newStatus };
+                        return t;
+                    });
+                    await updateDoc(userRef, { completedTasks: updatedTasks });
+                    if (newStatus === 'Approved') {
+                        await updateDoc(userRef, { xp: (data.xp || 0) + 50 });
+                        showToast('✅ Approved & 50 XP awarded!');
+                    } else {
+                        showToast('Task rejected.');
+                    }
+                    loadSubmissions();
+                }
+            } catch(e) { console.error(e); alert('Failed to update: ' + e.message); }
+        };
+
+        // ========== APP STORE SUBMISSIONS ==========
+        window.loadAppSubmissions = async () => {
+            const container = document.getElementById("app-subs-container");
+            container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-notch fa-spin"></i><br>Loading...</div>';
+
+            try {
+                const q = query(collection(db, "app_submissions"), orderBy("submittedAt", "desc"));
+                const snap = await getDocs(q);
+                const submissions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                const pending = submissions.filter(s => s.status === 'pending').length;
+                document.getElementById('app-count').innerText = pending;
+                container.innerHTML = '';
+
+                if (submissions.length === 0) {
+                    container.innerHTML = `<div class="empty-state"><i class="fa-brands fa-google-play"></i><br>No app submissions yet.</div>`;
+                    return;
+                }
+
+                submissions.forEach(sub => {
+                    const div = document.createElement('div');
+                    div.className = 'sub-card';
+                    const statusClass = sub.status === 'approved' ? 'badge-approved' : sub.status === 'rejected' ? 'badge-rejected' : 'badge-pending';
+                    const statusLabel = sub.status === 'approved' ? 'Approved' : sub.status === 'rejected' ? 'Rejected' : 'Pending';
+                    const statusIcon = sub.status === 'approved' ? 'fa-check-circle' : sub.status === 'rejected' ? 'fa-times-circle' : 'fa-clock';
+                    const submittedAt = sub.submittedAt?.toDate ? sub.submittedAt.toDate().toLocaleString() : 'Unknown';
+
+                    div.innerHTML = `
+                        <div class="sub-card-header">
+                            <div class="sub-meta">
+                                <div class="sub-avatar" style="background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3);">
+                                    <i class="fa-brands fa-google-play" style="color:#0ea5e9;"></i>
+                                </div>
+                                <div>
+                                    <div class="sub-name">${escHtml(sub.appName || 'Unnamed App')}</div>
+                                    <div class="sub-detail">by ${escHtml(sub.studentName || 'Unknown')} &bull; ${escHtml(sub.appCategory || 'Uncategorized')}</div>
+                                </div>
+                            </div>
+                            <span class="badge ${statusClass}"><i class="fa-solid ${statusIcon}"></i> ${statusLabel}</span>
+                        </div>
+                        <div class="sub-body">
+                            <div class="sub-row"><span class="lbl">Developer:</span><span class="val">${escHtml(sub.studentName || '-')}</span></div>
+                            <div class="sub-row"><span class="lbl">Email:</span><span class="val">${escHtml(sub.studentEmail || '-')}</span></div>
+                            <div class="sub-row"><span class="lbl">Description:</span><span class="val">${escHtml(sub.appDesc || '-')}</span></div>
+                            <div class="sub-row"><span class="lbl">Submitted:</span><span class="val">${submittedAt}</span></div>
+                            ${sub.designUrl ? `
+                                <div class="design-preview">
+                                    <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px; font-weight:600; text-transform:uppercase;">Design Mockup</div>
+                                    <img src="${escHtml(sub.designUrl)}" alt="Design Mockup" onerror="this.style.display='none'">
+                                    <br><a href="${escHtml(sub.designUrl)}" target="_blank" class="design-link"><i class="fa-solid fa-external-link-alt"></i> View Full Mockup</a>
+                                </div>
+                            ` : ''}
+                        </div>
+                        ${sub.status === 'pending' ? `
+                        <div style="display:flex; gap:8px; margin-top:15px;">
+                            <button class="btn btn-success" onclick="reviewApp('${sub.id}', '${escHtml(sub.uid)}', 'approved')"><i class="fa-solid fa-check"></i> Approve Access</button>
+                            <button class="btn btn-danger" onclick="reviewApp('${sub.id}', '${escHtml(sub.uid)}', 'rejected')"><i class="fa-solid fa-xmark"></i> Reject</button>
+                        </div>
+                        ` : ''}
+                    `;
+                    container.appendChild(div);
+                });
+
+            } catch(e) {
+                console.error(e);
+                container.innerHTML = `<div class="empty-state" style="color:#ff453a;"><i class="fa-solid fa-triangle-exclamation"></i><br>Error: ${e.message}</div>`;
+            }
+        };
+
+        window.reviewApp = async (submissionId, uid, newStatus) => {
+            const action = newStatus === 'approved' ? 'Approve this app and grant download access?' : 'Reject this app submission?';
+            if (!confirm(action)) return;
+
+            try {
+                await updateDoc(doc(db, "app_submissions", submissionId), { 
+                    status: newStatus,
+                    reviewedAt: new Date()
+                });
+
+                if (newStatus === 'approved') {
+                    showToast('✅ App approved. Student can now download source code.');
+                } else {
+                    showToast('App submission rejected.');
+                }
+                loadAppSubmissions();
+            } catch(e) {
+                console.error(e);
+                alert('Failed to update: ' + e.message);
+            }
+        };
+
+        // TOAST
+        function showToast(msg) {
+            let t = document.getElementById('toast');
+            if (!t) { t = document.createElement('div'); t.id = 'toast'; t.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1c1c1e;border:1px solid rgba(255,255,255,0.1);color:white;padding:12px 24px;border-radius:30px;font-size:14px;font-weight:600;z-index:9999;opacity:0;transition:0.3s;'; document.body.appendChild(t); }
+            t.innerText = msg;
+            t.style.opacity = '1';
+            setTimeout(() => t.style.opacity = '0', 2500);
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+        }
     </script>
 </body>
 </html>

@@ -233,98 +233,140 @@
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script type="module" src="home.js"></script>
-    <script>
-        // --- MOCK DATABASE ---
-        // This data simulates the server response.
-        const studentDatabase = [
-            {
-                id: "UB-WEB-2025-HK",
-                name: "Harshit Kashyap",
-                course: "Full Stack Web Development",
-                status: "verified",
-                issueDate: "December 20, 2025",
-                score: "98/100"
-            },
-            {
-                id: "UB-AI-2025-RK",
-                name: "Rahul Kumar",
-                course: "AI & Data Science Architect",
-                status: "pending",
-                issueDate: "N/A",
-                score: "In Progress"
-            },
-            {
-                id: "UB-APP-2025-AS",
-                name: "Anjali Singh",
-                course: "Mobile App Development",
-                status: "verified",
-                issueDate: "January 05, 2026",
-                score: "92/100"
-            }
-        ];
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        function verifyCertificate() {
-            const inputId = document.getElementById('cert-id').value.trim();
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Log verification attempt (for security/audit)
+        async function logVerificationAttempt(certId, result) {
+            try {
+                let ip = '?';
+                try { const r = await fetch('https://api.ipify.org?format=json'); ip = (await r.json()).ip; } catch(e) {}
+                await addDoc(collection(db, "cert_verifications"), {
+                    certId, result,
+                    ip,
+                    userAgent: navigator.userAgent,
+                    timestamp: serverTimestamp()
+                });
+            } catch(e) {}
+        }
+
+        window.verifyCertificate = async function() {
+            const inputId = document.getElementById('cert-id').value.trim().toUpperCase();
             const resultContainer = document.getElementById('result-container');
             
-            // UI Reset
-            resultContainer.innerHTML = '<p style="color:#888; text-align:center;"><i class="fa-solid fa-circle-notch fa-spin"></i> Searching Ledger...</p>';
+            resultContainer.innerHTML = '<p style="color:#888; text-align:center; margin-top:20px;"><i class="fa-solid fa-circle-notch fa-spin"></i> Searching Secure Ledger...</p>';
             resultContainer.style.display = 'block';
 
-            // Simulate Network Delay
-            setTimeout(() => {
-                if (!inputId) {
-                    resultContainer.innerHTML = `<p style="color:#ff4444; text-align:center;">Please enter a Certificate ID.</p>`;
-                    return;
-                }
+            if (!inputId) {
+                resultContainer.innerHTML = `<p style="color:#ff4444; text-align:center; margin-top:20px;">Please enter a Certificate ID.</p>`;
+                return;
+            }
 
-                // Search Logic
-                const student = studentDatabase.find(s => s.id === inputId);
+            try {
+                // Search by certificate code in Firestore
+                const q = query(collection(db, "users"), where("certificateCode", "==", inputId));
+                const snap = await getDocs(q);
 
-                if (student) {
-                    if (student.status === 'verified') {
-                        // SCENARIO 1: VALID & VERIFIED
+                if (!snap.empty) {
+                    const data = snap.docs[0].data();
+                    
+                    if (data.paymentStatus === 'Verified') {
+                        // VALID & VERIFIED
+                        logVerificationAttempt(inputId, 'valid');
+                        const completedPct = data.completedTasks ? Math.min(100, Math.round((data.completedTasks.length / 100) * 100)) : 0;
+                        const course = data.enrolledProgram || 'UniBolt Program';
+                        const level = Math.floor((data.xp || 0) / 500) + 1;
+                        const city = data.city ? `${data.city}, ` : '';
+                        const state = data.state || 'India';
+
                         resultContainer.innerHTML = `
                             <div class="result-box result-success">
-                                <div class="verified-stamp"><i class="fa-solid fa-circle-check"></i> UniBolt Verified</div>
-                                <div class="data-row"><span class="data-label">Student Name:</span> <span class="data-value">${student.name}</span></div>
-                                <div class="data-row"><span class="data-label">Track:</span> <span class="data-value">${student.course}</span></div>
-                                <div class="data-row"><span class="data-label">Issue Date:</span> <span class="data-value">${student.issueDate}</span></div>
-                                <div class="data-row"><span class="data-label">Final Score:</span> <span class="data-value">${student.score}</span></div>
-                                <div class="data-row"><span class="data-label">Status:</span> <span class="data-value" style="color:#00ff88">COMPLETED</span></div>
+                                <div class="verified-stamp"><i class="fa-solid fa-circle-check"></i> UniBolt Verified ✅</div>
+                                <div style="margin-top: 15px; display: grid; gap: 8px;">
+                                    <div class="data-row"><span class="data-label">Student Name:</span> <span class="data-value">${escHtml(data.name || 'N/A')}</span></div>
+                                    <div class="data-row"><span class="data-label">Program:</span> <span class="data-value">${escHtml(course)}</span></div>
+                                    <div class="data-row"><span class="data-label">Certificate ID:</span> <span class="data-value" style="font-family:monospace;">${inputId}</span></div>
+                                    <div class="data-row"><span class="data-label">Level:</span> <span class="data-value" style="color:#00ff88;">Level ${level}</span></div>
+                                    <div class="data-row"><span class="data-label">XP Earned:</span> <span class="data-value">${(data.xp || 0).toLocaleString()} XP</span></div>
+                                    <div class="data-row"><span class="data-label">Location:</span> <span class="data-value">${escHtml(city + state)}</span></div>
+                                    <div class="data-row"><span class="data-label">Status:</span> <span class="data-value" style="color:#00ff88;">✅ COMPLETED & VERIFIED</span></div>
+                                </div>
+                                <p style="margin-top:15px; font-size:11px; color:#555; line-height:1.5; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
+                                    🔒 Verified on ${new Date().toLocaleString()} &bull; This record is cryptographically sealed.
+                                </p>
                             </div>
                         `;
                     } else {
-                        // SCENARIO 2: VALID ID BUT PENDING
+                        // ENROLLED BUT NOT COMPLETED
+                        logVerificationAttempt(inputId, 'pending');
                         resultContainer.innerHTML = `
                             <div class="result-box result-pending">
                                 <div class="verified-stamp" style="color:#ffd43b; border-color:rgba(255,212,59,0.2)">
                                     <i class="fa-solid fa-clock"></i> Completion Pending
                                 </div>
-                                <div class="data-row"><span class="data-label">Student Name:</span> <span class="data-value">${student.name}</span></div>
-                                <div class="data-row"><span class="data-label">Track:</span> <span class="data-value">${student.course}</span></div>
-                                <div class="data-row"><span class="data-label">Current Status:</span> <span class="data-value" style="color:#ffd43b">IN PROGRESS (85%)</span></div>
-                                <p style="margin-top:15px; font-size:0.8rem; color:#ccc; line-height:1.5;">
-                                    This student is currently enrolled but has not yet generated their final certificate. Please check back later.
+                                <div class="data-row" style="margin-top:15px;"><span class="data-label">Student Name:</span> <span class="data-value">${escHtml(data.name || 'N/A')}</span></div>
+                                <div class="data-row"><span class="data-label">Program:</span> <span class="data-value">${escHtml(data.enrolledProgram || 'N/A')}</span></div>
+                                <div class="data-row"><span class="data-label">Status:</span> <span class="data-value" style="color:#ffd43b;">IN PROGRESS</span></div>
+                                <p style="margin-top:15px; font-size:0.85rem; color:#ccc; line-height:1.5;">
+                                    This student is currently enrolled but has not yet completed the program. Certificate will be issued upon completion.
                                 </p>
                             </div>
                         `;
                     }
                 } else {
-                    // SCENARIO 3: INVALID / FAKE
+                    // INVALID / FAKE CERTIFICATE
+                    logVerificationAttempt(inputId, 'fake');
                     resultContainer.innerHTML = `
                         <div class="result-box result-fake">
-                            <i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem; color:#ff4444; margin-bottom:15px;"></i>
-                            <h3 style="color:#ff4444; margin:0 0 10px 0;">Invalid Certificate ID</h3>
-                            <p style="color:#ccc; font-size:0.95rem; line-height:1.6;">
-                                The ID <strong>${inputId}</strong> does not exist in our secure ledger. 
-                                <br><br>
-                                This certificate may be forged, or the ID was entered incorrectly. Please contact <a href="mailto:security@unibolt.in" style="color:#ff4444;">security@unibolt.in</a> for assistance.
-                            </p>
+                            <div style="background: rgba(255,68,68,0.1); border: 2px solid #ff4444; border-radius: 16px; padding: 30px; animation: shake 0.4s ease;">
+                                <div style="font-size: 3rem; margin-bottom: 15px;">⚠️</div>
+                                <h3 style="color:#ff4444; margin:0 0 8px 0; font-size: 22px;">INVALID CERTIFICATE</h3>
+                                <div style="background: #ff4444; color: white; display: inline-block; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 800; margin-bottom: 15px; letter-spacing: 1px;">
+                                    NOT FOUND IN SECURE LEDGER
+                                </div>
+                                <p style="color: #ffaaaa; font-size: 0.95rem; line-height: 1.7; margin-bottom: 15px;">
+                                    The certificate ID <strong style="color:white; font-family:monospace;">${escHtml(inputId)}</strong> does not exist in the UniBolt verification database.
+                                </p>
+                                <div style="background: rgba(255,68,68,0.05); border: 1px solid rgba(255,68,68,0.3); border-radius: 10px; padding: 15px; text-align:left; font-size: 13px; color: #ccc; line-height: 1.7;">
+                                    <strong style="color: #ff4444;">⚠️ WARNING:</strong> This could indicate:<br>
+                                    • A <strong>forged or fraudulent certificate</strong><br>
+                                    • A <strong>typographical error</strong> in the ID<br>
+                                    • An ID from an <strong>unauthorized source</strong>
+                                </div>
+                                <p style="margin-top: 15px; font-size: 12px; color: #888;">
+                                    To report a fraudulent certificate, contact: 
+                                    <a href="mailto:security@unibolt.in" style="color: #ff4444;">security@unibolt.in</a>
+                                </p>
+                            </div>
                         </div>
+                        <style>@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }</style>
                     `;
                 }
-            }, 800); // 800ms delay for realism
+            } catch(e) {
+                console.error('Verification error:', e);
+                resultContainer.innerHTML = `
+                    <div class="result-box" style="background:rgba(255,255,255,0.02); border:1px solid #333;">
+                        <p style="color:#888; text-align:center;">⚠️ Connection error. Please try again.<br><small>${escHtml(e.message)}</small></p>
+                    </div>
+                `;
+            }
+        };
+
+        function escHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
         }
     </script>
 </body>

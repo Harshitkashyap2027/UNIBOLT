@@ -298,6 +298,7 @@
             <a href="admin-content.html" class="nav-item"><i class="fa-solid fa-book-open"></i> Content</a>
             <a href="admin-activity.html" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Activity</a>
             <a href="admin-registrations.html" class="nav-item"><i class="fa-solid fa-address-card"></i> Registrations</a>
+            <a href="admin-submissions.html" class="nav-item"><i class="fa-solid fa-list-check"></i> Submissions</a>
             <a href="admin-settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
             <a href="admin-notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications</a>
             <a href="admin-team.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Team</a>
@@ -368,6 +369,20 @@
                     <tr><td colspan="4" style="text-align:center; padding:40px; color:#8e8e93;">Loading Database...</td></tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- ADMIN CHANGE LOG SECTION -->
+        <div style="margin-top: 30px; background: var(--surface); border-radius: var(--radius); padding: 24px; box-shadow: var(--bento-shadow);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700;">Recent Admin Changes</h3>
+                    <p style="margin: 4px 0 0; color: var(--text-dim); font-size: 13px;">What you changed, on which device, and from where.</p>
+                </div>
+                <a href="admin-activity.html" style="font-size: 13px; color: #0a84ff; text-decoration: none;">View Full Log →</a>
+            </div>
+            <div id="admin-change-log">
+                <div style="text-align:center; padding:30px; color: var(--text-dim);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</div>
+            </div>
         </div>
     </div>
 
@@ -652,6 +667,61 @@
         window.logout = function() {
             if(confirm("Log out?")) window.location.href = "index.html"; // In real app, call signOut(auth)
         }
+
+        // --- ADMIN CHANGE LOG ---
+        async function loadAdminChangeLog() {
+            const container = document.getElementById('admin-change-log');
+            if (!container) return;
+            try {
+                const { query, collection: col, orderBy, limit, getDocs } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                const q = query(col(db, "audit_logs"), orderBy("timestamp", "desc"), limit(8));
+                const snap = await getDocs(q);
+                
+                if (snap.empty) {
+                    container.innerHTML = `<p style="color:var(--text-dim); text-align:center; padding:20px; font-size:14px;">No changes logged yet.</p>`;
+                    return;
+                }
+
+                const typeColors = { LOGIN: '#30d158', LOGOUT: '#ff9f0a', UPDATE: '#0a84ff', DELETE: '#ff453a', CREATE: '#bf5af2' };
+                container.innerHTML = snap.docs.map(d => {
+                    const log = d.data();
+                    const time = log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString() : 'Unknown';
+                    const color = typeColors[log.type] || '#8e8e93';
+                    const browser = log.userAgent ? log.userAgent.split(' ').slice(-2).join(' ') : 'Unknown device';
+                    return `
+                        <div style="display:flex; align-items:flex-start; gap:14px; padding:14px 0; border-bottom:1px solid var(--border);">
+                            <div style="width:8px; height:8px; border-radius:50%; background:${color}; margin-top:6px; flex-shrink:0; box-shadow:0 0 6px ${color};"></div>
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
+                                    <span style="font-weight:600; font-size:14px; color:white;">${escHtml(log.message || log.type)}</span>
+                                    <span style="font-size:11px; color:var(--text-dim); white-space:nowrap;">${time}</span>
+                                </div>
+                                <div style="display:flex; gap:16px; margin-top:5px; flex-wrap:wrap;">
+                                    <span style="font-size:12px; color:var(--text-dim);"><i class="fa-solid fa-map-location-dot" style="margin-right:4px;"></i>${escHtml(log.location || 'Unknown location')}</span>
+                                    <span style="font-size:12px; color:var(--text-dim);"><i class="fa-solid fa-shield" style="margin-right:4px;"></i>${escHtml(log.ip || '?')}</span>
+                                    <span style="font-size:12px; color:var(--text-dim);"><i class="fa-solid fa-laptop" style="margin-right:4px;"></i>${escHtml(browser)}</span>
+                                </div>
+                            </div>
+                            <span style="background:${color}22; color:${color}; border:1px solid ${color}44; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; flex-shrink:0;">${escHtml(log.type || 'EVENT')}</span>
+                        </div>
+                    `;
+                }).join('');
+            } catch(e) {
+                container.innerHTML = `<p style="color:var(--text-dim); font-size:13px; text-align:center;">Could not load change log.</p>`;
+            }
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+        }
+
+        // Load change log after auth check
+        onAuthStateChanged(auth, (user) => {
+            if (user && user.email === "admin@unibolt.in") {
+                setTimeout(loadAdminChangeLog, 1000);
+            }
+        });
 
         // --- GLOBAL CUSTOM CONFIRM LOGIC ---
         // This replaces the default browser 'confirm()'

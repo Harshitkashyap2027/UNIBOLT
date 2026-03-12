@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UniBolt - App Dev Hall of Fame</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="manifest" href="manifest-app.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+        :root {
+            --bg: #09090b;
+            --accent: #0ea5e9;
+            --gold: #fbbf24;
+            --surface: #18181b;
+            --border: rgba(255,255,255,0.07);
+            --text: #f8fafc;
+            --text-dim: #a1a1aa;
+            --sidebar-width: 260px;
+        }
+        body {
+            background: var(--bg); font-family: 'Montserrat', sans-serif; margin: 0; color: var(--text);
+            background-image: radial-gradient(rgba(14,165,233,0.05) 1px, transparent 1px); background-size: 30px 30px;
+        }
+        .app-container { display: flex; min-height: 100vh; }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0;
+            background: #000; border-right: 1px solid var(--border);
+            padding: 25px 15px; display: flex; flex-direction: column; z-index: 200;
+            transition: transform 0.3s;
+        }
+        .brand { font-size: 20px; font-weight: 800; color: white; margin-bottom: 30px; padding-left: 10px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; color: #71717a; text-decoration: none; border-radius: 10px; font-size: 14px; transition: 0.2s; font-weight: 600; margin-bottom: 3px; }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .nav-item.active { background: rgba(14,165,233,0.12); color: var(--accent); border-left: 3px solid var(--accent); }
+        .sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); }
+        
+        /* SIDEBAR OVERLAY & MOBILE HEADER */
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 150; }
+        .top-header { display: none; }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.active { transform: translateX(0); }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; padding: 20px 15px 30px; }
+            .top-header { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(0,0,0,0.8); border-bottom: 1px solid var(--border); margin: -20px -15px 20px; position: sticky; top: 0; z-index: 100; }
+            .top-header .menu-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+        }
+
+        /* MAIN */
+        .main-content { flex: 1; margin-left: var(--sidebar-width); padding: 30px; max-width: calc(100vw - var(--sidebar-width)); }
+
+        /* HERO */
+        .hof-hero {
+            text-align: center; padding: 60px 20px 40px; position: relative;
+            background: linear-gradient(180deg, rgba(14,165,233,0.08) 0%, transparent 100%);
+            border-radius: 24px; margin-bottom: 40px; border: 1px solid var(--border);
+        }
+        .hof-hero h1 { font-family: 'Cinzel', serif; font-size: 48px; background: linear-gradient(135deg, var(--accent), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 10px; }
+        .hof-hero p { color: var(--text-dim); font-size: 16px; max-width: 500px; margin: 0 auto; }
+        .floating-icons { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 24px; }
+        .fi { position: absolute; font-size: 40px; opacity: 0.05; animation: float 6s ease-in-out infinite; }
+
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
+
+        /* PODIUM */
+        .podium-section { margin-bottom: 50px; }
+        .section-title { font-size: 20px; font-weight: 700; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; color: white; }
+        .podium-row { display: flex; gap: 20px; justify-content: center; align-items: flex-end; flex-wrap: wrap; margin-bottom: 30px; }
+        .podium-card {
+            background: var(--surface); border-radius: 20px; padding: 25px 20px; text-align: center;
+            border: 1px solid var(--border); position: relative; transition: transform 0.2s;
+            min-width: 160px; max-width: 200px;
+        }
+        .podium-card:hover { transform: translateY(-5px); }
+        .podium-card.rank-1 { border-bottom: 4px solid var(--gold); transform: scale(1.08); box-shadow: 0 0 40px rgba(251,191,36,0.1); }
+        .podium-card.rank-2 { border-bottom: 4px solid #c0c0c0; }
+        .podium-card.rank-3 { border-bottom: 4px solid #cd7f32; }
+        .podium-avatar {
+            width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin: 0 auto 12px; border: 2px solid rgba(255,255,255,0.1);
+        }
+        .rank-1 .podium-avatar { background: rgba(251,191,36,0.15); border-color: var(--gold); width: 72px; height: 72px; font-size: 30px; }
+        .rank-2 .podium-avatar { background: rgba(192,192,192,0.1); border-color: #c0c0c0; }
+        .rank-3 .podium-avatar { background: rgba(205,127,50,0.1); border-color: #cd7f32; }
+        .crown { font-size: 24px; margin-bottom: 8px; }
+        .podium-name { font-weight: 700; font-size: 14px; color: white; margin-bottom: 4px; }
+        .podium-score { font-size: 22px; font-weight: 800; }
+        .rank-1 .podium-score { color: var(--gold); }
+        .rank-2 .podium-score { color: #c0c0c0; }
+        .rank-3 .podium-score { color: #cd7f32; }
+        .podium-label { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+
+        /* GRID */
+        .fame-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .fame-card {
+            background: var(--surface); border-radius: 16px; padding: 20px;
+            border: 1px solid var(--border); transition: transform 0.2s, border-color 0.2s;
+            position: relative; overflow: hidden;
+        }
+        .fame-card:hover { transform: translateY(-4px); border-color: rgba(14,165,233,0.3); }
+        .fame-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), #6366f1); opacity: 0; transition: opacity 0.2s; }
+        .fame-card:hover::before { opacity: 1; }
+        .fc-header { display: flex; align-items: center; gap: 14px; margin-bottom: 15px; }
+        .fc-avatar { width: 48px; height: 48px; border-radius: 50%; background: rgba(14,165,233,0.15); display: flex; align-items: center; justify-content: center; font-size: 22px; border: 1px solid rgba(14,165,233,0.3); flex-shrink: 0; }
+        .fc-name { font-weight: 700; font-size: 15px; color: white; margin-bottom: 3px; }
+        .fc-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(14,165,233,0.12); color: var(--accent); border: 1px solid rgba(14,165,233,0.25); padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .fc-stats { display: flex; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+        .fc-stat { flex: 1; text-align: center; }
+        .fc-stat-val { font-size: 18px; font-weight: 800; color: var(--accent); }
+        .fc-stat-lbl { font-size: 10px; color: var(--text-dim); margin-top: 2px; text-transform: uppercase; }
+
+        /* LOADING */
+        .loading { text-align: center; padding: 60px; color: var(--text-dim); }
+        .loading i { font-size: 30px; margin-bottom: 15px; color: var(--accent); }
+
+        /* PWA INSTALL */
+        #pwa-install-btn {
+            display: none; width: 100%; padding: 10px; margin-top: 8px;
+            background: rgba(14,165,233,0.12); border: 1px solid rgba(14,165,233,0.3);
+            color: var(--accent); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<div class="app-container">
+    <aside class="sidebar" id="sidebar">
+        <div class="brand"><i class="fa-solid fa-layer-group" style="color: #0ea5e9;"></i> UniBolt.</div>
+
+        <a href="APP.html" class="nav-item"><i class="fa-solid fa-mobile-screen"></i> Dashboard</a>
+        <a href="APP-studio.html" class="nav-item"><i class="fa-solid fa-laptop-code"></i> App Studio</a>
+        <a href="APP-components.html" class="nav-item"><i class="fa-solid fa-cubes"></i> Components</a>
+        <a href="leaderboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+        <a href="APP-play.html" class="nav-item"><i class="fa-brands fa-google-play"></i> App Store</a>
+        <a href="app-gallery.html" class="nav-item active"><i class="fa-solid fa-trophy"></i> Hall of Fame</a>
+        <a href="research.html" class="nav-item"><i class="fa-solid fa-book-open"></i> Docs</a>
+        <a href="contact.html" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
+        <a href="profile.html" class="nav-item"><i class="fa-solid fa-sliders"></i> Settings</a>
+
+        <div class="sidebar-footer">
+            <button id="pwa-install-btn"><i class="fa-solid fa-download"></i> Install App</button>
+            <a href="login.html" class="nav-item" style="color:#ef4444;"><i class="fa-solid fa-power-off"></i> Logout</a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-header">
+            <button class="menu-btn" onclick="openSidebar()"><i class="fa-solid fa-bars"></i></button>
+            <span style="font-weight: 700; font-size: 16px;">Hall of Fame</span>
+            <div></div>
+        </header>
+
+        <!-- HERO -->
+        <div class="hof-hero">
+            <div class="floating-icons">
+                <div class="fi" style="top:10%; left:5%;">📱</div>
+                <div class="fi" style="top:20%; right:8%; animation-delay: 1s;">🚀</div>
+                <div class="fi" style="bottom:15%; left:15%; animation-delay: 2s;">⚡</div>
+                <div class="fi" style="bottom:10%; right:12%; animation-delay: 0.5s;">🏆</div>
+                <div class="fi" style="top:50%; left:50%; animation-delay: 1.5s;">💎</div>
+            </div>
+            <h1>Hall of Fame</h1>
+            <p style="color: #71717a; margin-top: 10px; font-size: 14px;">App Development</p>
+            <p>The best mobile developers who built, shipped, and climbed to the top. Legends.</p>
+        </div>
+
+        <!-- PODIUM -->
+        <div class="podium-section">
+            <div class="section-title"><i class="fa-solid fa-medal" style="color: var(--gold);"></i> Top Builders</div>
+            <div class="podium-row" id="podium-container">
+                <div class="loading"><i class="fa-solid fa-circle-notch fa-spin"></i><br>Loading legends...</div>
+            </div>
+        </div>
+
+        <!-- ALL HONOREES -->
+        <div>
+            <div class="section-title"><i class="fa-solid fa-star" style="color: var(--accent);"></i> All Honorees</div>
+            <div class="fame-grid" id="fame-grid">
+                <div class="loading"><i class="fa-solid fa-circle-notch fa-spin"></i><br>Loading...</div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+        authDomain: "unibolt-f7005.firebaseapp.com",
+        projectId: "unibolt-f7005",
+        storageBucket: "unibolt-f7005.appspot.com",
+        messagingSenderId: "121987854250",
+        appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user) { window.location.href = "login.html"; return; }
+        loadHallOfFame();
+    });
+
+    async function loadHallOfFame() {
+        try {
+            const q = query(
+                collection(db, "users"),
+                where("paymentStatus", "==", "Verified"),
+                orderBy("xp", "desc"),
+                limit(30)
+            );
+            const snap = await getDocs(q);
+            const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderPodium(users.slice(0, 3));
+            renderGrid(users);
+        } catch (e) {
+            console.error("Hall of Fame Error:", e);
+            document.getElementById('fame-grid').innerHTML = `<div class="loading"><i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i><br>Could not load data.</div>`;
+        }
+    }
+
+    function renderPodium(top3) {
+        const el = document.getElementById('podium-container');
+        if (!top3.length) { el.innerHTML = `<p style="color:#666; text-align:center;">No data yet. Be the first!</p>`; return; }
+
+        const ranks = [
+            { order: 2, class: 'rank-1', crown: '👑', medal: '🥇', label: '1st Place' },
+            { order: 1, class: 'rank-2', crown: '🥈', medal: '🥈', label: '2nd Place' },
+            { order: 3, class: 'rank-3', crown: '🥉', medal: '🥉', label: '3rd Place' }
+        ];
+
+        let html = '';
+        ranks.forEach((r, i) => {
+            const u = top3[i];
+            if (!u) return;
+            const av = u.avatarIcon || (u.name ? u.name.charAt(0).toUpperCase() : '?');
+            const xp = (u.xp || 0).toLocaleString();
+            const apps = Math.floor(((u.xp || 0) / 500) / 10) || 0;
+            html += `
+                <div class="podium-card ${r.class}" style="order:${r.order}">
+                    <div class="crown">${r.crown}</div>
+                    <div class="podium-avatar">${av}</div>
+                    <div class="podium-name">${escHtml(u.name || 'Anonymous')}</div>
+                    <div class="podium-score">${xp}</div>
+                    <div class="podium-label">XP • ${r.label}</div>
+                </div>
+            `;
+        });
+        el.innerHTML = html;
+
+        if (typeof confetti === 'function') {
+            confetti({ particleCount: 80, spread: 60, origin: { y: 0.5 }, colors: ['#0ea5e9', '#fbbf24', '#6366f1'] });
+        }
+    }
+
+    function renderGrid(users) {
+        const el = document.getElementById('fame-grid');
+        if (!users.length) { el.innerHTML = `<p style="color:#666;">No honorees yet.</p>`; return; }
+        el.innerHTML = users.map((u, i) => {
+            const av = u.avatarIcon || (u.name ? u.name.charAt(0).toUpperCase() : '?');
+            const level = Math.floor((u.xp || 0) / 500) + 1;
+            const streak = u.streak || 0;
+            const apps = Math.floor(level / 10) || 0;
+            return `
+                <div class="fame-card">
+                    <div class="fc-header">
+                        <div class="fc-avatar">${av}</div>
+                        <div>
+                            <div class="fc-name">${escHtml(u.name || 'Anonymous')}</div>
+                            <span class="fc-badge"><i class="fa-solid fa-mobile-screen"></i> App Dev</span>
+                        </div>
+                    </div>
+                    <div class="fc-stats">
+                        <div class="fc-stat"><div class="fc-stat-val">${(u.xp||0).toLocaleString()}</div><div class="fc-stat-lbl">XP</div></div>
+                        <div class="fc-stat"><div class="fc-stat-val">${level}</div><div class="fc-stat-lbl">Level</div></div>
+                        <div class="fc-stat"><div class="fc-stat-val">🔥 ${streak}</div><div class="fc-stat-lbl">Streak</div></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function escHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+    }
+
+    // PWA install
+    let deferredPrompt;
+    const installBtn = document.getElementById('pwa-install-btn');
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = 'block';
+    });
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; }
+    });
+</script>
+
+<script>
+    function openSidebar() {
+        document.getElementById('sidebar').classList.add('active');
+        document.getElementById('sidebar-overlay').classList.add('active');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('active');
+        document.getElementById('sidebar-overlay').classList.remove('active');
+    }
+</script>
+</body>
+</html>

@@ -259,26 +259,75 @@
     </div>
 
     <div id="upload-modal" class="modal-overlay">
-        <div class="modal-box" style="background: #111; width: 600px; padding: 40px; border-radius: 24px; border: 1px solid #333;">
+        <div class="modal-box" style="background: #111; width: 620px; padding: 40px; border-radius: 24px; border: 1px solid #333; max-height: 90vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 25px;">
-                <h2 style="margin: 0; font-size: 24px;">Publish to Store</h2>
+                <div>
+                    <h2 style="margin: 0; font-size: 24px;">Submit Your App</h2>
+                    <p style="margin: 5px 0 0; color: #666; font-size: 13px;">A design mockup is required for admin review</p>
+                </div>
                 <i class="fa-solid fa-xmark" onclick="closeModal('upload-modal')" style="cursor: pointer; color: #666; font-size: 20px;"></i>
             </div>
 
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; color: #888; font-size: 12px; margin-bottom: 8px;">APP NAME</label>
-                <input type="text" id="up-name" placeholder="e.g. Super Task Manager" style="width: 100%; background: #1a1a1a; border: 1px solid #444; padding: 14px; border-radius: 10px; color: white; font-size: 15px; outline: none; box-sizing: border-box;">
+            <div id="submit-form-section">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase;">APP NAME *</label>
+                    <input type="text" id="up-name" placeholder="e.g. Super Task Manager" style="width: 100%; background: #1a1a1a; border: 1px solid #444; padding: 12px; border-radius: 10px; color: white; font-size: 15px; outline: none; box-sizing: border-box;">
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase;">APP DESCRIPTION *</label>
+                    <textarea id="up-desc" placeholder="Describe your app — what it does, who it's for..." rows="3" style="width: 100%; background: #1a1a1a; border: 1px solid #444; padding: 12px; border-radius: 10px; color: white; font-size: 14px; outline: none; resize: vertical; box-sizing: border-box;"></textarea>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase;">CATEGORY</label>
+                    <select id="up-cat" style="width: 100%; background: #1a1a1a; border: 1px solid #444; padding: 12px; border-radius: 10px; color: white; font-size: 14px; outline: none; box-sizing: border-box;">
+                        <option value="Productivity">Productivity</option>
+                        <option value="Game">Game</option>
+                        <option value="Dev Tools">Dev Tools</option>
+                        <option value="Health">Health</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Education">Education</option>
+                        <option value="Social">Social</option>
+                        <option value="Utility">Utility</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: #888; font-size: 12px; margin-bottom: 8px; text-transform: uppercase;">DESIGN MOCKUP / SCREENSHOT URL *</label>
+                    <input type="url" id="up-design" placeholder="https://imgur.com/your-app-screenshot.png" style="width: 100%; background: #1a1a1a; border: 1px solid #444; padding: 12px; border-radius: 10px; color: white; font-size: 14px; outline: none; box-sizing: border-box;">
+                    <p style="color: #555; font-size: 11px; margin: 6px 0 0;">Upload your mockup to Imgur, Google Drive (public), or similar and paste the link here.</p>
+                </div>
+
+                <div style="background: rgba(14,165,233,0.05); border: 1px solid rgba(14,165,233,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 13px; color: #888; line-height: 1.6;">
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent); margin-right: 8px;"></i>
+                    After submission, your app design will be <strong style="color: #ccc;">reviewed by the admin</strong>. 
+                    Once approved, you'll gain full access to download source code from the store.
+                </div>
+
+                <button onclick="submitAppForReview()" style="width: 100%; background: var(--accent); color: white; padding: 14px; border-radius: 10px; border: none; font-weight: 700; font-size: 15px; cursor: pointer;">
+                    <i class="fa-solid fa-paper-plane"></i> &nbsp; Submit for Review
+                </button>
             </div>
-            
-            <div class="upload-zone" onclick="startUploadProcess()">
-                <i class="fa-solid fa-file-zipper" style="font-size: 45px; margin-bottom: 15px;"></i>
-                <div style="font-weight: bold; font-size: 16px;">Drag & Drop Source Code (.zip)</div>
-                <div style="font-size: 13px; opacity: 0.6; margin-top: 5px;">or click to browse local files</div>
+
+            <div id="submit-success-section" style="display: none; text-align: center; padding: 20px 0;">
+                <div style="width: 70px; height: 70px; background: rgba(34,197,94,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 1px solid rgba(34,197,94,0.3);">
+                    <i class="fa-solid fa-clock" style="font-size: 28px; color: var(--success);"></i>
+                </div>
+                <h3 style="margin: 0 0 10px; color: white; font-size: 20px;">Submission Received!</h3>
+                <p style="color: #888; font-size: 14px; line-height: 1.7; max-width: 380px; margin: 0 auto 25px;">
+                    Your app design has been submitted for admin review.<br>
+                    <strong style="color: #ccc;">Please wait while the admin verifies your submission.</strong><br>
+                    You will be notified once approved and can then download source code.
+                </p>
+                <button onclick="closeModal('upload-modal')" style="background: #222; border: 1px solid #444; color: #ccc; padding: 10px 30px; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                    Close
+                </button>
             </div>
 
             <div class="progress-container" id="up-progress">
                 <div style="display: flex; justify-content: space-between; font-size: 13px; color: #ccc; margin-bottom: 5px;">
-                    <span id="up-status">Uploading...</span>
+                    <span id="up-status">Submitting...</span>
                     <span id="up-pct" style="font-weight: bold;">0%</span>
                 </div>
                 <div class="progress-bar">
@@ -298,6 +347,7 @@
                 <a href="APP-studio.html" class="nav-item"><i class="fa-solid fa-laptop-code"></i> App Studio</a>
                 <a href="APP-components.html" class="nav-item"><i class="fa-solid fa-cubes"></i> Components</a>
                 <a href="leaderboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+                <a href="app-gallery.html" class="nav-item"><i class="fa-solid fa-trophy"></i> Hall of Fame</a>
                 <a href="contact.html" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
             </ul>
             
