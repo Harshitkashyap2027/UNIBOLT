@@ -66,7 +66,7 @@ It is designed to bridge the gap between college education and real-world indust
 |---|---|---|
 | **Full Stack Web Development** (React, Node.js, Firebase) | 30 Days | ✅ Available |
 | **AI & Data Science** (Python, Pandas, ML) | 25 Days | ✅ Available |
-| **App Development** (Flutter) | 30 Days | 🔜 Coming Soon |
+| **App Development** (Flutter) | 30 Days | ✅ Available |
 
 ---
 
@@ -100,7 +100,12 @@ UNIBOLT/
 ├── admin-activity.html     # Activity logs
 │
 ├── AI.html                 # AI track dashboard
-├── APP.html                # App dev track dashboard
+├── APP.html                # App Dev track dashboard
+├── APP-studio.html         # Flutter code studio/IDE
+├── APP-components.html     # Flutter component hub
+├── APP-play.html           # App store / published apps
+├── app-practice.html       # App Dev practice gym (Flutter quizzes & bug hunt)
+├── signup-app.html         # App Development track registration
 ├── ai-notes.html           # AI-generated notes
 ├── ai-roadmap.html         # Personalized roadmap
 ├── AIarena.html / arena.html # Code arena

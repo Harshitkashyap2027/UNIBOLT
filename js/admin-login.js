@@ -48,7 +48,7 @@ form.addEventListener("submit", async (e) => {
         btn.style.background = "#10b981";
         btn.innerText = "Access Granted";
         setTimeout(() => {
-            window.location.href = "/admin";
+            window.location.href = "admin.html";
         }, 800);
 
     } catch (error) {
@@ -92,7 +92,7 @@ async function handleLogin() {
         await logSecurityEvent("LOGIN", "Admin", username, "Successfully logged into Master Control");
         // --- END TRACKING ---
 
-        window.location.href = "/admin";
+        window.location.href = "admin.html";
     } else {
         // Track failed attempts too for security!
         await logSecurityEvent("SECURITY_ALERT", "Unknown", username, "FAILED login attempt detected");
