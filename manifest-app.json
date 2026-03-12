@@ -1,14 +1,14 @@
 {
-  "id": "/AI",
-  "name": "UniBolt — AI & Data Science",
-  "short_name": "AI & Data",
-  "description": "Master AI, machine learning, and data science through gamified daily missions and real projects.",
-  "start_url": "/AI.html",
+  "id": "/APP",
+  "name": "UniBolt — App Development",
+  "short_name": "App Dev",
+  "description": "Build cross-platform mobile apps with Flutter. Gamified daily missions, live IDE, and community.",
+  "start_url": "/APP.html",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
-  "background_color": "#0f0e13",
-  "theme_color": "#8b5cf6",
+  "background_color": "#09090b",
+  "theme_color": "#0ea5e9",
   "orientation": "any",
   "categories": ["education", "productivity"],
   "lang": "en-IN",
@@ -28,27 +28,27 @@
   ],
   "shortcuts": [
     {
-      "name": "AI Dashboard",
+      "name": "App Dashboard",
       "short_name": "Dashboard",
-      "url": "/AI.html",
+      "url": "/APP.html",
       "icons": [{ "src": "UniBolt.png", "sizes": "96x96", "type": "image/png" }]
     },
     {
-      "name": "AI Arena",
-      "short_name": "Arena",
-      "url": "/AIarena.html",
+      "name": "App Studio IDE",
+      "short_name": "Studio",
+      "url": "/APP-studio.html",
       "icons": [{ "src": "UniBolt.png", "sizes": "96x96", "type": "image/png" }]
     },
     {
-      "name": "AI Leaderboard",
-      "short_name": "Ranks",
-      "url": "/aileaderboard.html",
+      "name": "App Store",
+      "short_name": "Store",
+      "url": "/APP-play.html",
       "icons": [{ "src": "UniBolt.png", "sizes": "96x96", "type": "image/png" }]
     },
     {
-      "name": "Research Hub",
-      "short_name": "Research",
-      "url": "/airesearch.html",
+      "name": "Hall of Fame",
+      "short_name": "Hall",
+      "url": "/app-gallery.html",
       "icons": [{ "src": "UniBolt.png", "sizes": "96x96", "type": "image/png" }]
     }
   ]

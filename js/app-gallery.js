@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // --- CONFIGURATION ---
 const firebaseConfig = {
@@ -13,10 +14,47 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // --- STATE MANAGEMENT ---
-// Checks if user has uploaded an app before
-let isContributor = localStorage.getItem("unibolt_contributor") === "true";
+let isContributor = false;
+let currentUser = null;
+let currentUserData = null;
+
+// Auth guard + contributor check
+onAuthStateChanged(auth, async (user) => {
+    if (!user) { window.location.href = "login.html"; return; }
+    currentUser = user;
+
+    try {
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        if (userSnap.exists()) {
+            currentUserData = userSnap.data();
+            const av = document.querySelector('.avatar');
+            if (av) av.innerText = currentUserData.avatarIcon || (currentUserData.name ? currentUserData.name.charAt(0) : 'U');
+        }
+    } catch (e) { console.warn("Profile load failed", e); }
+
+    // Check if user has an approved app submission
+    try {
+        const q = query(collection(db, "app_submissions"), where("uid", "==", user.uid), where("status", "==", "approved"));
+        const snap = await getDocs(q);
+        isContributor = !snap.empty;
+    } catch (e) { /* fallback to localStorage */ isContributor = localStorage.getItem("unibolt_contributor") === "true"; }
+
+    updateContributorUI();
+    renderGrids(ALL_APPS);
+
+    // Search Listener
+    const searchEl = document.getElementById('search-input');
+    if (searchEl) {
+        searchEl.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = ALL_APPS.filter(a => a.name.toLowerCase().includes(term));
+            renderGrids(filtered);
+        });
+    }
+});
 
 // --- DOM REFERENCES ---
 const dom = {
@@ -51,38 +89,44 @@ function generateApps() {
     // Hand-Crafted Premium Apps
     const featured = [
         { id: 1, name: "UniBolt IDE", dev: "UniBolt Team", cat: "Dev Tools", rating: 4.9, dl: "1M+", color: "#0ea5e9", icon: "fa-code", desc: "The official mobile IDE for UniBolt students. Code, compile, and deploy directly from your phone." },
-        { id: 2, name: "FitLife Pro", dev: "HealthInc", cat: "Health", rating: 4.7, dl: "500k+", color: "#22c55e", icon: "fa-heart-pulse", desc: "Track calories and workouts with AI." },
-        { id: 3, name: "CyberRacer", dev: "GameStudio", cat: "Game", rating: 4.8, dl: "2M+", color: "#ef4444", icon: "fa-gamepad", desc: "High-octane cyberpunk racing game." },
-        { id: 4, name: "BeatMaker", dev: "AudioLabs", cat: "Music", rating: 4.6, dl: "100k+", color: "#a855f7", icon: "fa-music", desc: "Create beats and loops in seconds." },
-        { id: 5, name: "CryptoWallet", dev: "FinTech Sol", cat: "Finance", rating: 4.5, dl: "800k+", color: "#f59e0b", icon: "fa-bitcoin", desc: "Secure crypto storage." }
+        { id: 2, name: "FitLife Pro", dev: "HealthInc", cat: "Health", rating: 4.7, dl: "500k+", color: "#22c55e", icon: "fa-heart-pulse", desc: "Track calories and workouts with AI-powered coaching. Set goals and monitor real-time vitals." },
+        { id: 3, name: "CyberRacer", dev: "GameStudio", cat: "Game", rating: 4.8, dl: "2M+", color: "#ef4444", icon: "fa-gamepad", desc: "High-octane cyberpunk racing game with stunning neon visuals. Compete globally." },
+        { id: 4, name: "BeatMaker Pro", dev: "AudioLabs", cat: "Music", rating: 4.6, dl: "100k+", color: "#a855f7", icon: "fa-music", desc: "Create professional beats and loops in seconds with our AI-assisted composer." },
+        { id: 5, name: "CryptoWallet", dev: "FinTech Sol", cat: "Finance", rating: 4.5, dl: "800k+", color: "#f59e0b", icon: "fa-bitcoin", desc: "Secure, fast crypto storage and portfolio tracker. Supports 200+ tokens." },
+        { id: 6, name: "CodeSnippets", dev: "DevMind", cat: "Dev Tools", rating: 4.8, dl: "300k+", color: "#6366f1", icon: "fa-terminal", desc: "Save, organize, and share code snippets across all your devices." },
+        { id: 7, name: "MindMap AI", dev: "BrainSoft", cat: "Productivity", rating: 4.7, dl: "450k+", color: "#ec4899", icon: "fa-diagram-project", desc: "AI-powered mind mapping for students and professionals. Export to PDF." },
+        { id: 8, name: "FlashLearn", dev: "EduTech", cat: "Education", rating: 4.9, dl: "600k+", color: "#10b981", icon: "fa-graduation-cap", desc: "Spaced repetition flashcard app with AI-generated content from your notes." },
+        { id: 9, name: "TaskForge", dev: "ProdLabs", cat: "Productivity", rating: 4.6, dl: "220k+", color: "#f97316", icon: "fa-list-check", desc: "Powerful task management with Kanban boards, time tracking, and team sync." },
+        { id: 10, name: "PixelArt Studio", dev: "CreativeCo", cat: "Utility", rating: 4.8, dl: "180k+", color: "#8b5cf6", icon: "fa-palette", desc: "Professional pixel art editor with animation timeline and export features." },
+        { id: 11, name: "WeatherSense", dev: "MeteoTech", cat: "Utility", rating: 4.5, dl: "1.2M+", color: "#0ea5e9", icon: "fa-cloud-sun", desc: "Hyper-local 15-day forecasts with air quality, UV index, and storm alerts." },
+        { id: 12, name: "StudyRoom", dev: "EduConnect", cat: "Education", rating: 4.7, dl: "95k+", color: "#22c55e", icon: "fa-book-open", desc: "Real-time collaborative study rooms. Share notes, quiz each other, and stay focused." }
     ];
     apps.push(...featured);
 
     // Procedural Generator Arrays
     const categories = ["Productivity", "Social", "Health", "Finance", "Game", "Utility", "Education", "Music", "Dev Tools"];
-    const colors = ["#ef4444", "#f97316", "#f59e0b", "#22c55e", "#0ea5e9", "#8b5cf6", "#ec4899", "#64748b"];
-    const icons = ["fa-bolt", "fa-heart", "fa-music", "fa-wallet", "fa-comment", "fa-gamepad", "fa-camera", "fa-plane", "fa-basket-shopping", "fa-robot", "fa-ghost", "fa-dragon", "fa-chess"];
-    const devs = ["Pixel Labs", "CodeFactory", "AppWiz", "DevStudio", "SoftCorp", "IndieDev", "RocketSoft", "NinjaCoders"];
-    const adjs = ["Super", "Ultra", "Quick", "Smart", "Mega", "Hyper", "Secure", "Cloud", "Nano", "Flex", "Zen", "Pro", "Neon", "Cyber", "Retro"];
-    const nouns = ["Notes", "Chat", "Scanner", "Vibe", "Docs", "Drive", "Share", "Cast", "Cleaner", "Booster", "VPN", "Cam", "Player", "Editor", "Link"];
+    const colors = ["#ef4444", "#f97316", "#f59e0b", "#22c55e", "#0ea5e9", "#8b5cf6", "#ec4899", "#64748b", "#10b981", "#6366f1"];
+    const icons = ["fa-bolt", "fa-heart", "fa-music", "fa-wallet", "fa-comment", "fa-gamepad", "fa-camera", "fa-plane", "fa-basket-shopping", "fa-robot", "fa-ghost", "fa-dragon", "fa-chess", "fa-map", "fa-fire", "fa-shield"];
+    const devs = ["Pixel Labs", "CodeFactory", "AppWiz", "DevStudio", "SoftCorp", "IndieDev", "RocketSoft", "NinjaCoders", "ByteBuilders", "FlutterFam", "DroidMakers", "iCraftStudio"];
+    const adjs = ["Super", "Ultra", "Quick", "Smart", "Mega", "Hyper", "Secure", "Cloud", "Nano", "Flex", "Zen", "Pro", "Neon", "Cyber", "Retro", "Swift", "Nova", "Bold"];
+    const nouns = ["Notes", "Chat", "Scanner", "Vibe", "Docs", "Drive", "Share", "Cast", "Cleaner", "Booster", "VPN", "Cam", "Player", "Editor", "Link", "Hub", "Board", "Sync"];
 
-    // Generate 250 Apps
     for (let i = 0; i < 250; i++) {
-        const adj = adjs[Math.floor(Math.random() * adjs.length)];
-        const noun = nouns[Math.floor(Math.random() * nouns.length)];
-        const cat = categories[Math.floor(Math.random() * categories.length)];
+        const adj = adjs[i % adjs.length];
+        const noun = nouns[i % nouns.length];
+        const cat = categories[i % categories.length];
         const rating = (Math.random() * (5.0 - 3.5) + 3.5).toFixed(1);
         
         apps.push({
             id: i + 100,
             name: `${adj} ${noun}`,
-            dev: devs[Math.floor(Math.random() * devs.length)],
+            dev: devs[i % devs.length],
             cat: cat,
             rating: rating,
-            dl: Math.floor(Math.random() * 900) + "k+",
-            color: colors[Math.floor(Math.random() * colors.length)],
-            icon: icons[Math.floor(Math.random() * icons.length)],
-            desc: `Experience the power of ${adj} ${noun}. This ${cat} app offers seamless performance, intuitive design, and cloud synchronization. Perfect for professionals and enthusiasts alike.`
+            dl: (Math.floor(Math.random() * 900) + 10) + "k+",
+            color: colors[i % colors.length],
+            icon: icons[i % icons.length],
+            desc: `Experience the power of ${adj} ${noun}. This ${cat} app offers seamless performance, intuitive design, and cloud synchronization. Built by the UniBolt community.`
         });
     }
     return apps;
@@ -90,42 +134,30 @@ function generateApps() {
 
 const ALL_APPS = generateApps();
 
-// --- INITIALIZATION ---
-document.addEventListener('DOMContentLoaded', () => {
-    updateContributorUI();
-    renderGrids(ALL_APPS);
-    
-    // Search Listener
-    dom.search.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        const filtered = ALL_APPS.filter(a => a.name.toLowerCase().includes(term));
-        renderGrids(filtered);
-    });
-});
-
 function updateContributorUI() {
+    const pill = dom.contribPill;
+    if (!pill) return;
     if (isContributor) {
-        dom.contribPill.innerText = "CONTRIBUTOR VERIFIED ✅";
-        dom.contribPill.classList.add('unlocked');
+        pill.innerText = "CONTRIBUTOR VERIFIED ✅";
+        pill.classList.add('unlocked');
+    } else {
+        pill.innerText = "NOT CONTRIBUTOR";
     }
 }
 
 // --- RENDER LOGIC ---
 function renderGrids(apps) {
-    // Clear Grids
-    dom.recGrid.innerHTML = '';
-    dom.gameGrid.innerHTML = '';
-    dom.devGrid.innerHTML = '';
+    if (dom.recGrid) dom.recGrid.innerHTML = '';
+    if (dom.gameGrid) dom.gameGrid.innerHTML = '';
+    if (dom.devGrid) dom.devGrid.innerHTML = '';
 
-    // Filter Logic
-    const recApps = apps.slice(0, 10); // First 10 mixed
+    const recApps = apps.slice(0, 12);
     const gameApps = apps.filter(a => a.cat === 'Game').slice(0, 10);
     const devApps = apps.filter(a => a.cat === 'Dev Tools' || a.cat === 'Utility').slice(0, 10);
 
-    // Render using Fragment for Speed
-    appendCards(dom.recGrid, recApps);
-    appendCards(dom.gameGrid, gameApps);
-    appendCards(dom.devGrid, devApps);
+    if (dom.recGrid) appendCards(dom.recGrid, recApps);
+    if (dom.gameGrid) appendCards(dom.gameGrid, gameApps);
+    if (dom.devGrid) appendCards(dom.devGrid, devApps);
 }
 
 function appendCards(container, list) {
@@ -138,8 +170,8 @@ function appendCards(container, list) {
             <div class="card-icon" style="background: ${app.color}; color: white;">
                 <i class="fa-solid ${app.icon}"></i>
             </div>
-            <div class="card-title">${app.name}</div>
-            <div class="card-dev">${app.dev}</div>
+            <div class="card-title">${escHtml(app.name)}</div>
+            <div class="card-dev">${escHtml(app.dev)}</div>
             <div class="card-meta">
                 <div class="card-rating">${app.rating} <i class="fa-solid fa-star" style="font-size:9px;"></i></div>
                 <div>${app.cat}</div>
@@ -153,18 +185,14 @@ function appendCards(container, list) {
 // --- APP DETAILS MODAL ---
 window.openDetail = (id) => {
     const app = ALL_APPS.find(a => a.id === id);
-    if(app) {
-        // Populate Data
+    if (app && dom.detailModal) {
         dom.dtTitle.innerText = app.name;
         dom.dtDev.innerText = app.dev;
         dom.dtDesc.innerText = app.desc;
         dom.dtRating.innerText = `${app.rating} ★`;
         dom.dtDownloads.innerText = app.dl;
-        
         dom.dtIcon.style.background = app.color;
         dom.dtIcon.innerHTML = `<i class="fa-solid ${app.icon}"></i>`;
-        
-        // Open Modal
         dom.detailModal.classList.add('modal-active');
     }
 };
@@ -172,85 +200,107 @@ window.openDetail = (id) => {
 // --- ACTION LOGIC (THE "GIVE TO GET" SYSTEM) ---
 window.attemptAction = (type) => {
     if (!isContributor) {
-        // BLOCKED: Close Detail, Open Lock
         dom.detailModal.classList.remove('modal-active');
         dom.lockModal.classList.add('modal-active');
     } else {
-        // ALLOWED
         const btn = event.target;
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
-        
         setTimeout(() => {
-            btn.innerHTML = type === 'install' ? 'Installed' : 'Downloaded';
-            alert(type === 'install' ? "App installed successfully on Virtual Device!" : "Source Code ZIP Downloaded.");
-            setTimeout(() => btn.innerHTML = originalText, 2000);
+            btn.innerHTML = type === 'install' ? 'Installed ✅' : 'Downloaded ✅';
+            setTimeout(() => btn.innerHTML = originalText, 2500);
         }, 1500);
     }
 };
 
-// --- UPLOAD FLOW ---
+// --- UPLOAD / SUBMISSION FLOW ---
 window.openUpload = () => {
-    dom.lockModal.classList.remove('modal-active');
-    dom.uploadModal.classList.add('modal-active');
-    
-    // Reset UI
-    dom.upProgress.style.display = 'none';
-    dom.upFill.style.width = '0%';
-    document.getElementById('up-name').value = '';
+    if (dom.lockModal) dom.lockModal.classList.remove('modal-active');
+    if (dom.uploadModal) dom.uploadModal.classList.add('modal-active');
+    // Reset form
+    document.getElementById('submit-form-section').style.display = 'block';
+    document.getElementById('submit-success-section').style.display = 'none';
+    if (dom.upProgress) dom.upProgress.style.display = 'none';
+    if (dom.upFill) dom.upFill.style.width = '0%';
+    const nameEl = document.getElementById('up-name');
+    const descEl = document.getElementById('up-desc');
+    const designEl = document.getElementById('up-design');
+    if (nameEl) nameEl.value = '';
+    if (descEl) descEl.value = '';
+    if (designEl) designEl.value = '';
 };
 
-window.startUploadProcess = () => {
-    const name = document.getElementById('up-name').value;
-    if(!name) { alert("Please enter the App Name first."); return; }
+window.submitAppForReview = async () => {
+    const name = (document.getElementById('up-name')?.value || '').trim();
+    const desc = (document.getElementById('up-desc')?.value || '').trim();
+    const design = (document.getElementById('up-design')?.value || '').trim();
+    const cat = document.getElementById('up-cat')?.value || 'Productivity';
 
-    dom.upProgress.style.display = 'block';
-    
-    // Simulate Upload
+    if (!name || !desc || !design) {
+        alert('Please fill in all required fields, including the design mockup URL.');
+        return;
+    }
+
+    // Show progress
+    const formSection = document.getElementById('submit-form-section');
+    if (dom.upProgress) dom.upProgress.style.display = 'block';
+    if (formSection) formSection.querySelector('button').disabled = true;
+
     let w = 0;
-    const int = setInterval(() => {
-        w += 2; // Slower, more realistic
-        dom.upFill.style.width = `${w}%`;
-        dom.upPct.innerText = `${w}%`;
-        
-        if(w >= 100) {
-            clearInterval(int);
-            dom.upStatus.innerText = "Processing Scan...";
-            
-            setTimeout(() => {
-                finalizeUpload(name);
-            }, 1000);
-        }
-    }, 50);
+    const simulateProgress = setInterval(() => {
+        w = Math.min(w + 5, 90);
+        if (dom.upFill) dom.upFill.style.width = `${w}%`;
+        if (dom.upPct) dom.upPct.innerText = `${w}%`;
+    }, 80);
+
+    try {
+        const submissionData = {
+            uid: currentUser ? currentUser.uid : 'anonymous',
+            studentName: currentUserData?.name || 'Unknown',
+            studentEmail: currentUserData?.email || currentUser?.email || '',
+            appName: name,
+            appDesc: desc,
+            appCategory: cat,
+            designUrl: design,
+            status: 'pending',
+            submittedAt: serverTimestamp(),
+            type: 'app_store_submission'
+        };
+
+        await addDoc(collection(db, "app_submissions"), submissionData);
+
+        clearInterval(simulateProgress);
+        if (dom.upFill) dom.upFill.style.width = '100%';
+        if (dom.upPct) dom.upPct.innerText = '100%';
+        if (dom.upStatus) dom.upStatus.innerText = 'Submitted!';
+
+        await new Promise(r => setTimeout(r, 600));
+
+        // Show success state
+        if (dom.upProgress) dom.upProgress.style.display = 'none';
+        if (formSection) formSection.style.display = 'none';
+        const successSection = document.getElementById('submit-success-section');
+        if (successSection) successSection.style.display = 'block';
+
+    } catch (e) {
+        clearInterval(simulateProgress);
+        console.error("Submission failed:", e);
+        if (dom.upProgress) dom.upProgress.style.display = 'none';
+        if (formSection) formSection.querySelector('button').disabled = false;
+        alert('Submission failed. Please check your connection and try again.');
+    }
 };
 
-function finalizeUpload(appName) {
-    // 1. Update State
-    isContributor = true;
-    localStorage.setItem("unibolt_contributor", "true");
-    updateContributorUI();
-    
-    // 2. Add User App to Store
-    const newApp = { 
-        id: Date.now(), 
-        name: appName, 
-        dev: "You", 
-        cat: "Community", 
-        rating: 5.0, 
-        dl: "0", 
-        color: "#fff", 
-        icon: "fa-box-open", 
-        desc: "An app contributed by you to the community." 
-    };
-    ALL_APPS.unshift(newApp);
-    renderGrids(ALL_APPS); // Refresh UI
-
-    // 3. Close & Notify
-    dom.uploadModal.classList.remove('modal-active');
-    alert(`Success! "${appName}" is now live. You have full access to download all apps.`);
-}
+// Kept for backward compatibility
+window.startUploadProcess = () => { window.submitAppForReview(); };
 
 // --- UTILS ---
 window.closeModal = (id) => {
-    document.getElementById(id).classList.remove('modal-active');
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('modal-active');
 };
+
+function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+}

@@ -248,7 +248,7 @@ async function calculateRank(uid) {
         const totalSnap = await getCountFromServer(collection(db, "users"));
         const totalUsers = totalSnap.data().count;
 
-        if (dom.rank) dom.rank.innerText = `#${rank}`;
+        if (dom.rank) dom.rank.innerText = rank;
         
         const pct = Math.ceil((rank / totalUsers) * 100);
         if (dom.topPct) dom.topPct.innerText = `Top ${pct}%`;

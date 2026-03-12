@@ -137,15 +137,22 @@
 
     <div class="overlay" id="action-overlay">
         <div class="progress-box" id="progress-state">
-            <h3 style="margin:0; color:white; font-size:18px;">Sending Email...</h3>
-            <p style="color:#888; font-size:13px; margin:5px 0 0;">Connecting to SMTP Server</p>
+            <h3 style="margin:0; color:white; font-size:18px;" id="prog-title">Sending Email...</h3>
+            <p style="color:#888; font-size:13px; margin:5px 0 0;" id="prog-subtitle">Connecting to SMTP Server</p>
             <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill"></div></div>
+            <div id="prog-count" style="margin-top:12px; font-size:13px; color:#a1a1aa; font-weight:600;"></div>
+            <div id="prog-timer" style="margin-top:6px; font-size:12px; color:#666; display:none;">
+                <i class="fa-solid fa-clock" style="margin-right:4px;"></i> Next email in: <span id="timer-count">90</span>s
+            </div>
+            <button id="prog-cancel-btn" onclick="cancelBulkSend()" style="margin-top:16px; background:#2c2c2e; border:1px solid #444; color:#aaa; padding:8px 20px; border-radius:8px; cursor:pointer; font-size:13px; display:none;">
+                <i class="fa-solid fa-stop"></i> Cancel
+            </button>
         </div>
 
         <div class="progress-box" id="success-state" style="display:none;">
             <div class="success-icon"><i class="fa-solid fa-check"></i></div>
-            <h2 style="margin:0; color:white; font-size:20px;">Sent Successfully!</h2>
-            <p style="color:#888; margin:10px 0 25px; font-size:14px;">The student has been notified.</p>
+            <h2 style="margin:0; color:white; font-size:20px;" id="success-title">Sent Successfully!</h2>
+            <p style="color:#888; margin:10px 0 25px; font-size:14px;" id="success-subtitle">The student has been notified.</p>
             <button class="btn" onclick="closeOverlay()" style="background:#2c2c2e;">Close</button>
         </div>
     </div>
@@ -272,9 +279,12 @@
                     <div id="dynamic-inputs"></div>
                 </div>
 
-                <div style="margin-top:20px;">
+                <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
                     <button id="btn-send" class="btn" onclick="triggerSend()">
                         <i class="fa-solid fa-paper-plane"></i> Send Now
+                    </button>
+                    <button class="btn" onclick="sendToAll()" style="background:#18181b; border:1px solid #333; color:#a1a1aa;">
+                        <i class="fa-solid fa-users"></i> Send to All Students
                     </button>
                 </div>
             </div>
@@ -549,6 +559,10 @@
         };
 
         // --- 5. SEND LOGIC ---
+        let cancelSend = false;
+
+        window.cancelBulkSend = () => { cancelSend = true; };
+
         window.triggerSend = async () => {
             const btn = document.getElementById('btn-send');
             const to = document.getElementById('inp-to').value;
@@ -556,50 +570,123 @@
             const subject = document.getElementById('subject-preview').innerText.replace("Subject: ", "");
             const htmlContent = document.getElementById('preview-frame').srcdoc;
 
-            if(!to || !subject) return alert("Missing details");
+            if (!to || !subject || subject === '...') return alert("Please select a template and fill all fields first.");
 
             // UI: Progress
+            cancelSend = false;
             document.getElementById('action-overlay').style.display = 'flex';
             document.getElementById('progress-state').style.display = 'block';
             document.getElementById('success-state').style.display = 'none';
             btn.disabled = true;
 
             const progressBar = document.getElementById('prog-fill');
-            progressBar.style.width = "30%";
+            const progTitle = document.getElementById('prog-title');
+            const progSubtitle = document.getElementById('prog-subtitle');
+            const progCount = document.getElementById('prog-count');
             
             // Handle Bulk vs Single
             const bulkList = localStorage.getItem('email_bulk_list');
             const recipients = bulkList ? JSON.parse(bulkList) : [to];
+            const isBulk = recipients.length > 1;
+            const DELAY_SECONDS = 90; // 1.5 minutes between bulk emails
 
             try {
-                progressBar.style.width = "60%";
-                
-                for(const email of recipients) {
-                    await fetch('/api/send-email', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ fromEmail: from, toEmail: email, subject: subject, html: htmlContent.replace('{{email}}', email) })
-                    });
+                if (isBulk) {
+                    progTitle.innerText = `Sending Campaign...`;
+                    document.getElementById('prog-cancel-btn').style.display = 'block';
                 }
+
+                let sent = 0;
+                for (let i = 0; i < recipients.length; i++) {
+                    if (cancelSend) {
+                        progTitle.innerText = 'Campaign Cancelled';
+                        progSubtitle.innerText = `Sent ${sent} / ${recipients.length} emails.`;
+                        document.getElementById('prog-cancel-btn').style.display = 'none';
+                        break;
+                    }
+
+                    const email = recipients[i];
+                    const pct = Math.round(((i + 1) / recipients.length) * 100);
+                    progressBar.style.width = `${pct}%`;
+                    progSubtitle.innerText = `Sending to: ${email}`;
+                    if (isBulk) progCount.innerText = `Progress: ${i + 1} / ${recipients.length} emails`;
+
+                    try {
+                        await fetch('/api/send-email', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                fromEmail: from,
+                                toEmail: email,
+                                subject: subject,
+                                html: htmlContent.replace('{{email}}', email)
+                            })
+                        });
+                        sent++;
+                    } catch (e) { console.warn(`Failed for ${email}:`, e); }
+
+                    // Wait 1.5 min between emails for bulk (except after last email)
+                    if (isBulk && i < recipients.length - 1 && !cancelSend) {
+                        document.getElementById('prog-timer').style.display = 'block';
+                        let remaining = DELAY_SECONDS;
+                        const timerEl = document.getElementById('timer-count');
+                        await new Promise(resolve => {
+                            const countdown = setInterval(() => {
+                                remaining--;
+                                timerEl.innerText = remaining;
+                                if (remaining <= 0 || cancelSend) {
+                                    clearInterval(countdown);
+                                    resolve();
+                                }
+                            }, 1000);
+                        });
+                        document.getElementById('prog-timer').style.display = 'none';
+                    }
+                }
+
+                progressBar.style.width = '100%';
+                document.getElementById('prog-cancel-btn').style.display = 'none';
                 
-                progressBar.style.width = "100%";
-                
-                // Show Success
                 setTimeout(() => {
                     document.getElementById('progress-state').style.display = 'none';
                     document.getElementById('success-state').style.display = 'block';
+                    document.getElementById('success-title').innerText = isBulk ? 'Campaign Complete!' : 'Sent Successfully!';
+                    document.getElementById('success-subtitle').innerText = isBulk ? `${sent} of ${recipients.length} emails sent.` : 'The student has been notified.';
                     localStorage.removeItem('email_bulk_list');
                 }, 500);
 
-            } catch(e) { 
-                alert("Error: " + e.message); 
+            } catch(e) {
+                alert("Error: " + e.message);
                 document.getElementById('action-overlay').style.display = 'none';
-            } finally { 
-                btn.disabled = false; 
+            } finally {
+                btn.disabled = false;
             }
         };
 
         window.closeOverlay = () => { document.getElementById('action-overlay').style.display = 'none'; };
+
+        // --- 6. SEND TO ALL ---
+        window.sendToAll = async () => {
+            const subject = document.getElementById('subject-preview').innerText.replace("Subject: ", "");
+            if (!subject || subject === '...') return alert("Please select a template first.");
+            if (!confirm(`Send this email to ALL verified students with a 1.5-minute gap between each email?\n\nThis cannot be undone.`)) return;
+
+            try {
+                const snap = await getDocs(query(collection(db, "users"), where("paymentStatus", "==", "Verified")));
+                const allEmails = snap.docs.map(d => d.data().email).filter(Boolean);
+                
+                if (allEmails.length === 0) return alert("No verified students found.");
+                
+                localStorage.setItem('email_bulk_list', JSON.stringify(allEmails));
+                document.getElementById('inp-to').value = `${allEmails.length} Students`;
+                document.getElementById('inp-to').disabled = true;
+                document.getElementById('bulk-msg').style.display = 'block';
+                
+                window.triggerSend();
+            } catch(e) {
+                alert("Failed to load students: " + e.message);
+            }
+        };
 
         // UI Utils
         window.toggleSidebar = () => {

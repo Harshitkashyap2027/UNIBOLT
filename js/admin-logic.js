@@ -40,11 +40,29 @@ window.logout = function() {
 // --- LOGGING ---
 async function logSecurityEvent(type, role, user, msg) {
     try {
-        const geo = await fetch('https://ipapi.co/json/').then(r => r.json());
+        let ip = 'Unknown', location = 'Unknown';
+        try {
+            const geo = await fetch('https://ipapi.co/json/').then(r => r.json());
+            ip = geo.ip || 'Unknown';
+            location = [geo.city, geo.region, geo.country_name].filter(Boolean).join(', ') || 'Unknown';
+        } catch(e) {
+            try { ip = (await fetch('https://api.ipify.org?format=json').then(r => r.json())).ip; } catch(e2) {}
+        }
+        // Detect device type from userAgent
+        const ua = navigator.userAgent;
+        const isMobile = /Android|iPhone|iPad/.test(ua);
+        const isTablet = /iPad|Tablet/.test(ua);
+        const deviceType = isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
+        const os = ua.includes('Windows') ? 'Windows' : ua.includes('Mac') ? 'macOS' : ua.includes('iPhone') || ua.includes('iPad') ? 'iOS' : ua.includes('Android') ? 'Android' : ua.includes('Linux') ? 'Linux' : 'Unknown';
+        const browser = ua.includes('Chrome') ? 'Chrome' : ua.includes('Firefox') ? 'Firefox' : ua.includes('Safari') ? 'Safari' : ua.includes('Edge') ? 'Edge' : 'Unknown';
+
         await addDoc(collection(db, "audit_logs"), {
             type, role, userName: user, message: msg,
-            ip: geo.ip || "Unknown", location: `${geo.city || 'Unknown'}, ${geo.region || 'Unknown'}`,
-            userAgent: navigator.userAgent, timestamp: serverTimestamp()
+            ip, location,
+            userAgent: ua,
+            device: `${deviceType} — ${os} — ${browser}`,
+            page: window.location.pathname,
+            timestamp: serverTimestamp()
         });
     } catch (e) { console.error(e); }
 }
@@ -242,6 +260,7 @@ document.getElementById("student-form").addEventListener("submit", async (e) => 
         if(uid) {
             await updateDoc(doc(db, "users", uid), data);
             window.showToast("Updated", "success");
+            logSecurityEvent("UPDATE", "Admin", "MasterAdmin", `Updated student: ${data.name} (${data.email}) — Status: ${data.paymentStatus}, XP: ${data.xp}`);
         } else {
             const secondaryApp = initializeApp(firebaseConfig, "Secondary");
             const pass = document.getElementById("inp-tempPass").value || "password123";
@@ -249,6 +268,7 @@ document.getElementById("student-form").addEventListener("submit", async (e) => 
             await setDoc(doc(db, "users", user.user.uid), { ...data, createdAt: serverTimestamp(), notifications: [] });
             await signOut(getAuth(secondaryApp));
             window.showToast("Created", "success");
+            logSecurityEvent("CREATE", "Admin", "MasterAdmin", `Created new student: ${data.name} (${data.email}) — Program: ${data.enrolledProgram}`);
         }
         window.closeModal("student-modal");
     } catch(e) { window.showToast(e.message, "error"); }
