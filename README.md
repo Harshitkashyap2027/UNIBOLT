@@ -45,6 +45,7 @@ It is designed to bridge the gap between college education and real-world indust
 | **Live Code Arena** | Browser-based coding environment — no software installation required. |
 | **AI Notes & Roadmap** | AI-generated personalized notes and learning roadmaps for each track. |
 | **Tickets & Support** | Students can raise support tickets directly from the platform. |
+| **App Dev Practice Gym** | Interactive Flutter/Dart quiz challenges and bug hunt exercises with XP rewards. |
 
 ### 🛡️ For Admins
 | Feature | Description |
@@ -122,6 +123,46 @@ UNIBOLT/
 ├── style.css               # Global styles
 └── sw.js / sw-admin.js     # Service workers (PWA support)
 ```
+
+---
+
+## 📸 Pages & Screenshots
+
+### 🏠 Landing Page — All Tracks Active
+All three internship tracks now display with live **Enroll Now** buttons.
+
+![Landing Page Tracks](https://github.com/user-attachments/assets/14dc4e14-e508-4f7b-8a95-89d81c418dec)
+
+### 📱 App Development Registration (`signup-app.html`)
+3-step registration form for the Flutter/App Dev track with UPI payment.
+
+![App Dev Signup](https://github.com/user-attachments/assets/5e99c222-9685-4b8c-8b2c-d1826a37ba4f)
+
+### 🏋️ App Dev Practice Gym (`app-practice.html`)
+Interactive Flutter/Dart skill challenges with bug hunt and concept quizzes.
+
+![App Dev Practice](https://github.com/user-attachments/assets/b7d68584-5bed-411c-8003-0638529ad0a7)
+
+### 🛡️ Admin Login (`admin-login.html`)
+Secure admin portal — now correctly redirects to `admin.html` after authentication.
+
+![Admin Login](https://github.com/user-attachments/assets/c6b0e1ed-21d8-4714-a476-6648207c3cf3)
+
+### 📄 All Pages Built / Fixed
+
+| Page | Description | Status |
+|---|---|---|
+| `index.html` | Landing page — App Dev track now active | ✅ Fixed |
+| `signup-app.html` | App Development track registration | ✅ New |
+| `app-practice.html` | Flutter practice gym (quiz + bug hunt) | ✅ New |
+| `APP.html` | App Dev student dashboard | ✅ Fixed links |
+| `APP-studio.html` | Flutter code studio | ✅ Fixed links |
+| `APP-components.html` | Flutter component hub | ✅ Fixed links |
+| `APP-play.html` | App store / published apps | ✅ Fixed links |
+| `admin-login.html` | Admin login portal | ✅ Fixed redirect |
+| `admin.html` + 10 sub-pages | Admin dashboard and tools | ✅ Fixed links |
+| `AI.html` + 7 AI pages | AI track dashboard and tools | ✅ Fixed links |
+| 30+ other pages | General navigation links | ✅ Fixed links |
 
 ---
 
