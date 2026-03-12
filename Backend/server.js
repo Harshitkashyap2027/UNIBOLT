@@ -4,17 +4,22 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+require('dotenv').config();
 
 const app = express();
 app.use(cors()); // Allows your frontend to talk to this backend
 app.use(bodyParser.json());
 
 // --- CONFIGURATION ---
-const PORT = 5000;
-const ZOHO_USER = "admin@unibolt.in"; 
-const ZOHO_PASS = "y0pxdTkbK8Sy"; // Your App Password
+const PORT = process.env.PORT || 5000;
+const ZOHO_USER = process.env.ZOHO_USER || "admin@unibolt.in";
+const ZOHO_PASS = process.env.ZOHO_PASSWORD;
 
 // --- EMAIL SENDING FUNCTION ---
+if (!ZOHO_PASS) {
+    console.error("❌ ZOHO_PASSWORD environment variable is not set. Email functionality will not work.");
+}
+
 const transporter = nodemailer.createTransport({
     host: "smtp.zoho.in",
     port: 465,

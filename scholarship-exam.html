@@ -1042,8 +1042,8 @@
                 
                 await ref.set(AppState.currentUser);
                 
-                // D. Prepare Questions
-                prepareQuestions(course);
+                // D. Prepare Questions (load from Firestore, fall back to local bank)
+                await prepareQuestions(course);
 
                 // E. Fullscreen Request
                 if (document.documentElement.requestFullscreen) {
@@ -1061,15 +1061,37 @@
             }
         });
 
-        function prepareQuestions(course) {
-            // Load from local bank or default to Web
-            let rawQs = QuestionBank[course] || QuestionBank['web'];
-            // Duplicate logic to ensure we have 50 questions if bank is small
-            while(rawQs.length < 50) {
-                rawQs = rawQs.concat(rawQs);
+        // Fisher-Yates shuffle for unbiased randomization
+        function shuffleArray(arr) {
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
             }
-            // Shuffle
-            AppState.questions = rawQs.sort(() => 0.5 - Math.random()).slice(0, 50);
+            return a;
+        }
+
+        // Pad array to at least `minLen` elements by repeating it, then return first `minLen`
+        function padToLength(arr, minLen) {
+            const reps = Math.ceil(minLen / arr.length);
+            return Array(reps).fill(arr).flat().slice(0, minLen);
+        }
+
+        async function prepareQuestions(course) {
+            // Try loading questions from Firestore (admin-managed bank) first
+            try {
+                const snapshot = await db.collection('questions').where('course', '==', course).get();
+                if (!snapshot.empty) {
+                    const rawQs = snapshot.docs.map(d => d.data());
+                    AppState.questions = shuffleArray(padToLength(rawQs, 50));
+                    return;
+                }
+            } catch(e) {
+                console.log("Firestore questions unavailable, using local bank:", e);
+            }
+            // Fallback: use local hardcoded QuestionBank
+            const rawQs = QuestionBank[course] || QuestionBank['web'];
+            AppState.questions = shuffleArray(padToLength(rawQs, 50));
         }
 
         /**
