@@ -37,8 +37,9 @@ It is designed to bridge the gap between college education and real-world indust
 ### 🎓 For Students
 | Feature | Description |
 |---|---|
-| **Scholarship Exam Portal** | An AI-proctored, timed exam with face detection, tab-switch detection, and fullscreen enforcement. Students who score high unlock 100% fee scholarships. |
-| **Student Dashboard** | Personalized dashboard showing progress, daily tasks, rank, streak, and certificates. |
+| **Scholarship Exam Portal** | AI-proctored, timed exam with face detection, tab-switch detection, and fullscreen enforcement. Students who score high unlock 100% fee scholarships. |
+| **Student Dashboard** | Personalized dashboard showing progress, daily tasks, rank, streak, certificates, quick actions, weekly goals, and daily tips. |
+| **Course-Based Access Control** | Students are automatically routed to their own track dashboard (Web Dev → `dashboard.html`, AI → `AI.html`, App Dev → `APP.html`). |
 | **Live Leaderboard** | Real-time ranking of all enrolled students by score and task completion. |
 | **Certificate Verification** | Every certificate has a unique ID + QR code that can be verified at `unibolt.in/verify`. |
 | **AI Mentor** | Built-in AI assistance to help students when they are stuck on tasks. |
@@ -46,12 +47,16 @@ It is designed to bridge the gap between college education and real-world indust
 | **AI Notes & Roadmap** | AI-generated personalized notes and learning roadmaps for each track. |
 | **Tickets & Support** | Students can raise support tickets directly from the platform. |
 | **App Dev Practice Gym** | Interactive Flutter/Dart quiz challenges and bug hunt exercises with XP rewards. |
+| **Install as App (PWA)** | Every dashboard can be installed as a Chrome App / PWA with offline support. |
 
 ### 🛡️ For Admins
 | Feature | Description |
 |---|---|
 | **Admin Dashboard** | Central command center with live stats — total students, pass rate, flagged users. |
-| **Exam Manager** | Add, edit, and delete exam questions per course track. Settings for timer, pass marks, registration toggle, and maintenance mode. |
+| **Monthly Seasonal Themes (12)** | Admin can change the student portal design theme for each month: January (New Year ❄️), February (Valentine's 💝), March (Holi/Spring 🌸), April (Spring Rain 🌧️), May (Early Summer ☀️), June (Pre-Monsoon 🌤️), July (Peak Monsoon ⛈️), August (Independence 🇮🇳), September (Autumn 🍂), October (Festive 🎃), November (Pre-Winter 🍁), December (Christmas 🎄). |
+| **IP Lockout Security** | Admin login page locks a device for 30 minutes after 5 consecutive failed attempts. Lockout events are logged to Firestore. |
+| **Exam Manager** | Add, edit, and delete exam questions per course track. |
+| **Mail Center** | Send bulk or individual emails to students via the mail dashboard. |
 | **Student Monitor** | Live view of all students taking the scholarship exam, their scores, status, and violations. |
 | **Notifications** | Send bulk or individual emails to students via Zoho Mail. |
 | **Registrations Manager** | View and manage all enrolled students with payment status. |
@@ -71,42 +76,73 @@ It is designed to bridge the gap between college education and real-world indust
 
 ---
 
+## 🎨 Monthly Seasonal Themes
+
+Admin can set a monthly theme in `admin-settings.html → Appearance → Monthly Theme`. The theme changes the student portal's color palette, particle animations, and seasonal popup messages:
+
+| Month | Theme Name | Particle Effect |
+|---|---|---|
+| January | New Year ❄️ | Snowfall |
+| February | Valentine's 💝 | Pink glow |
+| March | Holi Spring 🌸 | Falling petals |
+| April | Spring Rain 🌧️ | Rainfall |
+| May | Early Summer ☀️ | Sun glare |
+| June | Pre-Monsoon 🌤️ | Sun glare |
+| July | Peak Monsoon ⛈️ | Rainfall |
+| August | Independence 🇮🇳 | Tricolor glow |
+| September | Autumn 🍂 | Falling leaves |
+| October | Festive 🎃 | Autumn leaves |
+| November | Pre-Winter 🍁 | Falling leaves |
+| December | Christmas 🎄 | Snowfall |
+
+---
+
+## 🔐 Security Features
+
+- **Admin Login IP Lockout**: 5 failed login attempts → device locked for 30 minutes. Lockout events are logged to Firestore `admin_lockouts` collection.
+- **Course-Based Dashboard Access**: Students are redirected to their enrolled track's dashboard automatically. A Web Dev student cannot manually browse to the AI dashboard.
+- **Admin Page Guard**: All admin pages verify Firebase Auth — unauthorized users see a "SYSTEM BREACH DETECTED" screen with their IP and location logged to Firestore `security_logs`.
+- **Scholarship Exam Proctoring**: AI face detection, tab-switch events, fullscreen enforcement, and IP+email uniqueness check.
+- **Email credentials**: Stored as environment variables, never hardcoded.
+
+---
+
 ## 🗂️ Project Structure
 
 ```
 UNIBOLT/
 │
-├── index.html              # Landing page (hero, tracks, leaderboard, FAQ)
+├── index.html              # Landing page (hero, tracks, leaderboard, FAQ, testimonials, stats)
 ├── signup.html             # Web Dev track registration
 ├── signup-ai.html          # AI track registration
 ├── login.html              # Student login
-├── dashboard.html          # Student dashboard (tasks, progress, rank)
+├── dashboard.html          # Student dashboard (Web Dev — tasks, progress, rank, tips, goals)
+├── AI.html                 # AI track student dashboard
+├── APP.html                # App Dev track student dashboard
 ├── scholarship-exam.html   # AI-proctored scholarship exam portal
 ├── leaderboard.html        # Public leaderboard
 ├── verify-certificate.html # Certificate verification page
 │
 ├── admin.html              # Admin main dashboard
-├── admin-login.html        # Admin login
+├── admin-login.html        # Admin login (with IP lockout after 5 failed attempts)
 ├── admin-exam.html         # Exam question manager + live student monitor
 ├── admin-registrations.html# Student registrations manager
 ├── admin-notifications.html# Email notification system
 ├── admin-analytics.html    # Analytics charts
 ├── admin-content.html      # Content management
 ├── admin-faq.html          # FAQ management
-├── admin-settings.html     # Platform settings
+├── admin-settings.html     # Platform settings (12 monthly themes)
 ├── admin-reports.html      # Reports
 ├── admin-submissions.html  # Task submissions
 ├── admin-tickets.html      # Support tickets
 ├── admin-team.html         # Team management
 ├── admin-activity.html     # Activity logs
 │
-├── AI.html                 # AI track dashboard
-├── APP.html                # App Dev track dashboard
+├── mail-dashboard.html     # Admin Mail Center
 ├── APP-studio.html         # Flutter code studio/IDE
 ├── APP-components.html     # Flutter component hub
 ├── APP-play.html           # App store / published apps
 ├── app-practice.html       # App Dev practice gym (Flutter quizzes & bug hunt)
-├── signup-app.html         # App Development track registration
 ├── ai-notes.html           # AI-generated notes
 ├── ai-roadmap.html         # Personalized roadmap
 ├── AIarena.html / arena.html # Code arena
@@ -118,9 +154,12 @@ UNIBOLT/
 ├── firebase.json           # Firebase hosting config
 ├── vercel.json             # Vercel deployment config
 │
-├── home.css / home.js      # Landing page styles & scripts
+├── home.css / home.js      # Landing page styles & scripts (seasonal themes)
 ├── dashboard.css           # Dashboard styles
 ├── style.css               # Global styles
+├── manifest.json           # Web App Manifest (PWA — Web Dev dashboard)
+├── manifest-ai.json        # Web App Manifest (PWA — AI dashboard)
+├── manifest-admin.json     # Web App Manifest (PWA — Admin panel)
 └── sw.js / sw-admin.js     # Service workers (PWA support)
 ```
 
@@ -129,40 +168,16 @@ UNIBOLT/
 ## 📸 Pages & Screenshots
 
 ### 🏠 Landing Page — All Tracks Active
-All three internship tracks now display with live **Enroll Now** buttons.
-
-![Landing Page Tracks](https://github.com/user-attachments/assets/14dc4e14-e508-4f7b-8a95-89d81c418dec)
+All three internship tracks now display with live **Enroll Now** buttons, testimonials, achievement stats, and a CTA banner.
 
 ### 📱 App Development Registration (`signup-app.html`)
 3-step registration form for the Flutter/App Dev track with UPI payment.
 
-![App Dev Signup](https://github.com/user-attachments/assets/5e99c222-9685-4b8c-8b2c-d1826a37ba4f)
-
-### 🏋️ App Dev Practice Gym (`app-practice.html`)
-Interactive Flutter/Dart skill challenges with bug hunt and concept quizzes.
-
-![App Dev Practice](https://github.com/user-attachments/assets/b7d68584-5bed-411c-8003-0638529ad0a7)
-
 ### 🛡️ Admin Login (`admin-login.html`)
-Secure admin portal — now correctly redirects to `admin.html` after authentication.
+Secure admin portal with IP lockout — locked for 30 minutes after 5 failed attempts.
 
-![Admin Login](https://github.com/user-attachments/assets/c6b0e1ed-21d8-4714-a476-6648207c3cf3)
-
-### 📄 All Pages Built / Fixed
-
-| Page | Description | Status |
-|---|---|---|
-| `index.html` | Landing page — App Dev track now active | ✅ Fixed |
-| `signup-app.html` | App Development track registration | ✅ New |
-| `app-practice.html` | Flutter practice gym (quiz + bug hunt) | ✅ New |
-| `APP.html` | App Dev student dashboard | ✅ Fixed links |
-| `APP-studio.html` | Flutter code studio | ✅ Fixed links |
-| `APP-components.html` | Flutter component hub | ✅ Fixed links |
-| `APP-play.html` | App store / published apps | ✅ Fixed links |
-| `admin-login.html` | Admin login portal | ✅ Fixed redirect |
-| `admin.html` + 10 sub-pages | Admin dashboard and tools | ✅ Fixed links |
-| `AI.html` + 7 AI pages | AI track dashboard and tools | ✅ Fixed links |
-| 30+ other pages | General navigation links | ✅ Fixed links |
+### ⚙️ Admin Settings (`admin-settings.html`)
+12 monthly seasonal themes selector — admin picks the month theme which changes the student portal's colors, animations, and popup messages.
 
 ---
 
@@ -208,6 +223,9 @@ PORT=5000
    - `students` — scholarship exam participants
    - `questions` — exam questions (managed via admin panel)
    - `settings` — exam configuration (`settings/config` document)
+   - `platform_settings` — platform config including active seasonal theme (`platform_settings/config`)
+   - `admin_lockouts` — admin login lockout events
+   - `security_logs` — unauthorized access attempts
 
 ### 5. Run the Email Backend Server
 ```bash
@@ -223,6 +241,15 @@ npm start
 ---
 
 ## 🔥 Firestore Data Structure
+
+### `platform_settings/config` (Platform Configuration)
+```json
+{
+  "allowRegistrations": true,
+  "maintenanceMode": false,
+  "season": "march"
+}
+```
 
 ### `settings/config` (Exam Configuration)
 ```json
@@ -265,6 +292,15 @@ npm start
 }
 ```
 
+### `admin_lockouts/latest` (Admin Lockout Log)
+```json
+{
+  "lockedAt": "Firestore Timestamp",
+  "attempts": 5,
+  "userAgent": "Mozilla/5.0..."
+}
+```
+
 ---
 
 ## 🛡️ Scholarship Exam — How It Works
@@ -286,11 +322,26 @@ npm start
 
 ## 🔐 Security Notes
 
-- Admin pages are protected by Firebase Authentication
-- The scholarship exam enforces single-attempt via IP + email check
-- Proctoring via face detection (webcam), tab-switch events, fullscreen exit, right-click, keyboard shortcuts
-- Email credentials are stored as environment variables (never hardcoded)
-- All Firebase API keys are client-side (expected for Firebase web apps); secure your Firestore with proper Security Rules
+- **Admin IP Lockout**: 5 failed admin login attempts lock the device for 30 minutes. Events logged to Firestore.
+- **Course-Based Access**: Students are auto-redirected to their enrolled track's dashboard. Cross-course access is prevented.
+- Admin pages are protected by Firebase Authentication with security breach logging.
+- The scholarship exam enforces single-attempt via IP + email check.
+- Proctoring via face detection (webcam), tab-switch events, fullscreen exit, right-click, keyboard shortcuts.
+- Email credentials are stored as environment variables (never hardcoded).
+- All Firebase API keys are client-side (expected for Firebase web apps); secure your Firestore with proper Security Rules.
+
+---
+
+## 📲 Installing as a Chrome App (PWA)
+
+Every student dashboard supports installation as a Progressive Web App (PWA) / Chrome App:
+
+1. Open the dashboard in Chrome
+2. Click the **Install App** button in the sidebar, OR
+3. Click the ⊕ icon in the Chrome address bar
+4. The app opens in its own window with no browser UI
+
+The `manifest.json` includes `display_override: ["window-controls-overlay"]` for a native app-like experience with title bar controls.
 
 ---
 
@@ -299,7 +350,7 @@ npm start
 | Layer | Technology |
 |---|---|
 | **Frontend** | HTML5, CSS3, Vanilla JavaScript |
-| **UI/Animation** | Font Awesome, AOS (Animate on Scroll), Google Fonts |
+| **UI/Animation** | Font Awesome, AOS (Animate on Scroll), Google Fonts, CSS particle animations |
 | **Database** | Firebase Firestore |
 | **Authentication** | Firebase Authentication |
 | **Email** | Zoho Mail via Nodemailer (SMTP) |
@@ -307,7 +358,7 @@ npm start
 | **Backend** | Node.js + Express.js |
 | **Serverless API** | Vercel Functions (`api/send-email.js`) |
 | **Hosting** | Vercel / Firebase Hosting |
-| **PWA** | Service Workers + Web App Manifests |
+| **PWA** | Service Workers + Web App Manifests + `display_override` |
 | **QR Codes** | qrcodejs |
 | **Canvas Export** | html2canvas |
 

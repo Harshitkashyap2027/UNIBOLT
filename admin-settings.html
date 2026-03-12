@@ -136,20 +136,22 @@
         input:checked + .slider:before { transform: translateX(20px); }
 
         /* --- SEASON SELECTOR --- */
-        .season-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+        .season-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
         .season-option {
             background: #2c2c2e;
-            padding: 12px;
+            padding: 12px 8px;
             border-radius: 12px;
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             border: 2px solid transparent;
             transition: 0.2s;
             color: var(--text-dim);
+            line-height: 1.4;
         }
-        .season-option:hover { background: #3a3a3c; color: white; }
+        .season-option .season-emoji { font-size: 20px; display: block; margin-bottom: 4px; }
+        .season-option:hover { background: #3a3a3c; color: white; transform: scale(1.04); }
         .season-option.active {
             background: rgba(239, 68, 68, 0.15);
             border-color: var(--primary);
@@ -197,6 +199,8 @@
             <a href="admin-notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications</a>
             <a href="admin-team.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Team</a>
             <a href="admin-faq.html" class="nav-item"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+            <a href="admin-exam.html" class="nav-item"><i class="fa-solid fa-file-pen"></i> Exam Manager</a>
+            <a href="mail-dashboard.html" class="nav-item"><i class="fa-solid fa-envelope"></i> Mail Center</a>
         </div>
         <div class="sidebar-footer">
             <div class="nav-item" onclick="logout()" style="color: #ff453a;"><i class="fa-solid fa-power-off"></i> Sign Out</div>
@@ -247,10 +251,18 @@
                     <p>Select the active design theme for the student portal.</p>
                 </div>
                 <div class="season-grid" id="season-selector">
-                    <div class="season-option" data-val="winter" onclick="selectSeason(this)">Winter</div>
-                    <div class="season-option" data-val="summer" onclick="selectSeason(this)">Summer</div>
-                    <div class="season-option" data-val="monsoon" onclick="selectSeason(this)">Monsoon</div>
-                    <div class="season-option" data-val="autumn" onclick="selectSeason(this)">Autumn</div>
+                    <div class="season-option" data-val="january" onclick="selectSeason(this)"><span class="season-emoji">❄️</span>January<br><small style="font-size:10px;opacity:0.6;">New Year</small></div>
+                    <div class="season-option" data-val="february" onclick="selectSeason(this)"><span class="season-emoji">💝</span>February<br><small style="font-size:10px;opacity:0.6;">Valentine's</small></div>
+                    <div class="season-option" data-val="march" onclick="selectSeason(this)"><span class="season-emoji">🌸</span>March<br><small style="font-size:10px;opacity:0.6;">Holi Spring</small></div>
+                    <div class="season-option" data-val="april" onclick="selectSeason(this)"><span class="season-emoji">🌧️</span>April<br><small style="font-size:10px;opacity:0.6;">Spring Rain</small></div>
+                    <div class="season-option" data-val="may" onclick="selectSeason(this)"><span class="season-emoji">☀️</span>May<br><small style="font-size:10px;opacity:0.6;">Early Summer</small></div>
+                    <div class="season-option" data-val="june" onclick="selectSeason(this)"><span class="season-emoji">🌤️</span>June<br><small style="font-size:10px;opacity:0.6;">Pre-Monsoon</small></div>
+                    <div class="season-option" data-val="july" onclick="selectSeason(this)"><span class="season-emoji">⛈️</span>July<br><small style="font-size:10px;opacity:0.6;">Peak Monsoon</small></div>
+                    <div class="season-option" data-val="august" onclick="selectSeason(this)"><span class="season-emoji">🇮🇳</span>August<br><small style="font-size:10px;opacity:0.6;">Independence</small></div>
+                    <div class="season-option" data-val="september" onclick="selectSeason(this)"><span class="season-emoji">🍂</span>September<br><small style="font-size:10px;opacity:0.6;">Autumn</small></div>
+                    <div class="season-option" data-val="october" onclick="selectSeason(this)"><span class="season-emoji">🎃</span>October<br><small style="font-size:10px;opacity:0.6;">Festive</small></div>
+                    <div class="season-option" data-val="november" onclick="selectSeason(this)"><span class="season-emoji">🍁</span>November<br><small style="font-size:10px;opacity:0.6;">Pre-Winter</small></div>
+                    <div class="season-option" data-val="december" onclick="selectSeason(this)"><span class="season-emoji">🎄</span>December<br><small style="font-size:10px;opacity:0.6;">Christmas</small></div>
                 </div>
             </div>
 
@@ -378,7 +390,7 @@
             }
         });
 
-        let currentSelectedSeason = "summer";
+        let currentSelectedSeason = ["january","february","march","april","may","june","july","august","september","october","november","december"][new Date().getMonth()];
 
         // --- GLOBAL UTILS ---
         window.logout = function() {

@@ -15,36 +15,50 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// --- 3. ANIMATED COUNTERS ---
+// --- 3. ANIMATED COUNTERS (IntersectionObserver for all .counter elements) ---
 const counters = document.querySelectorAll('.counter');
-let animated = false;
 
-window.addEventListener('scroll', () => {
-    const statsSection = document.querySelector('.stats-row');
-    if (!statsSection) return;
-    const position = statsSection.getBoundingClientRect().top;
-    const screenPos = window.innerHeight / 1.3;
+function animateCounter(counter) {
+    const target = +counter.getAttribute('data-target');
+    const inc = target / 80;
+    counter.innerText = '0';
+    const updateCount = () => {
+        const count = +counter.innerText;
+        if (count < target) {
+            counter.innerText = Math.ceil(count + inc);
+            setTimeout(updateCount, 20);
+        } else {
+            counter.innerText = target;
+        }
+    };
+    updateCount();
+}
 
-    if (position < screenPos && !animated) {
-        counters.forEach(counter => {
-            const target = +counter.getAttribute('data-target');
-            const inc = target / 100;
-            const updateCount = () => {
-                const count = +counter.innerText;
-                if (count < target) {
-                    counter.innerText = Math.ceil(count + inc);
-                    setTimeout(updateCount, 20);
-                } else {
-                    counter.innerText = target;
-                }
-            };
-            updateCount();
+if ('IntersectionObserver' in window) {
+    const counterObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !entry.target.dataset.animated) {
+                entry.target.dataset.animated = 'true';
+                animateCounter(entry.target);
+            }
         });
-        animated = true;
-    }
-});
+    }, { threshold: 0.5 });
+    counters.forEach(c => counterObserver.observe(c));
+} else {
+    // Fallback: old scroll logic
+    let animated = false;
+    window.addEventListener('scroll', () => {
+        const statsSection = document.querySelector('.stats-row');
+        if (!statsSection) return;
+        const position = statsSection.getBoundingClientRect().top;
+        if (position < window.innerHeight / 1.3 && !animated) {
+            counters.forEach(c => animateCounter(c));
+            animated = true;
+        }
+    });
+}
 
-// --- ENHANCED: SEASONAL THEME MANAGER ---
+// --- ENHANCED: SEASONAL THEME MANAGER (12 Monthly Themes) ---
 async function applySeasonalTheme() {
     try {
         const docRef = doc(db, "platform_settings", "config");
@@ -54,8 +68,11 @@ async function applySeasonalTheme() {
             const data = docSnap.data();
             const season = data.season || 'summer';
 
-            // 1. Reset and Apply Classes
-            document.body.classList.remove('season-summer', 'season-winter', 'season-monsoon', 'season-autumn');
+            // 1. Reset and Apply Classes (all 12 months)
+            const allSeasons = ['summer','winter','monsoon','autumn',
+                'january','february','march','april','may','june',
+                'july','august','september','october','november','december'];
+            allSeasons.forEach(s => document.body.classList.remove(`season-${s}`));
             document.body.classList.add(`season-${season}`);
 
             // 2. Clear and Recreate Overlay
@@ -66,10 +83,13 @@ async function applySeasonalTheme() {
             document.body.appendChild(overlay);
 
             // 3. Launch Particle Effects
-            if (season === 'winter') createSnow(overlay);
-            if (season === 'monsoon') createRain(overlay);
-            if (season === 'autumn') createLeaves(overlay);
-            if (season === 'summer') createSun(overlay);
+            const winterMonths = ['winter', 'december', 'january'];
+            const rainMonths = ['monsoon', 'june', 'july', 'august'];
+            const leafMonths = ['autumn', 'september', 'october', 'november'];
+            if (winterMonths.includes(season)) createSnow(overlay);
+            else if (rainMonths.includes(season)) createRain(overlay);
+            else if (leafMonths.includes(season)) createLeaves(overlay);
+            else createSun(overlay);
 
             // 4. SHOW SEASONAL POPUP MESSAGE
             showSeasonalPopup(season);
@@ -79,13 +99,25 @@ async function applySeasonalTheme() {
     }
 }
 
-// --- NEW FUNCTION: POPUP MANAGER ---
+// --- NEW FUNCTION: POPUP MANAGER (12 months) ---
 function showSeasonalPopup(season) {
     const config = {
-        winter: { icon: 'fa-snowflake', title: 'Winter Season Is Here!', msg: 'New opportunities are freezing in! Grab your internship before they melt.' },
-        monsoon: { icon: 'fa-cloud-showers-heavy', title: 'Monsoon Coding Rush!', msg: 'Rain down your skills on new projects. Ready to grab opportunities?' },
-        autumn: { icon: 'fa-leaf', title: 'Autumn Harvest!', msg: 'Leaves are falling, and so are new career tracks. Start interning today.' },
-        summer: { icon: 'fa-sun', title: 'Summer Heatwave!', msg: 'The competition is heating up! Level up your career under the sun.' }
+        winter:    { icon: 'fa-snowflake',        title: 'Winter Season!',        msg: 'Cold nights, hot skills. Start your internship today.' },
+        monsoon:   { icon: 'fa-cloud-showers-heavy', title: 'Monsoon Coding Rush!', msg: 'Rain down your skills on new projects.' },
+        autumn:    { icon: 'fa-leaf',              title: 'Autumn Harvest!',       msg: 'Leaves are falling, opportunities are rising.' },
+        summer:    { icon: 'fa-sun',               title: 'Summer Heatwave!',      msg: 'The competition is heating up! Level up your career.' },
+        january:   { icon: 'fa-snowflake',        title: '✨ New Year, New Skills!', msg: 'Start fresh. Enroll in an internship track today.' },
+        february:  { icon: 'fa-heart',             title: '💝 Love Your Career!',   msg: "Valentine's special — unlock your dream track." },
+        march:     { icon: 'fa-seedling',          title: '🌸 Spring Into Action!', msg: 'Holi vibes! Colors of new beginnings await.' },
+        april:     { icon: 'fa-cloud-rain',        title: '🌧️ Spring Sprint!',      msg: 'April showers bring career flowers.' },
+        may:       { icon: 'fa-sun',               title: '☀️ Early Summer Push!',  msg: 'Beat the heat — earn a certificate before exams.' },
+        june:      { icon: 'fa-cloud-sun',         title: '🌤️ Pre-Monsoon Prep!',   msg: 'Monsoon is coming. Get certified before it hits.' },
+        july:      { icon: 'fa-umbrella',          title: '⛈️ Monsoon Hustle!',     msg: 'Stay inside, stay productive. Code your way up.' },
+        august:    { icon: 'fa-flag',              title: '🇮🇳 Independence Month!', msg: "India's future is tech. Be part of it." },
+        september: { icon: 'fa-leaf',              title: '🍂 Autumn Ambition!',    msg: 'Season of change. Start your internship now.' },
+        october:   { icon: 'fa-jack-o-lantern',   title: '🎃 Festive Coding!',     msg: 'Diwali is near. Light up your resume.' },
+        november:  { icon: 'fa-cloud',             title: '🍁 Pre-Winter Drive!',   msg: 'Last push before winter. Finish strong.' },
+        december:  { icon: 'fa-gifts',             title: '🎄 Year-End Sprint!',    msg: 'Close the year with a new certificate.' },
     };
 
     const current = config[season] || config.summer;
@@ -160,6 +192,12 @@ function createLeaves(container) {
         `;
         container.appendChild(leaf);
     }
+}
+
+function createSun(container) {
+    const glare = document.createElement('div');
+    glare.className = 'sun-glare';
+    container.appendChild(glare);
 }
 
 // --- 5. FAQ LOADING LOGIC ---
