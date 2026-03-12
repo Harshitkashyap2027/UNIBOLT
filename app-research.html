@@ -305,12 +305,16 @@
         });
 
         // Search filter
+        let searchTimeout;
         document.getElementById('search-input').addEventListener('input', (e) => {
-            const q = e.target.value.toLowerCase();
-            document.querySelectorAll('.resource-card').forEach(card => {
-                const text = card.innerText.toLowerCase();
-                card.style.display = text.includes(q) ? '' : 'none';
-            });
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const q = e.target.value.toLowerCase();
+                document.querySelectorAll('.resource-card').forEach(card => {
+                    const text = card.innerText.toLowerCase();
+                    card.style.display = text.includes(q) ? '' : 'none';
+                });
+            }, 200);
         });
     </script>
 

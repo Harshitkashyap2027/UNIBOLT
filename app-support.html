@@ -288,13 +288,18 @@
             const box = document.getElementById('chat-box');
             if(!input.value.trim()) return;
 
-            const userMsg = input.value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            box.innerHTML += `<div class="chat-bubble user">${userMsg}</div>`;
+            const userBubble = document.createElement('div');
+            userBubble.className = 'chat-bubble user';
+            userBubble.textContent = input.value;
+            box.appendChild(userBubble);
             input.value = "";
             box.scrollTop = box.scrollHeight;
 
             setTimeout(() => {
-                box.innerHTML += `<div class="chat-bubble bot">Thanks for reaching out! A support agent has been notified. For urgent Flutter or Android issues, please also use the Ticket form and our team will respond within 24 hours.</div>`;
+                const botBubble = document.createElement('div');
+                botBubble.className = 'chat-bubble bot';
+                botBubble.textContent = 'Thanks for reaching out! A support agent has been notified. For urgent Flutter or Android issues, please also use the Ticket form and our team will respond within 24 hours.';
+                box.appendChild(botBubble);
                 box.scrollTop = box.scrollHeight;
             }, 1000);
         }
