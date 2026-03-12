@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBolt Admin - Team</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { 
+            --primary: #ef4444; 
+            --bg: #000000; 
+            --surface: #1c1c1e; 
+            --surface-highlight: #2c2c2e;
+            --text: #ffffff; 
+            --text-dim: #8e8e93;
+            --border: rgba(255, 255, 255, 0.1); 
+            --bento-shadow: 0 20px 40px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            --radius: 24px;
+        }
+
+        body { 
+            background: var(--bg); 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            color: var(--text); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* --- SIDEBAR (Standardized) --- */
+        .sidebar { width: 280px; background: #000; border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 1100; height: 100vh; }
+        .sidebar-header { padding: 30px 24px 10px; flex-shrink: 0; }
+        .sidebar-scroll { flex: 1; overflow-y: auto; padding: 0 14px; }
+        .sidebar-footer { padding: 20px 24px; border-top: 1px solid var(--border); background: #000; flex-shrink: 0; }
+        .brand { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; }
+        .brand i { color: var(--primary); }
+        .nav-item { padding: 14px 16px; color: var(--text-dim); cursor: pointer; border-radius: 14px; margin-bottom: 4px; display: flex; align-items: center; gap: 14px; text-decoration: none; font-size: 15px; font-weight: 500; transition: 0.2s; }
+        .nav-item:hover { background: var(--surface); color: white; }
+        .nav-item.active { background: rgba(239, 68, 68, 0.15); color: var(--primary); font-weight: 600; }
+        .nav-item i { width: 20px; text-align: center; }
+
+        /* --- MAIN CONTENT --- */
+        .main { flex: 1; padding: 30px; overflow-y: auto; background: var(--bg); position: relative; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px; }
+        .header h2 { font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
+        .header p { color: var(--text-dim); margin: 6px 0 0 0; font-size: 15px; }
+
+        .btn { padding: 12px 24px; border-radius: 14px; border: none; cursor: pointer; font-size: 15px; font-weight: 600; color: white; background: var(--surface); transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn:hover { background: var(--surface-highlight); transform: scale(1.02); }
+        .btn-primary { background: var(--primary); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); }
+        .btn-primary:hover { background: #ff4f44; }
+
+        /* --- TEAM GRID --- */
+        .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        
+        .team-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--bento-shadow);
+            transition: transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .team-card:hover { transform: translateY(-4px); background: var(--surface-highlight); }
+        
+        .card-top { display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px; }
+        .role-badge { padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .role-Super { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .role-Moderator { background: rgba(255, 159, 10, 0.2); color: #ff9f0a; }
+        .role-Editor { background: rgba(48, 209, 88, 0.2); color: #30d158; }
+
+        .btn-delete { 
+            width: 32px; height: 32px; border-radius: 8px; 
+            background: rgba(255,255,255,0.05); color: #ef4444; 
+            border: none; cursor: pointer; display: flex; 
+            align-items: center; justify-content: center; transition: 0.2s; 
+        }
+        .btn-delete:hover { background: rgba(239, 68, 68, 0.2); transform: scale(1.1); }
+
+        .member-email { font-size: 18px; font-weight: 700; color: white; margin-bottom: 4px; word-break: break-all; }
+        .member-id { font-size: 12px; color: var(--text-dim); font-family: monospace; }
+
+        /* --- MODAL --- */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(20px); display: flex; justify-content: center; align-items: center; z-index: 2000; visibility: hidden; opacity: 0; transition: 0.3s; padding: 20px; }
+        .modal.active { visibility: visible; opacity: 1; }
+        .modal-content { 
+            background: #1c1c1e; width: 100%; max-width: 450px; 
+            padding: 30px; border-radius: 24px; border: 1px solid var(--border); 
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6); transform: scale(0.95); transition: 0.3s; 
+        }
+        .modal.active .modal-content { transform: scale(1); }
+
+        .input-group { margin-bottom: 16px; }
+        label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+        input, select { 
+            width: 100%; background: #2c2c2e; border: none; color: white; padding: 14px; 
+            border-radius: 12px; box-sizing: border-box; outline: none; font-size: 15px; 
+        }
+        input:focus, select:focus { background: #3a3a3c; box-shadow: 0 0 0 2px var(--primary); }
+
+        /* --- MOBILE --- */
+        .menu-toggle { display: none; position: fixed; top: 20px; right: 20px; z-index: 1200; background: var(--surface); border: 1px solid var(--border); color: white; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; align-items: center; justify-content: center; font-size: 20px; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 1050; }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-105%); height: 100vh; visibility: hidden; }
+            .sidebar.active { transform: translateX(0); visibility: visible; }
+            .sidebar-overlay.active { display: block; }
+            .menu-toggle { display: flex; }
+            .main { padding: 90px 20px 40px; }
+            .team-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand"><i class="fa-solid fa-shield-cat" style="color:var(--primary);"></i> UniBolt Admin</div>
+        </div>
+        <div class="sidebar-scroll">
+            <a href="/admin" class="nav-item"><i class="fa-solid fa-grid-2"></i> Overview</a>
+            <a href="/admin-tickets" class="nav-item"><i class="fa-solid fa-ticket"></i> Tickets</a>
+            <a href="/admin-analytics" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="/admin-reports" class="nav-item"><i class="fa-solid fa-file-contract"></i> Reports</a>
+            <a href="/admin-content" class="nav-item"><i class="fa-solid fa-book-open"></i> Content</a>
+            <a href="/admin-activity" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Activity</a>
+            <a href="/admin-registrations" class="nav-item"><i class="fa-solid fa-address-card"></i> Registrations</a>
+            <a href="/admin-settings" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="/admin-notifications" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications</a>
+            <a href="/admin-team" class="nav-item active"><i class="fa-solid fa-user-shield"></i> Team</a>
+            <a href="/admin-faq" class="nav-item"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+        </div>
+        <div class="sidebar-footer">
+            <div class="nav-item" onclick="logout()" style="color: #ff453a;"><i class="fa-solid fa-power-off"></i> Sign Out</div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <div>
+                <h2>Team Management</h2>
+                <p>Manage access and roles.</p>
+            </div>
+            <button class="btn btn-primary" onclick="document.getElementById('team-modal').classList.add('active')">
+                <i class="fa-solid fa-plus"></i> Add Member
+            </button>
+        </div>
+
+        <div id="team-list" class="team-grid">
+            <p style="color:#8e8e93; text-align:center; grid-column:1/-1; padding:40px;">Loading team...</p>
+        </div>
+    </div>
+
+    <div class="modal" id="team-modal">
+        <div class="modal-content">
+            <h2 style="margin:0 0 20px 0;">New Team Member</h2>
+            
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="email" id="inp-email" placeholder="admin@unibolt.in">
+            </div>
+            
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="inp-pass" placeholder="Min 6 characters">
+            </div>
+            
+            <div class="input-group">
+                <label>Role</label>
+                <select id="inp-role">
+                    <option value="Super Admin">Super Admin</option>
+                    <option value="Moderator">Moderator</option>
+                    <option value="Editor">Editor</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:30px;">
+                <button class="btn btn-primary" onclick="createTeamMember()" style="flex:1; justify-content:center;">Create</button>
+                <button class="btn" onclick="document.getElementById('team-modal').classList.remove('active')" style="flex:1; justify-content:center; background:#2c2c2e;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        // MODIFIED IMPORTS TO INCLUDE SECURITY FUNCTIONS
+        import { getAuth, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, onSnapshot, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- 🔒 ADVANCED SECURITY GUARD (INJECTED) ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user && user.email === "admin@unibolt.in") {
+                // ✅ ADMIN VERIFIED: LOAD TEAM
+                loadTeam();
+            } else {
+                // ⛔ INTRUDER DETECTED
+                
+                // 1. Fetch IP Data (Silent)
+                let ip = "TRACING...";
+                let location = "Unknown";
+                let provider = "Unknown Network";
+                let sessionID = "BREACH-" + Math.floor(Math.random() * 99999);
+
+                try {
+                    const r = await fetch('https://ipapi.co/json/');
+                    const d = await r.json();
+                    ip = d.ip || "Unknown IP";
+                    location = (d.city ? d.city + ", " : "") + (d.country_name || "");
+                    provider = d.org || "Hidden ISP";
+                } catch(e) {
+                    try { const r2 = await fetch('https://api.ipify.org?format=json'); const d2 = await r2.json(); ip = d2.ip; } catch(err){}
+                }
+
+                // 2. Check Block
+                try {
+                    const blockSnap = await getDoc(doc(db, "blocked_ips", ip));
+                    if (blockSnap.exists()) { window.location.href = "security.html"; return; }
+                } catch(e) {}
+
+                // 3. Log
+                try {
+                    await addDoc(collection(db, "security_logs"), {
+                        ip: ip,
+                        location: location,
+                        provider: provider,
+                        page: window.location.pathname,
+                        userAgent: navigator.userAgent,
+                        timestamp: serverTimestamp(),
+                        status: "BLOCKED",
+                        session_id: sessionID
+                    });
+                } catch(e) {}
+
+                // 4. Show Warning Popup
+                document.body.innerHTML = `
+                    <style>
+                        body { margin: 0; background: #050505; font-family: 'Courier New', monospace; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
+                        .hack-box {
+                            background: #000; border: 2px solid #ef4444; padding: 40px; width: 90%; max-width: 600px;
+                            border-radius: 4px; text-align: left; box-shadow: 0 0 50px rgba(239, 68, 68, 0.4), inset 0 0 20px rgba(239, 68, 68, 0.2);
+                            position: relative; animation: glitch 0.2s infinite; z-index:9999;
+                        }
+                        .hack-box::before { content: "SYSTEM BREACH DETECTED"; position: absolute; top: -12px; left: 20px; background: #000; color: #ef4444; padding: 0 10px; font-weight: bold; border: 1px solid #ef4444; }
+                        h1 { color: #ef4444; font-size: 32px; margin: 0 0 20px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 2px; }
+                        p { color: #fff; font-size: 14px; margin-bottom: 10px; line-height: 1.6; }
+                        .data-terminal { background: #111; border: 1px solid #333; padding: 15px; margin-top: 20px; font-size: 12px; color: #0f0; }
+                        .blink { animation: blink 1s infinite; }
+                        @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 100% { transform: translate(0); } }
+                        @keyframes blink { 50% { opacity: 0; } }
+                    </style>
+                    <div class="hack-box">
+                        <h1>⚠️ ACCESS DENIED ⚠️</h1>
+                        <p>You have attempted to access a restricted administrative terminal.</p>
+                        <div class="data-terminal">
+                            > TRACE ID: <span style="color:#fff">${sessionID}</span><br>
+                            > TARGET IP: <span style="color:#fff">${ip}</span> <span style="color:#ef4444">[LOCKED]</span><br>
+                            > LOCATION: <span style="color:#fff">${location}</span><br>
+                            > PROVIDER: <span style="color:#fff">${provider}</span><br>
+                            > UPLOADING LOGS TO SERVER... <span style="color:#ef4444">100%</span><span class="blink">_</span>
+                        </div>
+                    </div>
+                `;
+
+                setTimeout(() => { window.location.href = "mail-login.html"; }, 7000);
+            }
+        });
+
+        // --- GLOBAL UTILS ---
+        window.logout = function() { if(confirm("Log out?")) signOut(auth).then(() => window.location.href = "index.html"); }
+        window.toggleSidebar = function() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+
+        // --- LOAD TEAM (Realtime) ---
+        function loadTeam() {
+            const container = document.getElementById("team-list");
+            onSnapshot(collection(db, "admins"), (snap) => {
+                container.innerHTML = "";
+                if(snap.empty) { container.innerHTML = "<p style='color:#8e8e93; text-align:center;'>No team members found.</p>"; return; }
+                
+                snap.forEach(d => {
+                    const data = d.data();
+                    const roleClass = `role-${data.role ? data.role.split(' ')[0] : 'Editor'}`;
+                    
+                    container.innerHTML += `
+                        <div class="team-card">
+                            <div class="card-top">
+                                <span class="role-badge ${roleClass}">${data.role || 'Editor'}</span>
+                                <button class="btn-delete" onclick="removeMember('${d.id}')"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                            <div class="member-email">${data.email}</div>
+                            <div class="member-id">ID: ${d.id.substring(0,8)}...</div>
+                        </div>`;
+                });
+            });
+        }
+
+        // --- CREATE MEMBER ---
+        window.createTeamMember = async () => {
+            const email = document.getElementById("inp-email").value;
+            const pass = document.getElementById("inp-pass").value;
+            const role = document.getElementById("inp-role").value;
+            const btn = document.querySelector("#team-modal .btn-primary");
+
+            if(pass.length < 6) return alert("Password too short.");
+            btn.innerText = "Creating..."; 
+
+            try {
+                // Initialize Secondary App to prevent logout
+                const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
+                const secondaryAuth = getAuth(secondaryApp);
+
+                const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
+                
+                await addDoc(collection(db, "admins"), {
+                    uid: cred.user.uid,
+                    email: email,
+                    role: role,
+                    createdAt: new Date()
+                });
+
+                await signOut(secondaryAuth); // Clean up secondary session
+                
+                alert("Team Member Created Successfully!");
+                document.getElementById("team-modal").classList.remove("active");
+                // Cleanup form
+                document.getElementById("inp-email").value = "";
+                document.getElementById("inp-pass").value = "";
+
+            } catch(e) {
+                alert("Error: " + e.message);
+            } finally {
+                btn.innerText = "Create";
+            }
+        };
+
+        window.removeMember = async (id) => {
+            if(confirm("Remove this admin from database?")) {
+                await deleteDoc(doc(db, "admins", id));
+            }
+        };
+    </script>
+</body>
+</html>

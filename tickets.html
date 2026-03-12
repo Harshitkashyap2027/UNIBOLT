@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Tickets | UniBolt</title>
+    <link rel="stylesheet" href="admin-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="opacity: 0; transition: opacity 0.5s;">
+
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <div class="brand"><i class="fa-solid fa-shield-cat"></i> UniBolt Admin</div>
+            <nav>
+                <a href="admin.html" class="nav-link"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+                <a href="students.html" class="nav-link"><i class="fa-solid fa-users"></i> Students</a>
+                <a href="tickets.html" class="nav-link active"><i class="fa-solid fa-ticket"></i> Support Tickets</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-bar">
+                <div class="page-title">
+                    <h1>Support Tickets</h1>
+                    <p>Resolve student issues and bugs.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Issue</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ticket-table-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/admin-tickets.js"></script>
+</body>
+</html>

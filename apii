@@ -1,0 +1,10 @@
+// ⚠️ YOUR KEY
+const firebaseConfig = {
+    apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+    authDomain: "unibolt-f7005.firebaseapp.com",
+    projectId: "unibolt-f7005",
+    storageBucket: "unibolt-f7005.firebasestorage.app",
+    messagingSenderId: "121987854250",
+    appId: "1:121987854250:web:21a9f50aad54b2143a85d3",
+    measurementId: "G-21W55ET9E6"
+};

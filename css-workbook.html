@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <title>CSS Grid & Flexbox Workbook</title>
+    <link rel="stylesheet" href="resources.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <header class="doc-header">
+        <div class="brand">
+            <i class="fa-brands fa-css3-alt"></i>
+            <div>
+                <h1>UniBolt<span>.</span></h1>
+                <div style="font-size: 10px; color: #666; font-weight:600;">Web Design Faculty</div>
+            </div>
+        </div>
+        <div class="doc-meta">
+            <div>Resource: WEB-CSS-03</div>
+            <div id="dynamic-date">...</div>
+            <div>Level: Intermediate</div>
+        </div>
+    </header>
+
+    <h1 class="title">Mastering Layouts: Flexbox & Grid</h1>
+    <p class="subtitle">A visual guide to modern CSS layout techniques.</p>
+
+    <h2>1. Flexbox (One-Dimensional)</h2>
+    <p>Use Flexbox for alignment within a single row or column (e.g., Navbars, Centers).</p>
+    
+    <div class="code-block">
+<div class="code-badge">CSS</div>
+.container {
+    display: flex;
+    justify-content: space-between; /* Horizontal Alignment */
+    align-items: center;            /* Vertical Alignment */
+    gap: 20px;                      /* Spacing */
+}
+</div>
+
+    <div class="info-box">
+        <strong>💡 Cheat Sheet:</strong><br>
+        <code>justify-content</code> = Main Axis (Left/Right)<br>
+        <code>align-items</code> = Cross Axis (Up/Down)
+    </div>
+
+    <h2>2. CSS Grid (Two-Dimensional)</h2>
+    <p>Use Grid for overall page layouts involving both rows and columns.</p>
+
+    <div class="code-block">
+<div class="code-badge">CSS</div>
+.grid-layout {
+    display: grid;
+    /* Create 3 columns: 200px, auto-fill, and 1 fraction */
+    grid-template-columns: 200px auto 1fr;
+    grid-template-rows: 100px auto;
+    gap: 15px;
+}
+</div>
+
+    <h3>2.1 The "Holy Grail" Layout</h3>
+    <div class="code-block">
+<div class="code-badge">CSS</div>
+.page {
+    display: grid;
+    grid-template-areas:
+        "header header"
+        "sidebar main"
+        "footer footer";
+    grid-template-columns: 250px 1fr;
+}
+</div>
+
+    <div class="verification-section">
+        <img id="qr-code-img" src="" alt="QR" style="width:100px;">
+        <p style="font-size:10px; color:#666; margin-top:10px;">
+            <strong>UniBolt Verified Resource</strong>
+        </p>
+    </div>
+
+    <script src="resources.js"></script>
+</body>
+</html>

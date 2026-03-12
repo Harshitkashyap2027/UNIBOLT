@@ -1,0 +1,404 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { 
+    getFirestore, collection, getDocs, doc, updateDoc, setDoc, deleteDoc, getDoc, query, orderBy, 
+    onSnapshot 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// --- CONFIGURATION ---
+const firebaseConfig = {
+    apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+    authDomain: "unibolt-f7005.firebaseapp.com",
+    projectId: "unibolt-f7005",
+    storageBucket: "unibolt-f7005.appspot.com",
+    messagingSenderId: "121987854250",
+    appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let allStudents = [];
+
+// --- INITIAL LOAD ---
+window.onload = () => { setupRealtimeListener(); };
+
+function setupRealtimeListener() {
+    const tbody = document.getElementById("table-body");
+    
+    if(allStudents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">Loading...</td></tr>`;
+    }
+
+    const q = query(collection(db, "users"), orderBy("paymentDate", "desc"));
+
+    onSnapshot(q, (snapshot) => {
+        allStudents = [];
+        let pendingCount = 0;
+        let revenue = 0;
+
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            data.uid = docSnap.id;
+            allStudents.push(data);
+
+            if(data.paymentStatus === "Pending") pendingCount++;
+            if(data.paymentStatus === "Verified") revenue += 200;
+        });
+
+        document.getElementById("stat-total").innerText = allStudents.length;
+        document.getElementById("stat-pending").innerText = pendingCount;
+        document.getElementById("stat-rev").innerText = "₹" + revenue.toLocaleString();
+
+        filterTable();
+
+    }, (error) => {
+        console.error("Error fetching data:", error);
+        showToast("Error loading data", "error");
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Error loading data. Check console.</td></tr>`;
+    });
+}
+
+function renderTable(data) {
+    const tbody = document.getElementById("table-body");
+    tbody.innerHTML = "";
+
+    if(data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">No students found matching current filter.</td></tr>`;
+        return;
+    }
+
+    data.forEach(s => {
+        const badgeClass = s.paymentStatus === 'Verified' ? 'verified' : (s.paymentStatus === 'Pending' ? 'pending' : 'rejected');
+        const avatar = s.avatarIcon || "👤";
+        
+        const approveBtn = s.paymentStatus !== 'Verified' 
+            ? `<button class="btn-icon btn-approve" title="Approve Student" onclick="window.quickApprove('${s.uid}')"><i class="fa-solid fa-check"></i></button>`
+            : '';
+
+        const row = `
+            <tr>
+                <td>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="background:#222; width:35px; height:35px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:18px;">${avatar}</div>
+                        <div>
+                            <div style="font-weight:bold; color:white;">${s.name || "No Name"}</div>
+                            <div style="font-size:11px; color:#666;">${s.email}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div style="color:white; font-size:13px;">${s.enrolledProgram || "N/A"}</div>
+                    <div style="font-size:11px; color:#666;">${s.degree || "Degree"} • ${s.year || "Year"}</div>
+                </td>
+                <td>
+                    <div style="font-family:monospace; color:#e4e4e7; font-size:13px; letter-spacing:1px;">
+                        ${s.transactionId || "NO UTR"}
+                    </div>
+                    <span class="badge ${badgeClass}" style="margin-top:4px;">${s.paymentStatus || "Unknown"}</span>
+                </td>
+                <td style="text-align:right;">
+                    ${approveBtn}
+                    <button class="btn-icon btn-reset" title="Reset Progress" onclick="window.quickReset('${s.uid}')"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button class="btn-icon" title="Broadcast" onclick="window.openBroadcastModal('${s.uid}', '${s.name}')"><i class="fa-solid fa-envelope"></i></button>
+                    <button class="btn-icon" title="Edit" onclick="window.openEdit('${s.uid}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-icon btn-delete" title="Delete" onclick="window.deleteUser('${s.uid}')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+}
+
+// --- FILTER LOGIC ---
+window.filterTable = function(searchVal = "") {
+    const courseFilter = document.getElementById("course-filter").value;
+    
+    if (!searchVal) {
+        searchVal = document.querySelector(".search-bar").value;
+    }
+    const lowerSearch = searchVal.toLowerCase();
+
+    const filtered = allStudents.filter(s => {
+        const matchesCourse = courseFilter === "all" || s.enrolledProgram === courseFilter;
+        const matchesSearch = 
+            (s.name && s.name.toLowerCase().includes(lowerSearch)) || 
+            (s.email && s.email.toLowerCase().includes(lowerSearch)) || 
+            (s.transactionId && s.transactionId.toLowerCase().includes(lowerSearch));
+
+        return matchesCourse && matchesSearch;
+    });
+
+    renderTable(filtered);
+}
+
+// --- QUICK ACTIONS ---
+window.quickReset = function(uid) {
+    const confirmModal = document.getElementById("confirm-modal");
+    const confirmBtn = document.getElementById("confirm-yes");
+    const confirmTitle = confirmModal.querySelector('h2');
+    const confirmText = confirmModal.querySelector('p');
+
+    // Update text for Reset
+    confirmTitle.innerText = "Reset Progress?";
+    confirmText.innerText = "This will set XP and Streaks back to zero.";
+    confirmBtn.innerText = "Yes, Reset";
+    
+    confirmModal.classList.add("active");
+
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    newConfirmBtn.onclick = async () => {
+        confirmModal.classList.remove("active");
+        try {
+            await updateDoc(doc(db, "users", uid), { xp: 0, streak: 0, completedTasks: [] });
+            showToast("Progress has been reset", "info");
+        } catch(e) { showToast("Reset failed", "error"); }
+    };
+}
+
+window.quickApprove = async function(uid) {
+    if(!confirm("Approve this student instantly?")) return;
+    try {
+        await updateDoc(doc(db, "users", uid), { paymentStatus: "Verified" });
+        showToast("Student Approved Successfully! ✅", "success");
+    } catch(e) { showToast("Approval Failed: " + e.message, "error"); }
+}
+
+// --- ADD/EDIT MODAL LOGIC ---
+window.openAddModal = function() {
+    document.getElementById("student-modal").classList.add("active");
+    document.getElementById("student-form").reset();
+    document.getElementById("modal-title").innerText = "Add New Student";
+    document.getElementById("inp-uid").value = ""; 
+    document.getElementById("inp-email").readOnly = false;
+    document.getElementById("inp-email").style.opacity = "1";
+    document.getElementById("inp-transactionId").readOnly = false;
+    document.getElementById("inp-transactionId").style.opacity = "1";
+    document.getElementById("inp-transactionId").value = "";
+    const now = new Date();
+    document.getElementById("inp-paymentDate").value = now.toISOString().split('T')[0] + " " + now.toLocaleTimeString();
+    document.getElementById("inp-tempPass").placeholder = "Enter new password";
+    document.getElementById("inp-tempPass").value = "";
+}
+
+window.openEdit = function(uid) {
+    const s = allStudents.find(student => student.uid === uid);
+    if(!s) return;
+
+    document.getElementById("student-modal").classList.add("active");
+    document.getElementById("modal-title").innerText = "Edit Details";
+    document.getElementById("inp-uid").value = uid;
+    document.getElementById("inp-email").readOnly = true;
+    document.getElementById("inp-email").style.opacity = "0.5";
+    document.getElementById("inp-transactionId").readOnly = false; 
+    document.getElementById("inp-transactionId").style.opacity = "1";
+
+    document.getElementById("inp-name").value = s.name || "";
+    document.getElementById("inp-phone").value = s.phone || "";
+    document.getElementById("inp-email").value = s.email || "";
+    document.getElementById("inp-avatarIcon").value = s.avatarIcon || "";
+    document.getElementById("inp-state").value = s.state || "";
+    document.getElementById("inp-city").value = s.city || "";
+    document.getElementById("inp-college").value = s.college || "";
+    document.getElementById("inp-year").value = s.year || "";
+    document.getElementById("inp-degree").value = s.degree || "";
+    document.getElementById("inp-enrolledProgram").value = s.enrolledProgram || "";
+    document.getElementById("inp-paymentStatus").value = s.paymentStatus || "Pending";
+    document.getElementById("inp-transactionId").value = s.transactionId || "";
+    document.getElementById("inp-paymentDate").value = s.paymentDate || "";
+    document.getElementById("inp-xp").value = s.xp || 0;
+    document.getElementById("inp-streak").value = s.streak || 0;
+    document.getElementById("inp-tempPassword").value = s.tempPassword || "";
+}
+
+// --- FORM SUBMIT ---
+document.getElementById("student-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const uid = document.getElementById("inp-uid").value;
+    const btn = e.target.querySelector("button[type=submit]");
+    const originalText = btn.innerText;
+    btn.innerText = "Processing...";
+    btn.disabled = true;
+
+    const newPass = document.getElementById("inp-tempPass").value;
+
+    const formData = {
+        name: document.getElementById("inp-name").value,
+        phone: document.getElementById("inp-phone").value,
+        avatarIcon: document.getElementById("inp-avatarIcon").value,
+        state: document.getElementById("inp-state").value,
+        city: document.getElementById("inp-city").value,
+        college: document.getElementById("inp-college").value,
+        year: document.getElementById("inp-year").value,
+        degree: document.getElementById("inp-degree").value,
+        enrolledProgram: document.getElementById("inp-enrolledProgram").value,
+        paymentStatus: document.getElementById("inp-paymentStatus").value,
+        transactionId: document.getElementById("inp-transactionId").value,
+        paymentDate: document.getElementById("inp-paymentDate").value,
+        xp: Number(document.getElementById("inp-xp").value),
+        streak: Number(document.getElementById("inp-streak").value)
+    };
+
+    if(newPass.trim() !== "") formData.tempPassword = newPass;
+
+    try {
+        if(uid) {
+            await updateDoc(doc(db, "users", uid), formData);
+            showToast("Student Updated Successfully! 📝", "success");
+        } else {
+            formData.email = document.getElementById("inp-email").value;
+            if(!newPass || newPass.length < 6) {
+                showToast("Password too short (min 6)", "error");
+                btn.innerText = originalText;
+                btn.disabled = false;
+                return;
+            }
+            const secondaryApp = initializeApp(firebaseConfig, "Secondary");
+            const secondaryAuth = getAuth(secondaryApp);
+            const userCred = await createUserWithEmailAndPassword(secondaryAuth, formData.email, newPass);
+            await setDoc(doc(db, "users", userCred.user.uid), { 
+                ...formData, 
+                createdAt: new Date(), 
+                notifications: [], 
+                completedTasks: [] 
+            });
+            await signOut(secondaryAuth);
+            showToast("New Student Created! 🚀", "success");
+        }
+        window.closeModal("student-modal");
+    } catch (err) {
+        showToast("Error: " + err.message, "error");
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+});
+
+// --- BROADCAST ---
+window.openBroadcastModal = function(uid, name) {
+    document.getElementById("broadcast-modal").classList.add("active");
+    document.getElementById("bc-target-uid").value = uid;
+    document.getElementById("bc-target-name").innerText = uid === 'all' ? "Everyone (All Students)" : name;
+    document.getElementById("bc-message").value = "";
+}
+
+window.sendBroadcast = async function() {
+    const targetUid = document.getElementById("bc-target-uid").value;
+    const message = document.getElementById("bc-message").value;
+    if(!message.trim()) {
+        showToast("Message cannot be empty", "error");
+        return;
+    }
+
+    const notifObj = { message: message, date: new Date().toLocaleDateString(), read: false };
+    const btn = document.querySelector("#broadcast-modal .btn-primary");
+    btn.innerText = "Sending...";
+    btn.disabled = true;
+
+    try {
+        if(targetUid === 'all') {
+            const promises = allStudents.map(async (student) => {
+                const userRef = doc(db, "users", student.uid);
+                const currentNotifs = student.notifications || [];
+                await updateDoc(userRef, { notifications: [...currentNotifs, notifObj] });
+            });
+            await Promise.all(promises);
+            showToast("Sent to Everyone! 📢", "success");
+        } else {
+            const userRef = doc(db, "users", targetUid);
+            const snap = await getDoc(userRef);
+            if(snap.exists()) {
+                const currentNotifs = snap.data().notifications || [];
+                await updateDoc(userRef, { notifications: [...currentNotifs, notifObj] });
+                showToast("Sent Privately 📨", "success");
+            }
+        }
+        window.closeModal("broadcast-modal");
+    } catch(e) { showToast("Broadcast Failed", "error"); } 
+    finally { btn.innerText = "Send Message"; btn.disabled = false; }
+}
+
+// --- UTILS ---
+window.closeModal = function(id) { document.getElementById(id).classList.remove("active"); }
+
+window.deleteUser = function(uid) {
+    const confirmModal = document.getElementById("confirm-modal");
+    const confirmBtn = document.getElementById("confirm-yes");
+
+    // 1. Show the custom modal
+    confirmModal.classList.add("active");
+
+    // 2. Clear old event listeners from the "Yes" button
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    // 3. Handle the "Yes" click
+    newConfirmBtn.onclick = async () => {
+        try {
+            // Close modal immediately
+            confirmModal.classList.remove("active");
+            
+            // Perform delete
+            await deleteDoc(doc(db, "users", uid));
+            
+            // Show your custom toast
+            showToast("Record deleted successfully", "error");
+        } catch (e) {
+            showToast("Error deleting record", "error");
+            console.error(e);
+        }
+    };
+}
+
+/**
+ * REUSABLE POPUP SYSTEM
+ */
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+    const toastIcon = toast.querySelector('i');
+
+    toastMsg.textContent = message;
+    
+    // Apply types for colors (success, error, info)
+    toast.className = `toast show ${type}`;
+    
+    // Set appropriate icon
+    if (type === 'success') toastIcon.className = 'fa-solid fa-circle-check';
+    else if (type === 'error') toastIcon.className = 'fa-solid fa-circle-exclamation';
+    else if (type === 'info') toastIcon.className = 'fa-solid fa-circle-info';
+
+    // Auto hide
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
+window.logout = function() {
+    if(confirm("Logout?")) {
+        showToast("Logging out...", "info");
+        signOut(auth).then(() => window.location.href = "index.html");
+    }
+}
+// Example: Inside your Admin Login Logic
+async function handleLogin() {
+    const username = document.getElementById('admin-user').value;
+    const pass = document.getElementById('admin-pass').value;
+
+    if (username === "admin" && pass === "your-secret-password") {
+        
+        // --- START TRACKING ---
+        // This sends the data to your Monitor Page
+        await logSecurityEvent("LOGIN", "Admin", username, "Successfully logged into Master Control");
+        // --- END TRACKING ---
+
+        window.location.href = "/admin";
+    } else {
+        // Track failed attempts too for security!
+        await logSecurityEvent("SECURITY_ALERT", "Unknown", username, "FAILED login attempt detected");
+        alert("Invalid Credentials");
+    }
+}

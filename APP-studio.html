@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UniBolt - App Lab</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script src="js/studio.js"></script>
+
+    <style>
+        /* --- LAYOUT STYLES --- */
+        body { margin: 0; background: #09090b; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; }
+        .app-container { height: 100vh; display: flex; overflow: hidden; }
+        
+        /* 1. GLOBAL SIDEBAR (Minimal) */
+        .global-sidebar {
+            width: 60px; background: #111; border-right: 1px solid #333;
+            display: flex; flex-direction: column; align-items: center; padding-top: 20px;
+        }
+        .nav-icon {
+            color: #666; font-size: 18px; margin-bottom: 30px; cursor: pointer; transition: 0.2s;
+        }
+        .nav-icon:hover { color: white; }
+        .nav-icon.active { color: #0ea5e9; }
+
+        /* 2. MAIN CONTENT AREA */
+        .main-content { flex: 1; display: flex; flex-direction: column; height: 100%; }
+        .page-body { padding: 20px; height: 100%; box-sizing: border-box; }
+        
+        /* 3. EDITOR FRAME (Split View) */
+        .editor-frame { display: flex; gap: 20px; height: 100%; }
+
+        /* --- TASK SIDEBAR (Left Panel) --- */
+        .task-sidebar {
+            flex: 0 0 320px; background: #111; border: 1px solid #333;
+            border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;
+        }
+        
+        .task-header { padding: 20px; border-bottom: 1px solid #222; background: #18181b; }
+        
+        .step-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex: 1; }
+        .step-item {
+            padding: 15px 20px; border-bottom: 1px solid #222; cursor: pointer;
+            display: flex; align-items: center; gap: 12px; transition: 0.2s;
+            opacity: 0.6; color: #a1a1aa;
+        }
+        .step-item:hover { background: #222; opacity: 1; }
+        .step-item.active { 
+            opacity: 1; background: rgba(14, 165, 233, 0.1); 
+            border-left: 3px solid #0ea5e9; color: white; 
+        }
+        .step-item.completed { opacity: 1; }
+        .step-item.locked { pointer-events: none; opacity: 0.3; filter: grayscale(1); }
+
+        .step-circle {
+            width: 24px; height: 24px; border-radius: 50%; border: 2px solid #444;
+            display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;
+        }
+        .step-item.active .step-circle { border-color: #0ea5e9; color: #0ea5e9; }
+        .step-item.completed .step-circle { background: #10b981; border-color: #10b981; color: black; }
+
+        /* --- CODE EDITOR PANE (Right Panel) --- */
+        .code-pane { 
+            flex: 1; background: #1e1e1e; border-radius: 12px; 
+            display: flex; flex-direction: column; overflow: hidden; border: 1px solid #333; 
+        }
+        
+        .code-header { 
+            padding: 15px 20px; border-bottom: 1px solid #333; background: #252526;
+            display: flex; justify-content: space-between; align-items: center; 
+        }
+
+        .code-area { 
+            flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 20px; 
+            font-family: 'Fira Code', monospace; resize: none; outline: none; 
+            font-size: 14px; line-height: 1.6; 
+        }
+
+        .console-panel {
+            height: 150px; background: #111; border-top: 1px solid #333; 
+            padding: 15px; font-family: 'Fira Code', monospace; font-size: 12px; 
+            overflow-y: auto; display: flex; flex-direction: column;
+        }
+
+        /* UTILS */
+        .hidden { display: none !important; }
+        .progress-container { padding: 20px; border-top: 1px solid #222; background: #18181b; }
+        .progress-bar { height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-top: 10px; }
+        .fill { height: 100%; background: #0ea5e9; width: 0%; transition: width 0.3s ease; }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #09090b; padding: 40px; border-radius: 16px; width: 400px; text-align: center;
+            border: 1px solid #0ea5e9; box-shadow: 0 0 50px rgba(14, 165, 233, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="result-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div style="font-size: 50px; margin-bottom: 20px;">🎉</div>
+            <h2 style="color: white; margin: 0 0 10px;">Day Complete!</h2>
+            <p style="color: #a1a1aa; font-size: 14px; line-height: 1.6;">
+                Excellent work. You've mastered today's concepts.<br>
+                Come back tomorrow to unlock the next level.
+            </p>
+            <button onclick="window.location.href='app-dashboard.html'" 
+                    style="margin-top: 25px; width: 100%; padding: 12px; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                Return to Dashboard
+            </button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        
+        <aside class="global-sidebar">
+            <div style="margin-bottom: 40px;">
+                <i class="fa-solid fa-layer-group" style="color: #0ea5e9; font-size: 24px;"></i>
+            </div>
+            <a href="app-dashboard.html" class="nav-icon" title="Dashboard"><i class="fa-solid fa-arrow-left"></i></a>
+            <div class="nav-icon active" title="Code"><i class="fa-solid fa-code"></i></div>
+            <div class="nav-icon" title="Resources"><i class="fa-solid fa-book"></i></div>
+            <div class="nav-icon" title="Settings" style="margin-top: auto; margin-bottom: 20px;"><i class="fa-solid fa-gear"></i></div>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-body">
+                
+                <div class="editor-frame">
+                    
+                    <div class="task-sidebar">
+                        <div class="task-header">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <h2 id="project-title" style="margin: 0; font-size: 16px; color: white;">Loading Track...</h2>
+                                <span id="timer" style="color: #ef4444; font-weight: bold; font-family: monospace;">45:00</span>
+                            </div>
+                            <div id="project-meta" style="font-size: 12px; color: #0ea5e9;">Initialize...</div>
+                        </div>
+
+                        <ul class="step-list" id="step-list-container">
+                            </ul>
+
+                        <div class="progress-container">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #888;">
+                                <span>Daily Progress</span>
+                                <span id="progress-text">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="fill" id="overall-progress"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="code-pane">
+                        <div class="code-header">
+                            <div>
+                                <strong id="current-step-title" style="color: white; display: block; font-size: 14px;">Select a Task</strong>
+                                <span id="current-step-desc" style="font-size: 12px; color: #a1a1aa;">Click a step on the left to begin.</span>
+                            </div>
+                            <button id="run-btn" style="background: #22c55e; border: none; color: white; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-play"></i> Run Code
+                            </button>
+                        </div>
+
+                        <textarea id="code-editor" class="code-area" spellcheck="false" placeholder="// Your code will appear here..."></textarea>
+
+                        <div class="console-panel">
+                            <div style="color: #666; font-weight: bold; margin-bottom: 5px; font-size: 10px;">TERMINAL OUTPUT</div>
+                            <div id="console-output" style="flex: 1; color: #a1a1aa;">Ready to compile...</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>

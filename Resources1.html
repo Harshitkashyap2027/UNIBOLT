@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <title>Python for Data Science - UniBolt Cheat Sheet</title>
+    <link rel="stylesheet" href="resources.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <header class="doc-header">
+        <div class="brand">
+            <i class="fa-brands fa-python"></i>
+            <div>
+                <h1>UniBolt<span>.</span></h1>
+                <div style="font-size: 10px; color: #666; font-weight:600; text-transform:uppercase;">Data Science Faculty</div>
+            </div>
+        </div>
+        <div class="doc-meta">
+            <div>Resource: CS-PY-01</div>
+            <div id="dynamic-date">...</div>
+            <div>Access: Premium</div>
+        </div>
+    </header>
+
+    <h1 class="title">Python for Data Science</h1>
+    <p class="subtitle">The essential quick-reference guide for NumPy, Pandas, and Matplotlib.</p>
+
+    <h2><i class="fa-solid fa-layer-group" style="margin-right:10px;"></i> 1. NumPy (Numerical Python)</h2>
+    <p>NumPy is the fundamental package for scientific computing. It provides a high-performance multidimensional array object.</p>
+
+    <div class="code-block">
+<div class="code-badge">PYTHON</div>
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+
+<span class="comment"># Creating Arrays</span>
+arr = np.array([1, 2, 3])       <span class="comment"># 1D Array</span>
+mat = np.zeros((3,3))           <span class="comment"># 3x3 Zero Matrix</span>
+rand = np.random.rand(2,2)      <span class="comment"># Random values 0-1</span>
+
+<span class="comment"># Inspections</span>
+shape = arr.shape               <span class="comment"># Dimensions (rows, cols)</span>
+dtype = arr.dtype               <span class="comment"># Data type (int64, float32)</span>
+
+<span class="comment"># Math Operations</span>
+prod = np.dot(a, b)             <span class="comment"># Matrix Multiplication</span>
+mean = np.mean(arr)             <span class="comment"># Average</span>
+</div>
+
+    <div class="info-box">
+        <strong>⚡ Pro Tip:</strong> Always prefer NumPy vectorized operations (like <code>arr * 2</code>) over Python loops. They are implemented in C and are 100x faster.
+    </div>
+
+    <h2><i class="fa-solid fa-table" style="margin-right:10px;"></i> 2. Pandas (Data Analysis)</h2>
+    <p>Pandas is built on top of NumPy and provides easy-to-use data structures and data analysis tools.</p>
+
+    <h3>Dataframes & Loading</h3>
+    <div class="code-block">
+<div class="code-badge">PYTHON</div>
+<span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+
+<span class="comment"># Loading Data</span>
+df = pd.read_csv(<span class="string">'data.csv'</span>)
+df = pd.read_excel(<span class="string">'sheet.xlsx'</span>)
+
+<span class="comment"># Viewing Data</span>
+df.head(5)          <span class="comment"># First 5 rows</span>
+df.info()           <span class="comment"># Index, Datatype and Memory info</span>
+df.describe()       <span class="comment"># Summary statistics (mean, std, min)</span>
+</div>
+
+    <h3>Cleaning Data</h3>
+    <div class="code-block">
+<div class="code-badge">PYTHON</div>
+<span class="comment"># Handling Missing Values</span>
+df.dropna()                     <span class="comment"># Drop rows with nulls</span>
+df.fillna(<span class="string">'Unknown'</span>)            <span class="comment"># Fill nulls with value</span>
+
+<span class="comment"># Filtering</span>
+adults = df[df[<span class="string">'age'</span>] > 18]     <span class="comment"># Filter rows</span>
+subset = df[[<span class="string">'name'</span>, <span class="string">'age'</span>]]    <span class="comment"># Select columns</span>
+</div>
+
+    <h2><i class="fa-solid fa-chart-line" style="margin-right:10px;"></i> 3. Matplotlib (Visualization)</h2>
+    
+    <div class="code-block">
+<div class="code-badge">PYTHON</div>
+<span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt
+
+x = [1, 2, 3, 4]
+y = [10, 20, 25, 30]
+
+plt.plot(x, y, color=<span class="string">'red'</span>, linestyle=<span class="string">'--'</span>)
+plt.title(<span class="string">"Growth Over Time"</span>)
+plt.xlabel(<span class="string">"Days"</span>)
+plt.ylabel(<span class="string">"Revenue"</span>)
+plt.show()
+</div>
+
+    <div class="verification-section">
+        <img id="qr-code-img" src="" alt="QR" style="width:100px;">
+        <p style="font-size:10px; color:#666; margin-top:10px;">
+            <strong>Document Integrity Check</strong><br>
+            Scan to verify this document belongs to the authorized student.
+        </p>
+    </div>
+
+    <script src="resources.js"></script>
+</body>
+</html>

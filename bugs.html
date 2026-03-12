@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <title>UniBolt - Bug Tracker</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #09090b; color: #e4e4e7; font-family: 'Outfit', sans-serif; display: flex; margin: 0; }
+        .sidebar { width: 260px; background: #000; border-right: 1px solid #27272a; height: 100vh; position: fixed; padding: 20px; }
+        .main-content { flex: 1; margin-left: 260px; padding: 30px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; color: #a1a1aa; text-decoration: none; padding: 12px; margin-bottom: 5px; border-radius: 8px; font-size: 13px; }
+        .nav-item:hover, .nav-item.active { background: #27272a; color: white; }
+        .nav-item.active { border-left: 3px solid #ef4444; }
+
+        .bug-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .bug-card { background: #18181b; border: 1px solid #27272a; padding: 20px; border-radius: 12px; position: relative; }
+        .bug-card.critical { border-left: 4px solid #ef4444; }
+        .bug-card.medium { border-left: 4px solid #f59e0b; }
+        .bug-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .status { font-size: 10px; background: #333; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+        .status.open { color: #f59e0b; }
+        .status.closed { color: #10b981; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <h2 style="color:white; margin-top:0;">Admin<span style="color:#ef4444">PRO</span></h2>
+        <nav>
+            <a href="admin.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> Dashboard</a>
+            <a href="students.html" class="nav-item"><i class="fa-solid fa-users"></i> Students</a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="bugs.html" class="nav-item active"><i class="fa-solid fa-bug"></i> Bug Reports</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+            <h1 style="margin:0;">Issue Tracker</h1>
+            <button onclick="createTestBug()" style="background:#27272a; color:white; border:1px solid #333; padding:8px 16px; border-radius:6px; cursor:pointer;">+ Simulate Report</button>
+        </div>
+
+        <div id="bug-list" class="bug-grid">
+            <div style="color:#666;">Loading issues...</div>
+        </div>
+    </main>
+
+    <script type="module" src="js/admin-bugs.js"></script>
+</body>
+</html>

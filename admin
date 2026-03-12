@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UniBolt - Admin Command</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- ADMIN THEME OVERRIDES --- */
+        :root { --admin-red: #ef4444; --admin-bg: #09090b; --border: #27272a; --card-bg: #18181b; }
+        body { background: var(--admin-bg); font-family: 'Outfit', sans-serif; overflow-x: hidden; }
+        .sidebar { border-right: 1px solid var(--admin-red); }
+        
+        /* --- DASHBOARD STAT CARDS --- */
+        .stat-card {
+            background: var(--card-bg); border: 1px solid var(--border); padding: 25px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: space-between; transition: 0.3s;
+            position: relative; overflow: hidden;
+        }
+        .stat-card::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: currentColor; opacity: 0.5;
+        }
+        .stat-card:hover { transform: translateY(-3px); border-color: #555; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .stat-card h2 { margin: 5px 0 0; font-size: 32px; color: white; font-weight: 700; }
+        .stat-card p { margin: 0; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .stat-icon { font-size: 30px; opacity: 0.2; }
+
+        /* --- BULK ACTION TOOLBAR (Hidden by default) --- */
+        .bulk-toolbar {
+            background: #27272a; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid #3f3f46; animation: slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .bulk-toolbar.hidden { display: none; }
+        .bulk-count { color: white; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+        .bulk-count span { background: #ef4444; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* --- ADVANCED TABLE STYLES --- */
+        .admin-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+        .admin-table th { 
+            text-align: left; padding: 18px 15px; color: #a1a1aa; border-bottom: 1px solid var(--border); 
+            font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;
+            background: var(--card-bg); position: sticky; top: 0; z-index: 10;
+        }
+        .admin-table td { padding: 15px; border-bottom: 1px solid var(--border); color: #e4e4e7; vertical-align: middle; transition: 0.2s; }
+        .admin-table tr:hover td { background: rgba(255,255,255,0.03); }
+        .admin-table tr.selected td { background: rgba(239, 68, 68, 0.1); }
+        
+        /* Checkbox Style */
+        .custom-checkbox { cursor: pointer; width: 16px; height: 16px; accent-color: #ef4444; border-radius: 4px; }
+
+        /* Badges */
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px; letter-spacing: 0.5px; }
+        .badge.pending { background: rgba(245, 158, 11, 0.1); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
+        .badge.verified { background: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+
+        /* Skeleton Loading Effect */
+        .skeleton { background: linear-gradient(90deg, #27272a 25%, #3f3f46 50%, #27272a 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; height: 12px; margin: 6px 0; display: inline-block; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* Success Toast */
+        .toast { position: fixed; bottom: 30px; right: 30px; background: #10b981; color: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 15px; z-index: 2000; transform: translateY(100px); opacity: 0; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-left: 5px solid #059669; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast i { font-size: 22px; }
+
+        /* Action Buttons */
+        .btn-action-sm { background: #27272a; border: 1px solid var(--border); color: #fff; padding: 8px 14px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .btn-action-sm:hover { background: #3f3f46; border-color: #555; }
+        .btn-icon { background: none; border: none; cursor: pointer; padding: 8px; border-radius: 4px; color: #71717a; transition: 0.2s; font-size: 14px; }
+        .btn-icon:hover { color: white; background: #333; transform: scale(1.1); }
+        .btn-verify { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        .btn-verify:hover { background: #10b981; color: black; }
+        
+        /* Modal Styles */
+        .modal-content { background: #18181b; border: 1px solid #333; padding: 30px; border-radius: 16px; width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        label { display: block; font-size: 11px; color: #a1a1aa; margin-bottom: 6px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        input, select, textarea { width: 100%; padding: 12px 15px; background: #09090b; border: 1px solid #333; color: white; border-radius: 8px; outline: none; margin-bottom: 20px; font-size: 14px; transition: 0.3s; }
+        input:focus, select:focus { border-color: #ef4444; background: #000; }
+        
+        /* Search Bar */
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-wrapper { position: relative; flex: 1; min-width: 250px; }
+        .search-wrapper i { position: absolute; left: 15px; top: 12px; color: #666; font-size: 14px; }
+        .search-box { width: 100%; background: #18181b; border: 1px solid var(--border); padding: 10px 15px 10px 40px; color: white; border-radius: 8px; outline: none; transition: 0.3s; }
+        .search-box:focus { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
+    </style>
+</head>
+<body>
+
+    <div id="success-toast" class="toast">
+        <i class="fa-solid fa-circle-check"></i>
+        <div>
+            <h4 style="margin:0; font-size:14px; font-weight: 700;">Success</h4>
+            <span id="toast-msg" style="font-size:12px; opacity:0.8;">Action completed successfully.</span>
+        </div>
+    </div>
+
+    <div id="student-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; padding-bottom:15px; border-bottom:1px solid #333;">
+                <h2 id="modal-title" style="margin:0; font-size:20px; color:white;">Student Details</h2>
+                <span onclick="closeModal()" style="cursor:pointer; color:#666; font-size:24px; line-height:1;">&times;</span>
+            </div>
+            
+            <form id="admin-form">
+                <input type="hidden" id="edit-uid">
+                
+                <div class="grid-2">
+                    <div><label>Full Name</label><input type="text" id="inp-name" required placeholder="John Doe"></div>
+                    <div><label>Phone Number</label><input type="text" id="inp-phone" placeholder="+91..."></div>
+                </div>
+
+                <label>Email Address (Login ID)</label>
+                <input type="email" id="inp-email" required placeholder="student@example.com">
+                
+                <label>College / University</label>
+                <input type="text" id="inp-college" placeholder="Institute Name">
+
+                <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; border: 1px dashed #444; margin-bottom: 20px;">
+                    <label style="color: #f59e0b;">Payment Verification</label>
+                    <div class="grid-2" style="margin-bottom:0; grid-gap: 15px;">
+                        <select id="inp-status" style="margin-bottom:0;">
+                            <option value="Pending Approval">⏳ Pending</option>
+                            <option value="Verified">✅ Verified</option>
+                        </select>
+                        <input type="text" id="inp-utr" placeholder="UTR Number" style="margin-bottom:0;">
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div><label>XP Points</label><input type="number" id="inp-xp" value="0"></div>
+                    <div><label>Streak Days</label><input type="number" id="inp-streak" value="0"></div>
+                </div>
+
+                <label>Password <small style="color:#666; font-weight:400; text-transform:none;">(Leave blank if updating existing user)</small></label>
+                <input type="text" id="inp-pass" placeholder="Create/Reset Password">
+
+                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background: #ef4444; border:none; padding: 14px; font-size: 14px;">
+                    <i class="fa-solid fa-save"></i> &nbsp; Save Student Record
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="notif-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="width: 400px;">
+            <h2 style="margin-top:0;">📢 Send Broadcast</h2>
+            <p id="notif-target" style="color: #666; font-size: 12px; margin-bottom: 20px;"></p>
+            <input type="hidden" id="notif-uid">
+            <textarea id="inp-msg" rows="4" placeholder="Type your announcement here..." style="resize:none;"></textarea>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button onclick="sendNotification()" class="btn-primary" style="flex:1; justify-content:center;">Send</button>
+                <button onclick="closeNotif()" class="btn-action-sm" style="background:transparent; border-color:#666; color:#aaa;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="brand"><i class="fa-solid fa-shield-cat" style="color: #ef4444;"></i> Admin<span style="font-size:9px; background:#ef4444; color:white; padding:2px 5px; border-radius:3px; margin-left:8px;">PRO</span></div>
+            <ul class="nav-menu">
+                <a href="#" class="nav-item active"><i class="fa-solid fa-users-gear"></i> User Manager</a>
+                <a href="/dashboard" class="nav-item"><i class="fa-solid fa-eye"></i> Student View</a>
+            </ul>
+            <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid #222;">
+                 <a href="/login" class="nav-item" style="color:#ef4444 !important;"><i class="fa-solid fa-power-off"></i> Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-body">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <div>
+                        <h1 style="margin:0; font-size: 26px; font-weight:800;">Command Center</h1>
+                        <p style="color:#666; font-size:13px; margin-top:5px;">Manage ecosystem users, payments, and content.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="exportCSV()" class="btn-action-sm"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+                        <button onclick="openAddModal()" class="btn-primary" style="background: #ef4444; border:none; padding: 10px 20px; font-size: 13px;">
+                            <i class="fa-solid fa-user-plus"></i> Add Student
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid-3" style="margin-bottom: 25px;">
+                    <div class="stat-card" style="color: #10b981;">
+                        <div><p>Total Revenue</p><h2 id="stat-rev">₹0</h2></div>
+                        <i class="fa-solid fa-sack-dollar stat-icon"></i>
+                    </div>
+                    <div class="stat-card" style="color: #fff;">
+                        <div><p>Total Students</p><h2 id="stat-total">0</h2></div>
+                        <i class="fa-solid fa-users stat-icon"></i>
+                    </div>
+                    <div class="stat-card" style="color: #f59e0b; cursor: pointer; border-color: rgba(245, 158, 11, 0.3);" onclick="filterPending()">
+                        <div><p>Pending Verification</p><h2 id="stat-pending">0</h2></div>
+                        <i class="fa-solid fa-hourglass-half stat-icon"></i>
+                    </div>
+                </div>
+
+                <div id="bulk-toolbar" class="bulk-toolbar hidden">
+                    <div class="bulk-count">
+                        <i class="fa-solid fa-layer-group"></i> <span id="selected-count">0</span> Selected
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="bulkVerify()" class="btn-primary" style="background: #10b981; border:none; padding: 8px 16px; font-size: 12px; height:36px;">
+                            <i class="fa-solid fa-check-double"></i> Verify Selected
+                        </button>
+                        <button onclick="bulkDelete()" class="btn-action-sm" style="border-color:#ef4444; color:#ef4444; height:36px;">
+                            <i class="fa-solid fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <div class="search-wrapper">
+                        <i class="fa-solid fa-search"></i>
+                        <input type="text" id="search-box" class="search-box" placeholder="Search by Name, Email, or UTR...">
+                    </div>
+                    <select id="filter-box" class="search-box" style="flex: 0 0 180px; padding-left:15px;" onchange="applyFilter()">
+                        <option value="all">Show: All Students</option>
+                        <option value="pending">Show: Pending Only</option>
+                        <option value="verified">Show: Verified Only</option>
+                    </select>
+                    <button class="btn-action-sm" onclick="openBroadcast()"><i class="fa-solid fa-bullhorn"></i> Broadcast All</button>
+                </div>
+
+                <div class="card" style="padding: 0; overflow: hidden; border: 1px solid var(--border);">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align:center;"><input type="checkbox" id="check-all" class="custom-checkbox"></th>
+                                <th>Student Profile</th>
+                                <th>Payment & UTR</th>
+                                <th>Stats</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-list">
+                            <tr>
+                                <td style="text-align:center;"><input type="checkbox" disabled class="custom-checkbox"></td>
+                                <td>
+                                    <div class="skeleton" style="width: 140px; height:14px; margin-bottom:5px;"></div>
+                                    <div class="skeleton" style="width: 100px; height:10px;"></div>
+                                </td>
+                                <td>
+                                    <div class="skeleton" style="width: 80px; height:20px; border-radius:10px; margin-bottom:5px;"></div>
+                                    <div class="skeleton" style="width: 120px; height:10px;"></div>
+                                </td>
+                                <td>
+                                    <div class="skeleton" style="width: 60px; height:12px;"></div>
+                                </td>
+                                <td style="text-align:right;">
+                                    <div class="skeleton" style="width: 30px; height:30px; border-radius:4px; display:inline-block;"></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="text-align:center;"><input type="checkbox" disabled class="custom-checkbox"></td>
+                                <td>
+                                    <div class="skeleton" style="width: 120px; height:14px; margin-bottom:5px;"></div>
+                                    <div class="skeleton" style="width: 150px; height:10px;"></div>
+                                </td>
+                                <td>
+                                    <div class="skeleton" style="width: 80px; height:20px; border-radius:10px; margin-bottom:5px;"></div>
+                                    <div class="skeleton" style="width: 100px; height:10px;"></div>
+                                </td>
+                                <td>
+                                    <div class="skeleton" style="width: 60px; height:12px;"></div>
+                                </td>
+                                <td style="text-align:right;">
+                                    <div class="skeleton" style="width: 30px; height:30px; border-radius:4px; display:inline-block;"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function closeModal() { document.getElementById('student-modal').classList.add('hidden'); }
+        function closeNotif() { document.getElementById('notif-modal').classList.add('hidden'); }
+        
+        function copyUTR(text) { 
+            navigator.clipboard.writeText(text); 
+            showToast(`UTR Copied: ${text}`); 
+        }
+        
+        // Global Toast Function
+        window.showToast = function(message) {
+            const toast = document.getElementById("success-toast");
+            document.getElementById("toast-msg").innerText = message;
+            toast.classList.add("show");
+            
+            // Auto hide after 3s
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3000);
+        }
+    </script>
+
+    <script type="module" src="js/admin-manager.js"></script>
+</body>
+</html>

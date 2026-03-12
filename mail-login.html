@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBolt - Admin Access</title>
+    
+    <link rel="manifest" href="mail-manifest.json">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background: #050505;
+            display: flex; align-items: center; justify-content: center;
+            height: 100vh; font-family: monospace; margin: 0;
+        }
+        .admin-card {
+            width: 400px; padding: 40px; background: #09090b;
+            border: 1px solid #333; border-radius: 12px;
+            box-shadow: 0 0 40px rgba(239, 68, 68, 0.1);
+            text-align: center; position: relative; overflow: hidden;
+        }
+        /* Red Top Bar */
+        .admin-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: #ef4444; box-shadow: 0 0 10px #ef4444;
+        }
+        
+        .logo-icon { font-size: 40px; color: #ef4444; margin-bottom: 20px; }
+        h1 { color: #fff; font-size: 24px; margin-bottom: 5px; font-family: sans-serif; font-weight: 800; }
+        p { color: #666; font-size: 12px; margin-bottom: 30px; letter-spacing: 1px; text-transform: uppercase; }
+
+        .input-group { margin-bottom: 20px; text-align: left; }
+        label { color: #888; font-size: 11px; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        input {
+            width: 100%; padding: 12px; background: #111; border: 1px solid #333;
+            color: #fff; border-radius: 6px; outline: none; font-family: monospace;
+            box-sizing: border-box; 
+            transition: 0.2s;
+        }
+        input:focus { border-color: #ef4444; background: #1a1a1a; }
+
+        .btn-admin {
+            width: 100%; padding: 12px; background: #ef4444; color: white; border: none;
+            border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-admin:hover { background: #dc2626; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+        .btn-admin:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #error-msg { color: #ef4444; font-size: 12px; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-card">
+        <i class="fa-solid fa-shield-cat logo-icon"></i>
+        <h1>Admin Control</h1>
+        <p>Restricted Access Area</p>
+
+        <form id="admin-login-form">
+            <div class="input-group">
+                <label>Admin ID</label>
+                <input type="email" id="adm-email" placeholder="usermail" required>
+            </div>
+            
+            <div class="input-group">
+                <label>Passcode</label>
+                <input type="password" id="adm-pass" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-admin" id="login-btn">Authenticate</button>
+            <div id="error-msg"><i class="fa-solid fa-triangle-exclamation"></i> Access Denied</div>
+        </form>
+        
+        <div style="margin-top: 20px; font-size: 10px; color: #444;">
+            Session ID: <span style="color: #666;">8473-X9</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // 1. AUTO-REDIRECT if already logged in as Admin
+        onAuthStateChanged(auth, (user) => {
+            if (user && user.email === "admin@unibolt.in") {
+                console.log("Welcome back, Admin.");
+                window.location.href = "mail-dashboard.html";
+            }
+        });
+
+        // 2. LOGIN FUNCTION
+        const loginBtn = document.getElementById('login-btn');
+        const errorMsg = document.getElementById('error-msg');
+
+        document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('adm-email').value.trim(); // Trim spaces
+            const password = document.getElementById('adm-pass').value;
+
+            // UI: Loading State
+            loginBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying...';
+            loginBtn.disabled = true;
+            errorMsg.style.display = 'none';
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // STRICT CHECK: Is it the specific admin email?
+                if (user.email === "admin@unibolt.in") {
+                    // Success
+                    window.location.href = "mail-dashboard.html";
+                } else {
+                    // Logged in but wrong email (Safety Fallback)
+                    throw new Error("Unauthorized ID");
+                }
+
+            } catch (error) {
+                console.error(error);
+                errorMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${error.code === 'auth/invalid-credential' ? 'Invalid ID or Passcode' : 'Access Denied'}`;
+                errorMsg.style.display = 'block';
+                
+                // UI: Reset
+                loginBtn.innerHTML = 'Authenticate';
+                loginBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

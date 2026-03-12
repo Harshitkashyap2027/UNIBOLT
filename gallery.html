@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UniBolt - Hall of Fame</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Great+Vibes&family=Montserrat:wght@400;600;700&family=Tinos:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        /* --- GLOBAL THEME --- */
+        * { box-sizing: border-box; }
+        :root {
+            --bg-deep: #0f0e13;
+            --accent-primary: #8b5cf6;
+            --accent-gold: #d4af37;
+            --text-main: #f8fafc;
+            --sidebar-width: 260px;
+        }
+        body {
+            background-color: var(--bg-deep); font-family: 'Montserrat', sans-serif; margin: 0; color: var(--text-main);
+            background-image: radial-gradient(#2d2b3b 1px, transparent 1px); background-size: 30px 30px;
+        }
+        .app-container { display: flex; min-height: 100vh; }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0;
+            background: #111014; border-right: 1px solid rgba(255,255,255,0.05);
+            padding: 25px 15px; display: flex; flex-direction: column; z-index: 20000;
+            transition: transform 0.3s;
+        }
+        .brand { font-size: 20px; font-weight: 800; color: white; margin-bottom: 30px; padding-left: 10px; }
+        .nav-menu { display: flex; flex-direction: column; gap: 4px; flex: 1; padding: 0; margin: 0; list-style: none; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; color: #94a3b8; text-decoration: none; border-radius: 10px; font-size: 14px; transition: 0.2s; font-weight: 600; }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .nav-item.active { background: linear-gradient(90deg, rgba(139, 92, 246, 0.15), transparent); color: var(--accent-primary); border-left: 3px solid var(--accent-primary); }
+        .sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+
+        /* --- MAIN CONTENT --- */
+        .main-content { flex: 1; margin-left: var(--sidebar-width); padding: 30px; }
+        .top-header, .sidebar-overlay { display: none; }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: 260px; box-shadow: 50px 0 100px rgba(0,0,0,0.5); }
+            .sidebar.active { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 20px; }
+            .top-header { display: flex; align-items: center; margin-bottom: 20px; }
+            .mobile-menu-toggle { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); width: 36px; height: 36px; border-radius: 8px; color: white; border: 1px solid rgba(255,255,255,0.1); }
+            .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 19999; display: none; }
+            .sidebar-overlay.active { display: block; }
+        }
+
+        /* --- BENTO GRID --- */
+        .bento-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; margin-top: 20px;
+        }
+        .bento-card {
+            background: #1a1920; border-radius: 24px; padding: 25px;
+            border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .bento-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .icon-box { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .icon-gold { background: rgba(212, 175, 55, 0.15); color: var(--accent-gold); border: 1px solid rgba(212, 175, 55, 0.3); }
+        .icon-purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-primary); border: 1px solid rgba(139, 92, 246, 0.3); }
+        
+        /* --- DOCUMENT PREVIEW CONTAINER --- */
+        .doc-preview-wrapper {
+            background: #252529; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);
+            height: 400px; 
+            position: relative; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            margin-bottom: 20px;
+        }
+
+        /* --- BUTTONS --- */
+        .btn { width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: #d4af37; color: #000; }
+        .btn-primary:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid #8b5cf6; color: #8b5cf6; }
+
+        /* --- CERTIFICATE DESIGN --- */
+        #cert-element {
+            width: 1123px; height: 794px; 
+            background: #fff; color: #1a1a1a;
+            position: absolute; 
+            transform-origin: center; transform: scale(0.32); 
+            padding: 40px;
+            display: flex; flex-direction: column; text-align: center;
+        }
+        
+        .cert-inner {
+            border: 3px solid #d4af37; height: 100%; width: 100%;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 40px; position: relative;
+        }
+
+        .cert-header { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
+        .cert-logo-text { font-size: 32px; font-weight: 800; color: #222; }
+        .cert-main-title { font-family: 'Cinzel', serif; font-size: 48px; font-weight: 700; color: #1a1a1a; margin-top: 20px; text-transform: uppercase; letter-spacing: 2px; }
+        .cert-sub { font-size: 18px; text-transform: uppercase; letter-spacing: 4px; color: #666; margin-bottom: 30px; }
+        .cert-student-name { font-family: 'Great Vibes', cursive; font-size: 90px; color: #d4af37; padding: 0 40px; border-bottom: 2px solid #ddd; display: inline-block; margin-bottom: 30px; min-width: 500px; line-height: 1.2; }
+        .cert-desc { font-size: 16px; line-height: 1.8; color: #444; max-width: 800px; margin: 0 auto; }
+        
+        .cert-details-row { display: flex; gap: 40px; justify-content: center; margin-top: 30px; }
+        .detail-box { border: 1px solid #ccc; padding: 10px 30px; border-radius: 6px; min-width: 200px; }
+        .detail-label { font-size: 12px; font-weight: 700; color: #8b5cf6; text-transform: uppercase; letter-spacing: 1px; }
+        .detail-val { font-size: 18px; font-weight: 600; color: #333; margin-top: 5px; }
+
+        .cert-footer { 
+            margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; 
+            display: flex; justify-content: space-between; align-items: flex-end; 
+            text-align: left;
+        }
+        
+        .qr-section { display: flex; flex-direction: column; align-items: flex-start; }
+        #qrcode img { border: 4px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .sign-block { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+        
+        /* --- OFFER LETTER DESIGN --- */
+        #offer-element {
+            width: 794px; height: 1123px;
+            background: #fff; color: #000;
+            position: absolute; transform-origin: center; transform: scale(0.32);
+            padding: 60px 70px;
+            font-family: 'Tinos', serif; display: flex; flex-direction: column;
+        }
+
+        .offer-header { display: flex; justify-content: space-between; border-bottom: 2px solid #8b5cf6; padding-bottom: 20px; margin-bottom: 40px; }
+        .offer-body { font-size: 18px; line-height: 1.6; flex-grow: 1; text-align: left; }
+        .offer-body p { margin-bottom: 20px; color: #000; }
+        .offer-footer { margin-top: auto; text-align: right; } 
+
+        /* Lock Overlay */
+        .locked-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 50; color: white; border-radius: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="mobile-sidebar-overlay" class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
+
+    <div class="app-container">
+        
+        <aside class="sidebar" id="mobile-sidebar">
+            <div class="brand"><i class="fa-solid fa-code" style="color: #8b5cf6;"></i> UniBolt.</div>
+            <ul class="nav-menu">
+                <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-bolt"></i> Dashboard</a>
+                <a href="arena.html" class="nav-item"><i class="fa-solid fa-code"></i> Code Arena</a>
+                <a href="practice.html" class="nav-item"><i class="fa-solid fa-dumbbell"></i> Practice Zone</a>
+                <a href="leaderboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+                <a href="gallery.html" class="nav-item active"><i class="fa-solid fa-trophy"></i> Hall of Fame</a>
+                <a href="research.html" class="nav-item"><i class="fa-solid fa-flask"></i> Research Hub</a>
+                <a href="contact.html" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
+                <a href="profile.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            </ul>
+            <div class="sidebar-footer">
+                <a href="login.html" class="nav-item" style="color: #ef4444;"><i class="fa-solid fa-power-off"></i> Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-header">
+                <button class="mobile-menu-toggle" onclick="toggleMobileSidebar()"><i class="fa-solid fa-bars"></i></button>
+                <div style="margin-left: 15px; font-weight: 700; font-size: 16px;">Hall of Fame</div>
+            </div>
+
+            <div class="page-body">
+                <div>
+                    <h1 style="margin: 0; font-size: 28px;">Credentials & Awards 📂</h1>
+                    <p style="color: var(--text-muted); margin-top: 5px;">Your official achievements and documents.</p>
+                </div>
+
+                <div class="bento-grid">
+                    
+                    <div class="bento-card">
+                        <div class="bento-header">
+                            <div class="icon-box icon-gold"><i class="fa-solid fa-certificate"></i></div>
+                            <h3 style="margin:0; font-size:18px;" id="card-title-cert">Internship Certificate</h3>
+                        </div>
+                        
+                        <div class="doc-preview-wrapper">
+                            <div id="cert-lock" class="locked-overlay">
+                                <i class="fa-solid fa-lock" style="font-size: 40px; color: #ef4444; margin-bottom: 15px;"></i>
+                                <h3>Locked</h3>
+                                <p style="text-align: center; font-size: 14px; opacity: 0.8; margin-top: 5px;">Complete the Course to Unlock</p>
+                            </div>
+
+                            <div id="cert-element">
+                                <div class="cert-inner">
+                                    <div class="cert-header">
+                                        <i class="fa-solid fa-dna" id="cert-icon" style="color: #8b5cf6; font-size: 36px;"></i>
+                                        <div class="cert-logo-text">UniBolt.</div>
+                                    </div>
+
+                                    <div class="cert-main-title">Certificate of Internship</div>
+                                    <div class="cert-sub">Presented To</div>
+                                    
+                                    <div class="cert-student-name" id="cert-name">Student Name</div>
+                                    
+                                    <div class="cert-desc" id="cert-desc-text">
+                                        Loading credentials details...
+                                    </div>
+
+                                    <div class="cert-details-row">
+                                        <div class="detail-box">
+                                            <div class="detail-label">DURATION</div>
+                                            <div class="detail-val">
+                                                <span id="cert-start-date">--</span> - <span id="cert-end-date">--</span>
+                                            </div>
+                                        </div>
+                                        <div class="detail-box">
+                                            <div class="detail-label">ISSUED ON</div>
+                                            <div class="detail-val" id="cert-issued-date">--</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="cert-footer">
+                                        <div class="qr-section">
+                                            <div id="qrcode"></div>
+                                            <div style="font-size: 11px; color: #555; font-weight: bold; margin-top: 5px; letter-spacing: 0.5px;">
+                                                ID: <span id="cert-id">PENDING</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="sign-block">
+                                            <img src="signature.png" alt="Sign" style="width: 150px; mix-blend-mode: multiply; margin-bottom: 5px;">
+                                            <div style="border-top: 2px solid #333; width: 180px;"></div>
+                                            <div style="font-weight: bold; font-size: 16px; margin-top: 5px;">Harshit Kashyap</div>
+                                            <div style="font-size: 12px; text-transform: uppercase; color: #666;">Founder & CEO</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="dl-cert-btn" class="btn btn-primary" disabled>
+                            <i class="fa-solid fa-lock"></i> Download Certificate
+                        </button>
+                    </div>
+
+                    <div class="bento-card">
+                        <div class="bento-header">
+                            <div class="icon-box icon-purple"><i class="fa-solid fa-file-contract"></i></div>
+                            <h3 style="margin:0; font-size:18px;">Offer Letter</h3>
+                        </div>
+
+                        <div class="doc-preview-wrapper">
+                            <div id="offer-element">
+                                <div class="offer-header">
+                                    <div>
+                                        <div style="font-weight:bold; font-size:24px; color:#8b5cf6;">UniBolt.</div>
+                                        <div style="font-size:14px; color:#666;" id="offer-lab-name">Research Lab</div>
+                                    </div>
+                                    <div style="text-align:right; font-size:14px; color:#333;">
+                                        Date: <span id="offer-date">--</span><br>Ref: 2025/UB
+                                    </div>
+                                </div>
+
+                                <div class="offer-body">
+                                    <p><strong>To, <span id="offer-name">Student Name</span></strong></p>
+                                    <p><strong>Subject: Internship Offer Letter</strong></p>
+                                    <p>Dear Candidate,</p>
+                                    <p>We are delighted to offer you an educational internship position at UniBolt's <strong id="offer-lab-bold">Lab</strong>.</p>
+                                    
+                                    <div style="background: #f4f4f5; padding: 20px; border-left: 4px solid #8b5cf6; margin: 20px 0; color: #333;">
+                                        <strong>Position:</strong> <span id="offer-role">Intern</span><br>
+                                        <strong>Mode:</strong> Remote<br>
+                                        <strong>Duration:</strong> <span id="offer-duration">2 Months</span>
+                                    </div>
+
+                                    <p id="offer-desc">During this internship, you will be working on cutting-edge projects. We look forward to a productive journey with you.</p>
+                                </div>
+
+                                <div class="offer-footer">
+                                    <p>Sincerely,</p>
+                                    <img src="signature.png" alt="Sign" style="width: 140px; mix-blend-mode: multiply;">
+                                    <div style="font-weight:bold; font-size:16px;">Harshit Kashyap</div>
+                                    <div style="font-size:12px; color:#555;">Founder & CEO, UniBolt</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="downloadOffer()" class="btn btn-outline">
+                            <i class="fa-solid fa-download"></i> Download Offer Letter
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        window.toggleMobileSidebar = function() {
+            const sidebar = document.getElementById('mobile-sidebar');
+            const overlay = document.getElementById('mobile-sidebar-overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+    </script>
+
+    <script type="module" src="js/gallery-backend.js"></script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Backend Boilerplate - UniBolt</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="backend-boilerplate.css">
+</head>
+<body>
+
+    <header class="project-header">
+        <div class="brand-area">
+            <i class="fa-solid fa-bolt"></i> UniBolt Boilerplate
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-download" id="btnVerify">
+                <i class="fa-solid fa-qrcode"></i> Verify
+            </button>
+            <button class="btn-download" id="btnDownload">
+                <i class="fa-solid fa-download"></i> Download .zip
+            </button>
+        </div>
+    </header>
+
+    <div class="workspace">
+        
+        <aside class="sidebar">
+            <div class="sidebar-title">Explorer</div>
+            <div class="file-list">
+                <div class="file-item active" data-file="server">
+                    <i class="fa-brands fa-node-js" style="color:#6cc24a;"></i> server.js
+                </div>
+                <div class="file-item" data-file="auth">
+                    <i class="fa-solid fa-lock" style="color:#ffc107;"></i> auth.js
+                </div>
+                <div class="file-item" data-file="env">
+                    <i class="fa-solid fa-gear" style="color:#9e9e9e;"></i> .env
+                </div>
+                <div class="file-item" data-file="pkg">
+                    <i class="fa-brands fa-npm" style="color:#cb3837;"></i> package.json
+                </div>
+            </div>
+        </aside>
+
+        <main class="editor">
+            <div class="tab-bar">
+                <div class="tab">
+                    <i class="fa-brands fa-js" style="color:#f1e05a;"></i> 
+                    <span id="tab-name">server.js</span>
+                </div>
+            </div>
+
+            <div id="view-server" class="code-view">
+<pre><code class="language-javascript">const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const authRoutes = require('./routes/auth');
+require('dotenv').config();
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Routes
+app.use('/api/auth', authRoutes);
+
+// Health Check
+app.get('/', (req, res) => {
+    res.json({ 
+        status: 'active', 
+        timestamp: new Date(),
+        maintainer: 'UniBolt Dev Team' 
+    });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+});
+</code></pre>
+            </div>
+
+            <div id="view-auth" class="code-view hidden">
+<pre><code class="language-javascript">const router = require('express').Router();
+const bcrypt = require('bcryptjs');
+const User = require('../models/User');
+
+// REGISTER
+router.post('/register', async (req, res) => {
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(req.body.password, salt);
+        
+        const newUser = new User({
+            username: req.body.username,
+            email: req.body.email,
+            password: hashedPassword,
+        });
+
+        const user = await newUser.save();
+        res.status(200).json(user);
+    } catch (err) {
+        res.status(500).json(err);
+    }
+});
+
+module.exports = router;
+</code></pre>
+            </div>
+
+            <div id="view-env" class="code-view hidden">
+<pre><code class="language-bash">PORT=5000
+MONGO_URL=mongodb+srv://user:pass@cluster0.mongodb.net/unibolt
+JWT_SECRET=super_secret_key_12345
+</code></pre>
+            </div>
+
+            <div id="view-pkg" class="code-view hidden">
+<pre><code class="language-json">{
+  "name": "unibolt-backend-boilerplate",
+  "version": "1.0.0",
+  "main": "server.js",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "mongoose": "^7.0.3"
+  }
+}
+</code></pre>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="qr-modal" class="qr-modal hidden">
+        <div class="qr-content">
+            <h3 style="margin-top:0;">Project Verification</h3>
+            <img id="qr-code-img" src="" alt="QR" style="width:150px; height:150px;">
+            <p style="font-size:12px; color:#666; margin-bottom:0;">Scan to verify download authenticity.</p>
+            <button id="btnCloseQR" style="margin-top:15px; padding:8px 16px; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer;">Close</button>
+        </div>
+    </div>
+
+    <script src="resources.js"></script>
+    
+    <script src="backend-boilerplate.js"></script>
+
+</body>
+</html>

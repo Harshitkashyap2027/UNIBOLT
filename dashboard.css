@@ -1,0 +1,919 @@
+/* css/style.css - THE MASTER DESIGN SYSTEM */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap');
+
+:root {
+    --bg-dark: #09090b;
+    --bg-sidebar: #121214;
+    --panel: #18181b;
+    --primary: #8b5cf6; /* Electric Violet */
+    --primary-glow: rgba(139, 92, 246, 0.5);
+    --accent: #06b6d4;  /* Cyan */
+    --success: #10b981;
+    --danger: #ef4444;
+    --text: #ffffff;
+    --text-muted: #a1a1aa;
+    --border: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--primary) var(--bg-dark); }
+
+body { 
+    margin: 0; 
+    font-family: 'Outfit', sans-serif; 
+    background-color: var(--bg-dark); 
+    color: var(--text); 
+    display: flex; 
+    height: 100vh; 
+    overflow: hidden; 
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* --- ANIMATIONS --- */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-6px); } 100% { transform: translateY(0px); } }
+
+/* --- LAYOUT UTILITIES --- */
+.app-container { display: flex; width: 100%; height: 100%; }
+.main-content { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.page-body { padding: 30px; overflow-y: auto; height: 100%; animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* --- SIDEBAR --- */
+/* --- 3. SIDEBAR --- */
+.sidebar {
+    width: 260px; 
+    background: var(--bg-sidebar); 
+    border-right: 1px solid var(--border);
+    display: flex; 
+    flex-direction: column; 
+    padding: 25px; 
+    
+    /* FIX FOR MOBILE CUT-OFF: */
+    height: 100dvh;          /* Use Dynamic Viewport Height */
+    padding-bottom: 80px;    /* Extra space at bottom so buttons aren't hidden */
+    overflow-y: auto;        /* Allow scrolling if screen is too short */
+    
+    z-index: 40;
+    transition: width 0.3s ease;
+}
+.brand { font-size: 26px; font-weight: 800; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; color: white; }
+.brand i { color: var(--accent); animation: float 3s infinite ease-in-out; }
+
+.nav-menu { list-style: none; padding: 0; margin: 0; }
+.nav-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 15px; margin-bottom: 5px;
+    border-radius: 12px; color: var(--text-muted); text-decoration: none; font-weight: 500;
+    transition: all 0.2s ease; border-left: 3px solid transparent;
+}
+.nav-item:hover { background: rgba(255,255,255,0.05); color: white; transform: translateX(5px); }
+.nav-item.active { background: rgba(139, 92, 246, 0.15); color: var(--primary); border-left-color: var(--primary); }
+.nav-item i { width: 20px; text-align: center; font-size: 18px; }
+
+/* --- HEADER --- */
+.top-header {
+    height: 75px; background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;
+    align-items: center; padding: 0 30px; z-index: 5;
+}
+.page-title { font-size: 20px; font-weight: 600; }
+.user-menu { display: flex; align-items: center; gap: 20px; }
+.avatar {
+    width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 16px; color: white;
+}
+
+/* --- CARDS & BENTO GRID (NEW ADDITION) --- */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 200px);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+/* Responsive Logic for Bento */
+@media (max-width: 1200px) {
+    .bento-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+}
+
+.card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 25px;
+    position: relative; overflow: hidden; transition: 0.3s;
+}
+.card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+
+/* Card Sizes for Bento */
+.card-large { grid-column: span 2; }
+.card-tall { grid-row: span 2; }
+
+.card-glow::before {
+    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 60%); pointer-events: none;
+}
+
+/* --- UTILITY GRIDS (Old Grids) --- */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+
+/* --- BUTTONS --- */
+.btn-primary {
+    background: var(--primary); color: white; border: none;
+    padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; transition: 0.3s;
+}
+.btn-primary:hover { opacity: 0.9; transform: scale(1.05); }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+.btn-outline:hover { border-color: var(--text); color: var(--text); }
+
+/* --- PROGRESS BAR --- */
+.progress-bar {
+    width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 15px; overflow: hidden;
+}
+.fill { 
+    height: 100%; background: var(--accent); border-radius: 10px; width: 0%; transition: width 1s ease-out; 
+    /* Ensures animation works immediately */
+    animation: loadBar 1s forwards; 
+}
+@keyframes loadBar { from { width: 0; } to { width: var(--w); } }
+
+/* --- EDITOR STYLES (Arena) --- */
+.editor-frame { display: grid; grid-template-columns: 350px 1fr; gap: 20px; height: 80vh; }
+.task-pane { overflow-y: auto; padding-right: 10px; }
+.code-pane { display: flex; flex-direction: column; background: #0d0d0d; border-radius: 12px; border: 1px solid var(--border); }
+.code-header { padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #161616; }
+.code-area { flex: 1; background: transparent; border: none; color: #d4d4d4; font-family: 'Fira Code', monospace; padding: 20px; resize: none; font-size: 14px; line-height: 1.6; outline: none; }
+
+/* --- CERTIFICATE (Gallery) --- */
+.cert-container { perspective: 1000px; }
+.cert-card {
+    height: 220px; background: linear-gradient(135deg, #ffffff, #e2e8f0); border-radius: 12px; padding: 20px;
+    color: #1e1e24; position: relative; transform-style: preserve-3d; transition: transform 0.5s; cursor: pointer;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 4px solid #c084fc;
+}
+.cert-card:hover { transform: rotateX(10deg) rotateY(10deg); }
+.cert-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 80px; opacity: 0.05; font-weight: 800; pointer-events: none; }
+/* --- POPUP MODAL --- */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
+    display: flex; justify-content: center; align-items: center; z-index: 1000;
+    opacity: 1; transition: opacity 0.3s;
+}
+.hidden { opacity: 0; pointer-events: none; }
+
+.modal-content {
+    background: #18181b; border: 1px solid rgba(255,255,255,0.1);
+    padding: 40px; border-radius: 20px; text-align: center;
+    width: 350px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    transform: scale(1); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.hidden .modal-content { transform: scale(0.8); }
+
+.xp-box {
+    background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);
+    padding: 15px; border-radius: 12px; margin-top: 20px;
+}
+/* --- HEADER (Polished) --- */
+.top-header {
+    height: 80px;
+    background: rgba(9, 9, 11, 0.6); /* Semi-transparent dark */
+    backdrop-filter: blur(15px);      /* The Blur Effect */
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    position: sticky;
+    top: 0;
+    z-index: 50; /* Stays on top while scrolling */
+}
+
+.page-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: white;
+}
+
+/* The Container for XP, Streak, Avatar */
+.user-area {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Spacing between items */
+}
+
+/* The Pills (XP & Streak) */
+.xp-pill {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.3s;
+}
+
+.xp-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.xp-pill i { font-size: 14px; }
+
+/* Specific Colors */
+.xp-pill.blue { color: #06b6d4; border-color: rgba(6, 182, 212, 0.3); background: rgba(6, 182, 212, 0.05); }
+.xp-pill.red { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05); }
+
+/* The Avatar Circle */
+.avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: #1e1e24;
+    border: 2px solid var(--primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px; /* Emoji Size */
+    cursor: pointer;
+    box-shadow: 0 0 15px var(--primary-glow); /* Glowing Effect */
+    transition: 0.3s;
+}
+
+.avatar:hover {
+    transform: scale(1.1) rotate(10deg);
+    box-shadow: 0 0 25px var(--primary);
+}
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+}
+.shake { animation: shake 0.3s ease-in-out; }
+/* Mobile Responsive Styles for Dashboard */
+@media (max-width: 768px) {
+    /* 1. Reduce Sidebar Width and Font Size */
+    .sidebar {
+        width: 180px !important; /* Force a smaller width */
+        padding: 15px 10px !important; /* Reduce padding */
+    }
+
+    .brand-logo {
+        font-size: 1.2rem !important; /* Smaller logo text */
+        margin-bottom: 20px !important;
+    }
+
+    .menu-item {
+        font-size: 0.9rem !important; /* Smaller menu text */
+        padding: 10px !important; /* Smaller click area */
+        margin-bottom: 5px !important;
+    }
+
+    .menu-item i {
+        font-size: 1rem !important; /* Smaller icons */
+        margin-right: 8px !important;
+    }
+
+    /* 2. Adjust Main Content Area Padding */
+    .main-content {
+        padding: 15px !important; /* Reduce padding around the main area */
+    }
+
+    /* 3. Scale Down Header and Welcome Message */
+    .header {
+        padding: 10px 0 !important;
+        margin-bottom: 15px !important;
+    }
+
+    .welcome-text {
+        font-size: 1.4rem !important; /* Smaller welcome text */
+        margin-bottom: 15px !important;
+    }
+
+    /* 4. Make Cards More Compact */
+    .card-grid {
+        gap: 15px !important; /* Reduce space between cards */
+    }
+
+    .card {
+        padding: 15px !important; /* Reduce padding inside cards */
+    }
+
+    /* Main Purple Card ("Ready to code?") */
+    .main-card h2 {
+        font-size: 1.3rem !important;
+    }
+    .main-card p {
+        font-size: 0.9rem !important;
+    }
+    .main-card .btn {
+        padding: 8px 15px !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* Stat Cards (Certificates, Rank, etc.) */
+    .stat-card h3 {
+        font-size: 1.6rem !important; /* Smaller numbers */
+    }
+    .stat-card p {
+        font-size: 0.8rem !important; /* Smaller labels */
+    }
+
+    /* Course Progress & Live Feed Cards */
+    .section-title {
+        font-size: 1rem !important;
+        margin-bottom: 10px !important;
+    }
+    .progress-info {
+        font-size: 0.8rem !important;
+    }
+    .live-feed-item {
+        font-size: 0.8rem !important;
+        padding: 8px 0 !important;
+    }
+}
+/* --- SIDEBAR FIXES --- */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;      /* Fallback */
+    height: 100dvh;     /* Dynamic height (Fixes mobile address bar issue) */
+    overflow: hidden;   /* Prevents double scrollbars */
+}
+
+/* Push footer to bottom but keep it visible */
+.sidebar-footer {
+    padding: 15px;
+    padding-bottom: 80px; /* EXTRA PADDING so it sits above phone nav bar */
+    border-top: 1px solid rgba(255,255,255,0.1);
+    background: #09090b;  /* Matches background */
+}
+
+/* Install Button Style */
+.install-btn {
+    width: 100%;
+    background: #222;
+    color: #fff;
+    border: 1px solid #444;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logout-btn {
+    color: #ef4444 !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+}
+/* ========================================= */
+/* CUSTOM POPUP MODAL STYLES (Add to bottom) */
+/* ========================================= */
+
+/* 1. The Main Wrapper (Centers the box) */
+.custom-modal {
+    position: fixed; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%;
+    z-index: 9999; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    opacity: 1; 
+    transition: 0.3s ease;
+}
+
+/* Hide modal when not active */
+.custom-modal.hidden {
+    opacity: 0; 
+    pointer-events: none; 
+    visibility: hidden;
+}
+
+/* 2. The Glass Background Overlay */
+.modal-overlay {
+    position: absolute; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); /* Dark dimming */
+    backdrop-filter: blur(8px);       /* Blur effect */
+}
+
+/* 3. The Popup Box Itself */
+.modal-box {
+    position: relative; 
+    width: 90%; 
+    max-width: 400px;
+    background: #09090b; 
+    border: 1px solid #333;
+    border-radius: 20px; 
+    padding: 30px; 
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    transform: scale(1); 
+    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy effect */
+}
+
+/* Animation: Drop down slightly when hidden */
+.custom-modal.hidden .modal-box {
+    transform: scale(0.9) translateY(20px);
+}
+
+/* 4. Typography inside Modal */
+.modal-box h3 {
+    margin: 0 0 10px; 
+    font-size: 20px; 
+    color: white;
+}
+
+.sub-text {
+    color: #888; 
+    font-size: 13px; 
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+/* 5. Icons with Pulse Animation */
+.modal-icon {
+    width: 60px; height: 60px; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    margin: 0 auto 20px; 
+    font-size: 24px; 
+    position: relative;
+}
+
+.icon-pulse {
+    position: absolute; 
+    width: 100%; height: 100%; 
+    border-radius: 50%; 
+    opacity: 0; 
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* --- THEME VARIATIONS --- */
+
+/* Purple Theme (For Payment) */
+.type-payment { border-top: 4px solid #8b5cf6; }
+.type-payment .modal-icon { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+.type-payment .icon-pulse { border: 2px solid #8b5cf6; }
+
+/* Red Theme (For Errors/Warnings) */
+.type-error { border-top: 4px solid #ef4444; }
+.type-error .modal-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.type-error .icon-pulse { border: 2px solid #ef4444; }
+
+/* 6. List Styles (Used in Payment Steps) */
+.steps-list {
+    background: #111; 
+    border-radius: 12px; 
+    padding: 15px; 
+    text-align: left; 
+    margin-bottom: 25px; 
+    border: 1px dashed #333;
+}
+
+.step-row {
+    display: flex; 
+    gap: 12px; 
+    margin-bottom: 12px; 
+    font-size: 13px; 
+    color: #ccc; 
+    align-items: flex-start;
+}
+
+.step-row:last-child { margin-bottom: 0; }
+
+.step-num {
+    background: #222; 
+    color: #fff; 
+    width: 20px; height: 20px; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 10px; 
+    font-weight: bold; 
+    flex-shrink: 0; 
+    margin-top: 2px;
+}
+
+/* 7. Modal Buttons */
+.modal-btn-primary {
+    width: 100%; 
+    padding: 14px; 
+    background: #8b5cf6; 
+    color: white; 
+    border: none; 
+    border-radius: 10px; 
+    font-weight: 700; 
+    cursor: pointer; 
+    font-size: 14px; 
+    transition: 0.2s; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 10px;
+}
+
+.modal-btn-primary:hover {
+    background: #7c3aed; 
+    transform: translateY(-2px);
+}
+
+/* Error Button Variant (Red) */
+.modal-btn-error {
+    background: #ef4444;
+}
+
+.modal-btn-error:hover {
+    background: #dc2626;
+}
+
+.modal-btn-secondary {
+    background: transparent; 
+    border: none; 
+    color: #666; 
+    font-size: 13px; 
+    margin-top: 15px; 
+    cursor: pointer; 
+    font-weight: 500;
+}
+
+.modal-btn-secondary:hover {
+    color: #fff;
+}
+/* ========================================= */
+/* FIXED MODAL SYSTEM (Bright & Readable)  */
+/* ========================================= */
+
+.custom-modal {
+    position: fixed; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%;
+    z-index: 9999; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    opacity: 1; 
+    transition: 0.3s ease;
+}
+
+.custom-modal.hidden {
+    opacity: 0; 
+    pointer-events: none; 
+    visibility: hidden;
+}
+
+/* 1. Lighter Background & Blur */
+.modal-overlay {
+    position: absolute; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6); /* Reduced from 0.85 to 0.6 */
+    backdrop-filter: blur(5px);      /* Reduced blur for performance */
+    z-index: 1;                      /* Sits behind the box */
+}
+
+/* 2. The Box - Forced on Top */
+.modal-box {
+    position: relative; 
+    z-index: 10;                     /* Sits ABOVE the overlay */
+    width: 90%; 
+    max-width: 400px;
+    background: #18181b;             /* Slightly lighter than body #09090b */
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px; 
+    padding: 30px; 
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    transform: scale(1); 
+    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.custom-modal.hidden .modal-box {
+    transform: scale(0.9) translateY(20px);
+}
+
+/* Typography */
+.modal-box h3 {
+    margin: 0 0 10px; 
+    font-size: 22px; 
+    color: #ffffff; /* Pure white text */
+    font-weight: 700;
+}
+
+.sub-text {
+    color: #a1a1aa; /* Lighter grey for better contrast */
+    font-size: 14px; 
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+/* Icons */
+.modal-icon {
+    width: 60px; height: 60px; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    margin: 0 auto 20px; 
+    font-size: 24px; 
+    position: relative;
+    z-index: 2;
+}
+
+.icon-pulse {
+    position: absolute; 
+    width: 100%; height: 100%; 
+    border-radius: 50%; 
+    opacity: 0; 
+    animation: pulse 2s infinite;
+    z-index: 1;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Theme Colors */
+.type-payment { border-top: 4px solid #8b5cf6; }
+.type-payment .modal-icon { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+.type-payment .icon-pulse { border: 2px solid #8b5cf6; }
+
+.type-error { border-top: 4px solid #ef4444; }
+.type-error .modal-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.type-error .icon-pulse { border: 2px solid #ef4444; }
+
+/* Buttons */
+.modal-btn-primary {
+    width: 100%; 
+    padding: 14px; 
+    background: #8b5cf6; 
+    color: white; 
+    border: none; 
+    border-radius: 10px; 
+    font-weight: 700; 
+    cursor: pointer; 
+    font-size: 14px; 
+    transition: 0.2s; 
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.modal-btn-primary:hover { background: #7c3aed; transform: translateY(-2px); }
+
+.modal-btn-error { background: #ef4444; }
+.modal-btn-error:hover { background: #dc2626; }
+
+.modal-btn-secondary {
+    background: transparent; border: none; 
+    color: #888; font-size: 13px; 
+    margin-top: 15px; cursor: pointer; font-weight: 500;
+}
+.modal-btn-secondary:hover { color: white; }
+
+/* List Styles */
+.steps-list {
+    background: #111; 
+    border-radius: 12px; 
+    padding: 15px; 
+    text-align: left; 
+    margin-bottom: 25px; 
+    border: 1px solid #333;
+}
+.step-row { display: flex; gap: 12px; margin-bottom: 12px; font-size: 13px; color: #d4d4d8; align-items: flex-start; }
+.step-num { background: #27272a; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; flex-shrink: 0; margin-top: 2px; }
+
+/* ========================================= */
+/* 📱 MOBILE & LAYOUT FIXES (APPEND TO CSS)  */
+/* ========================================= */
+
+/* 1. Global Reset Fixes */
+* { -webkit-tap-highlight-color: transparent; }
+
+body {
+    /* Ensure body allows centering but handles overflow */
+    overflow: hidden; 
+    height: 100vh;
+}
+
+/* 2. Container Sizing (Fixes squished look) */
+.signup-container {
+    width: 100%;
+    height: 100%;
+    max-width: 1200px;
+    max-height: 850px;
+    background: #09090b;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Desktop: Card Look */
+@media (min-width: 769px) {
+    .signup-container {
+        border: 1px solid #222;
+        border-radius: 20px;
+        box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        height: 85vh;
+    }
+}
+
+/* 3. Form Area Scroll Fix (Crucial for keyboard) */
+.form-area {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto; /* Enables scrolling inside the form box */
+    height: 100%;
+    position: relative;
+    background: #09090b;
+}
+
+/* Add space at bottom so buttons aren't hidden */
+.form-step {
+    padding-bottom: 80px; 
+}
+
+/* 4. Sidebar Tweaks */
+.sidebar-progress {
+    width: 280px;
+    background: #18181b;
+    border-right: 1px solid #222;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+/* 5. Payment Box Sizing */
+.payment-split {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    background: #121214;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.qr-section {
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    width: 130px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.qr-img { width: 100%; display: block; }
+
+.mobile-pay-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 6. Input Field Consistency */
+input, select {
+    width: 100%;
+    padding: 14px;
+    background: #09090b;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: white;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+input:focus, select:focus {
+    border-color: #8b5cf6;
+    background: #121214;
+}
+
+/* 7. Modal Visibility Fixes */
+.custom-modal {
+    position: fixed; top: 0; left: 0; 
+    width: 100%; height: 100%; 
+    z-index: 9999; /* Force on top */
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    opacity: 1; 
+    transition: 0.3s;
+}
+
+.custom-modal.hidden {
+    opacity: 0; 
+    pointer-events: none; 
+    visibility: hidden;
+}
+
+.modal-overlay {
+    position: absolute; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); /* Darker overlay */
+    backdrop-filter: blur(5px);
+    z-index: 1;
+}
+
+.modal-box {
+    position: relative; 
+    width: 90%; 
+    max-width: 380px; 
+    background: #18181b; 
+    border: 1px solid rgba(255,255,255,0.1); 
+    padding: 30px; 
+    border-radius: 20px; 
+    text-align: center; 
+    z-index: 10; /* Above overlay */
+}
+
+/* 8. MOBILE RESPONSIVE OVERRIDES */
+@media (max-width: 768px) {
+    /* Reset body */
+    body {
+        padding: 0;
+        align-items: flex-start;
+        background: #111;
+    }
+
+    /* Force Sidebar to Left (Thin Strip) */
+    .signup-container {
+        flex-direction: row; 
+        border-radius: 0;
+        border: none;
+        height: 100vh;
+    }
+
+    /* Skinny Sidebar */
+    .sidebar-progress {
+        width: 70px;
+        padding: 20px 10px;
+        align-items: center;
+    }
+
+    /* Hide Text on Mobile Sidebar */
+    .brand span, 
+    .brand { font-size: 0; margin-bottom: 30px; } /* Hide text, keep icon */
+    .brand i { font-size: 24px; }
+    
+    .step-text { display: none; }
+    .step-item { justify-content: center; margin-bottom: 20px; width: 100%; }
+    .step-num { width: 36px; height: 36px; font-size: 14px; }
+
+    /* Content Area Scroll Fix */
+    .form-area {
+        padding: 20px;
+        padding-bottom: 120px; /* Crucial for scrolling past keyboard */
+    }
+
+    /* Stack Payment Box */
+    .payment-split {
+        flex-direction: column;
+        padding: 15px;
+    }
+    
+    .qr-section {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    
+    .qr-img {
+        width: 160px;
+        margin: 0 auto;
+    }
+
+    /* Stack Inputs */
+    .grid-2 {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+}
+/* Hides the install button when the app is installed and running */
+@media all and (display-mode: standalone) {
+    #install-pwa-btn {
+        display: none !important;
+    }
+}

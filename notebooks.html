@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>UniBolt - Neural Lab</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        /* =========================================
+           NEURAL LAB 3D THEME
+           ========================================= */
+        :root {
+            --bg-deep: #0f0e13;
+            --card-surface: #1a1920;
+            --accent-primary: #8b5cf6; /* Violet */
+            --accent-secondary: #ec4899; /* Pink */
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --sidebar-width: 250px;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            color: var(--text-main);
+            overflow: hidden; /* Prevent scrolling for IDE feel */
+            background-image: radial-gradient(#2d2b3b 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* --- LAYOUT --- */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* --- SIDEBAR (Fixed Left) --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed; /* Strictly fixed to left */
+            left: 0; top: 0;
+            background: #111014;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            padding: 25px 15px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            z-index: 20000;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 30px;
+            padding-left: 10px;
+            text-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Nav Menu fills the space */
+        .nav-menu {
+            display: flex; 
+            flex-direction: column; 
+            gap: 4px;
+            flex: 1; /* Pushes footer down */
+            padding: 0; margin: 0; list-style: none; /* Reset default UL styles */
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 10px;
+            margin-bottom: 4px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .nav-item.active { 
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.15), transparent); 
+            color: var(--accent-primary); 
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        /* Footer with Separator Line */
+        .sidebar-footer { 
+            margin-top: auto; 
+            padding-top: 20px; 
+            border-top: 1px solid rgba(255,255,255,0.1); 
+        }
+
+        /* --- MAIN CONTENT (Shifted Right) --- */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width); /* Leaves space for fixed sidebar */
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- TOP HEADER --- */
+        .top-header {
+            padding: 15px 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: rgba(15, 14, 19, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+        .page-title { font-weight: 700; color: var(--accent-primary); font-size: 16px; }
+        .mobile-menu-toggle { display: none; }
+
+        /* --- EDITOR GRID --- */
+        .editor-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: 1fr;
+            gap: 20px;
+            padding: 20px;
+            height: calc(100vh - 60px);
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* --- 3D CARD STYLES --- */
+        .card {
+            background: linear-gradient(145deg, #1f1e26, #151419);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.08); 
+        }
+
+        /* --- TASK PANE (Left) --- */
+        .task-pane { padding: 20px; overflow-y: auto; }
+        
+        .task-meta {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+        }
+        
+        #timer { font-family: 'Fira Code', monospace; font-size: 18px; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+
+        /* --- CODE PANE (Right) --- */
+        .code-pane { display: flex; flex-direction: column; }
+
+        .code-header {
+            padding: 12px 20px;
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .code-area {
+            flex: 1;
+            background: #0d0d10 !important;
+            color: #e2e8f0 !important;
+            border: none;
+            padding: 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+        }
+        .code-area::placeholder { color: rgba(255,255,255,0.2); }
+
+        /* --- TERMINAL OUTPUT --- */
+        .terminal-box {
+            height: 150px;
+            background: #000;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 15px 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            overflow-y: auto;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.5); 
+        }
+
+        /* --- BUTTONS --- */
+        .btn-primary {
+            background: linear-gradient(to bottom, #8b5cf6, #7c3aed);
+            color: white; border: none; padding: 8px 16px; border-radius: 8px;
+            font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;
+            box-shadow: 0 4px 6px rgba(124, 58, 237, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+            transition: transform 0.1s;
+        }
+        .btn-primary:active { transform: translateY(1px); box-shadow: none; }
+        
+        .btn-disabled {
+            background: #333 !important; color: #666 !important;
+            box-shadow: none !important; cursor: not-allowed;
+        }
+
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
+            z-index: 30000; display: flex; justify-content: center; align-items: center;
+        }
+        .hidden { display: none !important; }
+        
+        .modal-content {
+            background: #1a1920; border: 1px solid rgba(139, 92, 246, 0.3);
+            padding: 40px; border-radius: 24px; text-align: center; max-width: 400px;
+            box-shadow: 0 0 50px rgba(139, 92, 246, 0.2);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* --- MOBILE RESPONSIVENESS --- */
+        .sidebar-overlay { display: none; }
+
+        @media (max-width: 768px) {
+            body { overflow: auto; }
+            .main-content { margin-left: 0; height: auto; overflow: visible; }
+            
+            .sidebar { transform: translateX(-100%); transition: 0.3s; width: 260px; }
+            .sidebar.active { transform: translateX(0); }
+            
+            .sidebar-overlay {
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+                z-index: 19999; display: none;
+            }
+            .sidebar-overlay.active { display: block; }
+
+            .mobile-menu-toggle {
+                display: flex; align-items: center; justify-content: center;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+                color: white; width: 36px; height: 36px; border-radius: 8px; font-size: 18px;
+            }
+
+            .editor-grid {
+                grid-template-columns: 1fr; 
+                grid-template-rows: auto auto;
+                height: auto; padding: 15px;
+            }
+            .code-area { height: 300px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="result-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div id="modal-icon" style="font-size: 60px; margin-bottom: 20px;">🤖</div>
+            <h2 id="modal-title" style="margin: 0; font-size: 24px; color: white;">Model Converged!</h2>
+            <p id="modal-msg" style="color: var(--text-muted); margin: 10px 0 20px;">Accuracy threshold met. Great work.</p>
+            
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px dashed var(--accent-success); padding: 10px; border-radius: 12px; margin-bottom: 20px;">
+                <span id="modal-xp" style="font-size: 28px; font-weight: 800; color: var(--accent-success);">+10 XP</span>
+            </div>
+
+            <button id="modal-btn" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px;">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <div id="mobile-sidebar-overlay" class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
+
+    <div class="app-container">
+        
+        <aside class="sidebar" id="mobile-sidebar">
+            <div class="brand"><i class="fa-solid fa-dna" style="color: #8b5cf6;"></i> UniBolt.</div>
+            
+            <ul class="nav-menu">
+                <a href="/AI" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+                <a href="/notebooks" class="nav-item active"><i class="fa-solid fa-code-branch"></i> Neural Lab</a>
+                <a href="/datasets" class="nav-item"><i class="fa-solid fa-database"></i> Curriculum</a>
+                <a href="/aileaderboard" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+                <a href="/aigallery" class="nav-item"><i class="fa-solid fa-trophy"></i> Hall of Fame</a>
+                <a href="/airesearch" class="nav-item"><i class="fa-solid fa-flask"></i> Research Hub</a>
+                <a href="/aicontact" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
+                <a href="/aiprofile" class="nav-item"><i class="fa-solid fa-sliders"></i> Settings</a>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <a href="/login" class="nav-item" style="color: #ef4444;">
+                    <i class="fa-solid fa-power-off"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <button class="mobile-menu-toggle" onclick="toggleMobileSidebar()">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="page-title">Neural Network Lab</div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="background: #1a1920; padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); font-size: 12px;">
+                        <i class="fa-solid fa-microchip" style="color: var(--accent-success);"></i> GPU Active
+                    </div>
+                </div>
+            </header>
+
+            <div class="editor-grid">
+                
+                <div class="card task-pane">
+                    <div class="task-meta">
+                        <span style="background: rgba(139, 92, 246, 0.1); color: var(--accent-primary); border: 1px solid rgba(139, 92, 246, 0.2); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">
+                            <i class="fa-brands fa-python"></i> PyTorch
+                        </span>
+                        <div style="text-align: right;">
+                            <span id="timer" style="color: #ef4444; font-weight: 700;">45:00</span>
+                            <span id="attempts-display" style="display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px;">Attempts: 5</span>
+                        </div>
+                    </div>
+                    
+                    <h2 id="task-title" style="font-size: 20px; color: white; margin-bottom: 10px;">Loading Module...</h2>
+                    <p id="task-desc" style="color: var(--text-muted); font-size: 14px; line-height: 1.6;">
+                        Initializing GPU environment and loading dataset...
+                    </p>
+
+                    <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <small style="color: #666; display: block; margin-bottom: 5px;">Output Preview:</small>
+                        <div id="viz-container" style="background: #000; height: 120px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);">
+                            <i class="fa-solid fa-chart-simple" style="color: #333;"></i>
+                            <iframe id="preview-frame" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card code-pane">
+                    <div class="code-header">
+                        <span style="color: var(--text-muted); font-size: 12px; font-family: 'Inter', sans-serif;">
+                            <i class="fa-regular fa-file-code"></i> model.py &nbsp;&nbsp;
+                            <i class="fa-solid fa-database"></i> data.csv
+                        </span>
+                        <button id="run-btn" class="btn-primary">
+                            <i class="fa-solid fa-play"></i> Train Model
+                        </button>
+                    </div>
+                    
+                    <textarea class="code-area" id="code-editor" spellcheck="false" placeholder="# Import PyTorch libraries&#10;import torch&#10;import torch.nn as nn&#10;&#10;# Define your model here..."></textarea>
+                    
+                    <div class="terminal-box">
+                        <div style="color: var(--text-muted); margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                            <i class="fa-solid fa-terminal"></i> Console Output
+                        </div>
+                        <div id="console-output" style="color: #a1a1aa; line-height: 1.5;">
+                            > System ready.<br>
+                            > Waiting for execution...
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Toggle Mobile Sidebar Logic
+        window.toggleMobileSidebar = function() {
+            const sidebar = document.getElementById('mobile-sidebar');
+            const overlay = document.getElementById('mobile-sidebar-overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+    </script>
+
+    <script src="js/notebooks-backend.js"></script>
+</body>
+</html>

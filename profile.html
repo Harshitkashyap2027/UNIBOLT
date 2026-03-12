@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <title>UniBolt - My Profile</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Colorful Avatar Selector */
+        .avatar-option {
+            width: 55px; height: 55px; border-radius: 50%; 
+            background: rgba(255,255,255,0.05); display: flex; justify-content: center; align-items: center;
+            cursor: pointer; border: 2px solid transparent; transition: 0.3s;
+            font-size: 28px; /* Large Emoji Size */
+            user-select: none;
+        }
+        .avatar-option:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+        
+        .avatar-option.selected {
+            border-color: #8b5cf6; 
+            background: rgba(139, 92, 246, 0.2); 
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="success-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="width: 350px; padding: 40px;">
+            <div style="font-size: 60px; margin-bottom: 15px;">✅</div>
+            <h2 style="margin: 0; font-size: 24px; color: white;">Success!</h2>
+            <p style="color: #a1a1aa; margin: 10px 0 25px;">Profile Updated Successfully!</p>
+            <button onclick="closeModal()" class="btn-primary" style="width: 100%; justify-content: center;">Awesome</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="brand"><i class="fa-solid fa-code cursor-default-hover" style="color: #10b981;"></i> UniBolt.</div>
+            <ul class="nav-menu">
+                <a href="/dashboard" class="nav-item"><i class="fa-solid fa-bolt cursor-on-hover"></i> Dashboard</a>
+                <a href="/arena" class="nav-item"><i class="fa-solid fa-code"></i> Code Arena</a>
+                <a href="/practice" class="nav-item"><i class="fa-solid fa-dumbbell"></i> Practice Zone</a>
+                <a href="/leaderboard" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+                <a href="/gallery" class="nav-item"><i class="fa-solid fa-trophy"></i> Hall of Fame</a>
+                <a href="/research" class="nav-item"><i class="fa-solid fa-flask"></i> Research Hub</a>
+                <a href="/contact" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
+                <a href="/profile" class="nav-item active"><i class="fa-solid fa-gear"></i> Settings</a>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-body">
+                
+                <h1>Account Settings ⚙️</h1>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <h3 style="margin-bottom: 20px;">Personal Details</h3>
+                        <form id="profile-form">
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">Choose Your Persona</label>
+                                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                                    <div class="avatar-option" onclick="selectAvatar(this, '🐶')">🐶</div>
+                                    <div class="avatar-option" onclick="selectAvatar(this, '🐱')">🐱</div>
+                                    <div class="avatar-option" onclick="selectAvatar(this, '🌻')">🌻</div>
+                                    <div class="avatar-option" onclick="selectAvatar(this, '🤖')">🤖</div>
+                                    <div class="avatar-option" onclick="selectAvatar(this, '👽')">👽</div>
+                                    <div class="avatar-option" onclick="selectAvatar(this, '🦁')">🦁</div>
+                                </div>
+                                <input type="hidden" id="selected-avatar-val" value="🐶">
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; color: var(--text-muted); font-size: 13px; margin-bottom: 5px;">Full Name</label>
+                                <input type="text" id="input-name" placeholder="Enter your name" style="width: 100%; padding: 10px; background: #000; border: 1px solid var(--border); color: white; border-radius: 6px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; color: var(--text-muted); font-size: 13px; margin-bottom: 5px;">College Name</label>
+                                <input type="text" id="input-college" placeholder="Enter college name" style="width: 100%; padding: 10px; background: #000; border: 1px solid var(--border); color: white; border-radius: 6px;">
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="save-btn">Save Changes</button>
+                        </form>
+                    </div>
+
+                    <div>
+                        <h3 style="margin-bottom: 20px;">Your Student ID</h3>
+                        
+                        <div class="card" id="id-card" style="background: linear-gradient(135deg, #09090b, #18181b); border: 1px solid rgba(255,255,255,0.2); position: relative; overflow: hidden; padding: 0;">
+                            <div style="height: 80px; background: linear-gradient(to right, var(--primary), var(--accent));"></div>
+                            
+                            <div style="padding: 20px; text-align: center; margin-top: -40px;">
+                                <div class="avatar" style="width: 90px; height: 90px; border: 4px solid #18181b; margin: 0 auto; background: #222; display: flex; align-items: center; justify-content: center; font-size: 45px;">
+                                    <span id="card-icon">🐶</span>
+                                </div>
+
+                                <h2 style="margin: 10px 0 5px;" id="card-name">Student Name</h2>
+                                <p style="color: var(--accent); font-size: 14px; margin: 0;" id="card-college">College Name</p>
+                                
+                                <div style="display: flex; justify-content: space-between; margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                    <div style="text-align: left;">
+                                        <small style="color: #666; font-size: 10px;">STUDENT ID</small>
+                                        <div style="font-family: monospace;" id="card-uid">UB-XXXX</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <small style="color: #666; font-size: 10px;">VALID THRU</small>
+                                        <div style="font-family: monospace;">DEC 2026</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/profile-backend.js"></script>
+    
+    <script>
+        function closeModal() { document.getElementById('success-modal').classList.add('hidden'); }
+        
+        function selectAvatar(el, emojiChar) {
+            // 1. Visual Selection Box
+            document.querySelectorAll('.avatar-option').forEach(d => d.classList.remove('selected'));
+            el.classList.add('selected');
+            
+            // 2. Update Hidden Input (for saving)
+            document.getElementById('selected-avatar-val').value = emojiChar;
+            
+            // 3. Update Preview Immediately (Real-time)
+            document.getElementById('card-icon').innerText = emojiChar;
+        }
+    </script>
+</body>
+</html>

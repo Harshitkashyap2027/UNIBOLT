@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+    <meta charset="UTF-8">
+    <title>Flutter UI Kit - UniBolt</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        body {
+            background: #1e1e1e; 
+            font-family: 'Inter', sans-serif; 
+            color: white; 
+            margin: 0; 
+            padding: 40px;
+        }
+
+        /* --- HEADER --- */
+        .kit-header {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            border-bottom: 1px solid #333; padding-bottom: 20px; margin-bottom: 40px;
+        }
+        .kit-title h1 { margin: 0; font-size: 28px; display: flex; align-items: center; gap: 10px; }
+        .kit-title p { color: #888; margin: 5px 0 0 0; font-size: 14px; }
+        .badge { 
+            background: #0ea5e9; color: white; padding: 4px 10px; 
+            border-radius: 20px; font-size: 11px; font-weight: bold; 
+            text-transform: uppercase; margin-left: 10px;
+        }
+
+        /* --- GRID --- */
+        .widget-grid {
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            gap: 30px;
+        }
+
+        /* --- CARD STYLE --- */
+        .widget-card {
+            background: #252525; border-radius: 12px; overflow: hidden;
+            border: 1px solid #333; transition: transform 0.2s, border-color 0.2s;
+            display: flex; flex-direction: column;
+        }
+        .widget-card:hover { transform: translateY(-5px); border-color: #0ea5e9; }
+
+        .preview-area {
+            height: 200px; background: #121212;
+            display: flex; align-items: center; justify-content: center;
+            border-bottom: 1px solid #333; position: relative;
+        }
+        
+        /* Mock UI Elements for Preview */
+        .mock-btn {
+            background: #0ea5e9; color: white; padding: 12px 24px; 
+            border-radius: 8px; font-weight: 600; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+        }
+        .mock-input {
+            background: #2a2a2a; border: 1px solid #444; padding: 10px; 
+            border-radius: 8px; width: 60%; color: #aaa; font-size: 12px;
+        }
+        .mock-card {
+            background: #333; width: 60%; height: 80px; border-radius: 12px;
+            display: flex; align-items: center; padding: 0 15px; gap: 10px;
+        }
+        .mock-circle { width: 30px; height: 30px; background: #555; border-radius: 50%; }
+        .mock-line { height: 8px; background: #555; border-radius: 4px; width: 60%; }
+
+        .info-area { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+        .widget-name { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+        .widget-desc { font-size: 12px; color: #aaa; margin-bottom: 15px; flex: 1; }
+
+        .btn-code {
+            background: #333; color: white; border: none; padding: 10px;
+            border-radius: 6px; cursor: pointer; width: 100%; font-weight: 600;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: 0.2s;
+        }
+        .btn-code:hover { background: #444; color: #0ea5e9; }
+
+        /* --- CODE MODAL --- */
+        .code-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 1000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #1e1e1e; width: 80%; max-width: 700px; max-height: 80vh;
+            border-radius: 12px; border: 1px solid #444; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        .modal-header {
+            padding: 15px 20px; background: #252525; border-bottom: 1px solid #333;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-body { overflow: auto; padding: 0; }
+        pre { margin: 0; }
+        
+        .hidden { display: none !important; }
+
+        /* Security Footer Override for Dark Mode */
+        .security-footer {
+            background: #252525 !important; border-top: 1px solid #333 !important; color: #666 !important;
+        }
+        .watermark { opacity: 0.03; color: white !important; }
+
+    </style>
+</head>
+<body>
+
+    <header class="kit-header">
+        <div class="kit-title">
+            <h1><i class="fa-brands fa-flutter" style="color:#42a5f5;"></i> Flutter UI Kit <span class="badge">v2.4</span></h1>
+            <p>Production-ready widgets for your UniBolt Capstone.</p>
+        </div>
+        <div style="font-size: 12px; color: #666; font-family: 'JetBrains Mono';">
+            ID: APP-UI-KIT • PREVIEW MODE
+        </div>
+    </header>
+
+    <div class="widget-grid">
+
+        <div class="widget-card">
+            <div class="preview-area">
+                <div class="mock-btn">Get Started</div>
+            </div>
+            <div class="info-area">
+                <div class="widget-name">UniBolt Primary Button</div>
+                <div class="widget-desc">A gradient button with shadow and splash effect.</div>
+                <button class="btn-code" onclick="showCode('btn')"><i class="fa-solid fa-code"></i> View Code</button>
+            </div>
+        </div>
+
+        <div class="widget-card">
+            <div class="preview-area">
+                <div class="mock-input">Email Address</div>
+            </div>
+            <div class="info-area">
+                <div class="widget-name">Custom TextField</div>
+                <div class="widget-desc">Dark-themed input with focus borders and validation logic.</div>
+                <button class="btn-code" onclick="showCode('input')"><i class="fa-solid fa-code"></i> View Code</button>
+            </div>
+        </div>
+
+        <div class="widget-card">
+            <div class="preview-area">
+                <div class="mock-card">
+                    <div class="mock-circle"></div>
+                    <div class="mock-line"></div>
+                </div>
+            </div>
+            <div class="info-area">
+                <div class="widget-name">Glassmorphic Tile</div>
+                <div class="widget-desc">List tile with blur effect used in the dashboard.</div>
+                <button class="btn-code" onclick="showCode('tile')"><i class="fa-solid fa-code"></i> View Code</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="codeModal" class="code-modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span style="font-weight:bold; color:#ddd;">Widget Source Code</span>
+                <button onclick="closeModal()" style="background:none; border:none; color:#aaa; cursor:pointer;"><i class="fa-solid fa-xmark fa-lg"></i></button>
+            </div>
+            <div class="modal-body">
+                
+                <div id="code-btn" class="code-snippet hidden">
+<pre><code class="language-dart">class UniBoltButton extends StatelessWidget {
+  final String text;
+  final VoidCallback onPressed;
+
+  const UniBoltButton({required this.text, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [Colors.blue, Colors.purple]),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 10, offset: Offset(0, 4))
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        ),
+        child: Text(text, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+}</code></pre>
+                </div>
+
+                <div id="code-input" class="code-snippet hidden">
+<pre><code class="language-dart">class UniBoltInput extends StatelessWidget {
+  final String hint;
+  final bool isPassword;
+
+  const UniBoltInput({required this.hint, this.isPassword = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      obscureText: isPassword,
+      style: TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey),
+        filled: true,
+        fillColor: Color(0xFF1E1E1E),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.blueAccent),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+                </div>
+
+                <div id="code-tile" class="code-snippet hidden">
+<pre><code class="language-dart">class GlassTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: EdgeInsets.all(16),
+          color: Colors.white.withOpacity(0.1),
+          child: Row(
+            children: [
+              CircleAvatar(backgroundColor: Colors.grey[800]),
+              SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(height: 10, width: 100, color: Colors.grey[800]),
+                  SizedBox(height: 5),
+                  Container(height: 8, width: 60, color: Colors.grey[800]),
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}</code></pre>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="resources-pdf.js"></script>
+
+    <script>
+        hljs.highlightAll();
+
+        function showCode(type) {
+            document.getElementById('codeModal').classList.remove('hidden');
+            // Hide all
+            document.querySelectorAll('.code-snippet').forEach(el => el.classList.add('hidden'));
+            // Show specific
+            document.getElementById('code-' + type).classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('codeModal').classList.add('hidden');
+        }
+
+        // Close on background click
+        document.getElementById('codeModal').addEventListener('click', (e) => {
+            if(e.target.id === 'codeModal') closeModal();
+        });
+    </script>
+</body>
+</html>

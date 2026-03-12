@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Students | UniBolt Admin</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="admin-style.css">
+</head>
+<body style="opacity: 0; transition: opacity 0.5s;">
+
+    <div class="app-wrapper">
+        
+        <aside class="sidebar">
+            <div class="brand">
+                <i class="fa-solid fa-bolt"></i> UniBolt
+            </div>
+            
+            <nav>
+                <div class="nav-label">Main</div>
+                <a href="admin.html" class="nav-link">
+                    <i class="fa-solid fa-grid-2"></i> Dashboard
+                </a>
+                <a href="students.html" class="nav-link active">
+                    <i class="fa-solid fa-users"></i> Students
+                </a>
+                <a href="tickets.html" class="nav-link">
+                    <i class="fa-solid fa-ticket"></i> Support Tickets
+                </a>
+
+                <div class="nav-label">System</div>
+                <a href="#" class="nav-link">
+                    <i class="fa-solid fa-gear"></i> Settings
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="logout-btn" onclick="window.location.href='index.html'">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <header class="top-bar">
+                <div class="page-title">
+                    <h1>Student Manager</h1>
+                    <p>View, verify, and manage student access.</p>
+                </div>
+
+                <div class="user-profile">
+                    <div class="user-info">
+                        <span class="name">Admin User</span>
+                        <span class="role">Super Admin</span>
+                    </div>
+                    <div class="avatar">A</div>
+                </div>
+            </header>
+
+            <div class="glass-panel" style="margin-bottom: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+                    
+                    <div class="search-bar" style="flex: 1; min-width: 300px;">
+                        <i class="fa-solid fa-search"></i>
+                        <input type="text" id="student-search" placeholder="Search by name, email or UTR..." class="glass-input">
+                    </div>
+
+                    <div style="display:flex; gap:10px;">
+                        <select id="filter-status" class="glass-select">
+                            <option value="all">All Statuses</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Verified">Verified</option>
+                        </select>
+                        
+                        <button onclick="window.exportCSV()" class="btn btn-primary">
+                            <i class="fa-solid fa-download"></i> Export CSV
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="glass-panel">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Course</th>
+                                <th>Status</th>
+                                <th>Payment (UTR)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-table-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script type="module">
+    // 1. Import Firebase Directly
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // 2. Your Configuration
+    const firebaseConfig = { 
+        apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+        authDomain: "unibolt-f7005.firebaseapp.com",
+        projectId: "unibolt-f7005",
+        storageBucket: "unibolt-f7005.appspot.com",
+        messagingSenderId: "121987854250",
+        appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+    };
+
+    // 3. Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 4. Variables
+    const tbody = document.getElementById("student-table-body");
+    const searchInput = document.getElementById('student-search');
+    const statusFilter = document.getElementById('filter-status');
+    let studentsData = [];
+
+    console.log("🔥 Firebase Initialized. Attempting to fetch data...");
+
+    // 5. Fetch Data
+    // Note: If 'users' is not the name of your collection, change it below!
+    const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+
+    onSnapshot(q, (snapshot) => {
+        console.log(`✅ Snapshot received! Found ${snapshot.size} documents.`);
+        
+        studentsData = [];
+        snapshot.forEach(doc => {
+            studentsData.push({ id: doc.id, ...doc.data() });
+        });
+
+        applyFilters(); // Render data
+    }, (error) => {
+        console.error("❌ Error fetching data:", error);
+        tbody.innerHTML = `<tr><td colspan="5" style="color:red; text-align:center;">Error: ${error.message}<br>Check Console (F12)</td></tr>`;
+    });
+
+    // 6. Render Function
+    function renderTable(data) {
+        tbody.innerHTML = "";
+        
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">No students found.</td></tr>`;
+            return;
+        }
+
+        data.forEach(s => {
+            const tr = document.createElement("tr");
+            const isVerified = s.paymentStatus === "Verified";
+            const statusClass = isVerified ? 'status-success' : 'status-pending'; // Ensure you added CSS for this!
+            const initial = s.name ? s.name.charAt(0).toUpperCase() : "?";
+
+            // Add CSS styling if classes are missing
+            const badgeStyle = isVerified 
+                ? "background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem;" 
+                : "background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem;";
+
+            tr.innerHTML = `
+                <td>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:35px; height:35px; background:#333; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff;">${initial}</div>
+                        <div>
+                            <div style="font-weight:600; color:#eee;">${s.name || "Unknown"}</div>
+                            <div style="color:#aaa; font-size:0.85rem;">${s.email}</div>
+                        </div>
+                    </div>
+                </td>
+                <td style="color:#ccc;">${s.enrolledProgram || "General"}</td>
+                <td><span style="${badgeStyle}">${isVerified ? 'Verified' : 'Pending'}</span></td>
+                <td style="font-family:monospace; color:#4fd1c5;">${s.transactionId || "--"}</td>
+                <td>
+                    ${!isVerified ? `<button onclick="window.verifyUser('${s.id}')" style="cursor:pointer; background:none; border:none; color:#10b981; font-size:1.1rem;"><i class="fa-solid fa-check"></i></button>` : ''}
+                    <button onclick="window.deleteUser('${s.id}')" style="cursor:pointer; background:none; border:none; color:#ef4444; font-size:1.1rem; margin-left:10px;"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 7. Filter Function
+    function applyFilters() {
+        const term = searchInput ? searchInput.value.toLowerCase() : "";
+        const status = statusFilter ? statusFilter.value : "all";
+
+        const filtered = studentsData.filter(s => {
+            const matchesSearch = (s.name && s.name.toLowerCase().includes(term)) || 
+                                  (s.email && s.email.toLowerCase().includes(term));
+            const matchesStatus = status === 'all' || (s.paymentStatus || 'Pending') === status;
+            return matchesSearch && matchesStatus;
+        });
+        renderTable(filtered);
+    }
+
+    // Event Listeners
+    if(searchInput) searchInput.addEventListener('input', applyFilters);
+    if(statusFilter) statusFilter.addEventListener('change', applyFilters);
+
+    // 8. Global Functions (Window)
+    window.verifyUser = async (id) => {
+        if(confirm("Verify payment?")) {
+            await updateDoc(doc(db, "users", id), { paymentStatus: "Verified" });
+        }
+    };
+
+    window.deleteUser = async (id) => {
+        if(confirm("Delete user?")) {
+            await deleteDoc(doc(db, "users", id));
+        }
+    };
+    
+    // Fade in
+    document.body.style.opacity = '1';
+</script>
+
+    <script>
+        window.addEventListener('load', () => {
+            document.body.style.opacity = '1';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internship Tracks - UniBolt</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="home.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <style>
+        .hero {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 60vh;
+        }
+
+        /* Tech Stack Strip */
+        .tech-icons {
+            display: flex;
+            gap: 30px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .tech-icons i { font-size: 2.5rem; color: #555; transition: 0.3s; }
+        .tech-icons i:hover { color: #8b5cf6; transform: translateY(-5px); }
+
+        /* Accordion */
+        .accordion {
+            background-color: #111;
+            color: #eee;
+            cursor: pointer;
+            padding: 20px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 1.1rem;
+            transition: 0.4s;
+            border-bottom: 1px solid #222;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+        }
+        .active, .accordion:hover { background-color: #1a1a1a; color: #8b5cf6; }
+        .panel {
+            padding: 0 20px;
+            background-color: #0a0a0a;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            color: #aaa;
+            border-left: 3px solid #8b5cf6;
+        }
+        .panel ul { list-style: none; padding: 25px 0; }
+        .panel li { margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start; }
+        .panel i { color: #8b5cf6; margin-top: 4px; }
+        
+        .track-badge {
+            background: #8b5cf6;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">UniBolt<span class="dot">.</span></div>
+        <ul class="nav-links">
+            <li><a href="how-it-works.html">How It Works</a></li>
+            <li><a href="why-unibolt.html">Why UniBolt</a></li>
+            <li><a href="about.html">About Us</a></li>
+            <li><a href="verify-certificate.html">Verify Certificate</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+        </ul>
+        <div class="nav-buttons">
+            <a href="/login" class="btn-glow">Student Login</a>
+            <a href="program.html" class="btn-glow">Register Now</a>
+        </div>
+        <div class="menu-btn"><i class="fa-solid fa-bars"></i></div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content" style="text-align: center;margin-top: 80px; margin-bottom: 40px; width: 100%; max-width: 800px;" data-aos="fade-up">
+            <span class="badge">Curriculum 2.0</span>
+            <h1>Project-Based <span class="gradient-text">Internship Tracks</span></h1>
+            <p style="font-size: 1.1rem; color: #ccc; margin-top: 30px;">Stop watching endless tutorials. Start building production-ready applications.<br>Choose a track below and start your 30-day transformation.</p>
+            
+            <div class="tech-icons">
+                <i class="fa-brands fa-react" title="React"></i>
+                <i class="fa-brands fa-node-js" title="Node"></i>
+                <i class="fa-brands fa-python" title="Python"></i>
+                <i class="fa-brands fa-aws" title="AWS"></i>
+                <i class="fa-solid fa-database" title="MongoDB"></i>
+            </div>
+        </div>
+    </header>
+
+    <section class="section bg-darker">
+        <div class="section-header" style="text-align: center;" data-aos="fade-up">
+            <span class="track-badge">Most Popular</span>
+            <h2>Full Stack Web Development</h2>
+            <p>Master the MERN Stack (MongoDB, Express, React, Node) in 30 days.</p>
+        </div>
+
+        <div class="content-wrapper" style="max-width: 900px; margin: 0 auto;" data-aos="fade-up">
+            <button class="accordion">Week 1: Frontend Architecture & UI/UX <i class="fa-solid fa-chevron-down"></i></button>
+            <div class="panel">
+                <ul>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 1-2:</strong> Advanced HTML5 & Semantic Tags. Accessibility standards.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 3-5:</strong> Tailwind CSS Masterclass. Building a responsive Grid/Flexbox layout.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 6-7:</strong> Modern JavaScript (ES6+, Async/Await, DOM Manipulation).</li>
+                    <li><i class="fa-solid fa-rocket"></i> <strong>Mini Project:</strong> Build a Personal Portfolio Website deployed on Vercel.</li>
+                </ul>
+            </div>
+            
+            <button class="accordion">Week 2: React.js Deep Dive <i class="fa-solid fa-chevron-down"></i></button>
+            <div class="panel">
+                <ul>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 8-10:</strong> Component Lifecycle, Props, and State Management.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 11-12:</strong> React Hooks (useState, useEffect, useContext, useReducer).</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 13-14:</strong> React Router v6 & Single Page Application (SPA) logic.</li>
+                    <li><i class="fa-solid fa-rocket"></i> <strong>Mini Project:</strong> Build a Dynamic Movie Search App using OMDB API.</li>
+                </ul>
+            </div>
+
+            <button class="accordion">Week 3: Backend Engineering <i class="fa-solid fa-chevron-down"></i></button>
+            <div class="panel">
+                <ul>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 15-17:</strong> Node.js Runtime & Express.js Server Setup. Middleware concepts.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 18-20:</strong> MongoDB Atlas Setup. Mongoose Schemas & CRUD operations.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 21:</strong> REST API Architecture & Postman Testing.</li>
+                    <li><i class="fa-solid fa-rocket"></i> <strong>Mini Project:</strong> Build a Task Manager API with JWT Authentication.</li>
+                </ul>
+            </div>
+
+            <button class="accordion">Week 4: The Capstone <i class="fa-solid fa-chevron-down"></i></button>
+            <div class="panel">
+                <ul>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 22-25:</strong> Integrating Frontend with Backend (Axios/Fetch).</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 26-28:</strong> Payment Gateway Integration (Razorpay/Stripe) & Deployment.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 29-30:</strong> Final Code Review, Bug Fixing & Certificate Generation.</li>
+                    <li><i class="fa-solid fa-crown"></i> <strong>Final Project:</strong> Full Stack E-Commerce Dashboard.</li>
+                </ul>
+            </div>
+
+            <div style="text-align: center; margin-top: 40px;">
+                <h3 style="color: white; font-size: 2rem; margin-bottom: 20px;">₹200 <span style="font-size: 1rem; color: #888;">/ lifetime access</span></h3>
+                <a href="signup.html" class="btn-primary" style="width: 100%; max-width: 300px;">Enroll in Web Track</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-header" style="text-align: center;" data-aos="fade-up">
+            <span class="track-badge" style="background: #ec4899;">High Salary</span>
+            <h2>AI & Data Science Architect</h2>
+            <p>From raw data to predictive models. Learn the tools powering the AI revolution.</p>
+        </div>
+
+        <div class="content-wrapper" style="max-width: 900px; margin: 0 auto;" data-aos="fade-up">
+            <button class="accordion">Week 1: Python for Data Science <i class="fa-solid fa-chevron-down"></i></button>
+            <div class="panel">
+                <ul>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 1-3:</strong> Python Syntax, Lists, Dictionaries, Functions & OOPs.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 4-5:</strong> NumPy Arrays & Matrix Operations for high-speed calc.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 6-7:</strong> Pandas DataFrames, Data Cleaning & Preprocessing.</li>
+                    <li><i class="fa-solid fa-rocket"></i> <strong>Project:</strong> Analyze a CSV Dataset of Netflix Movies.</li>
+                </ul>
+            </div>
+            
+            <button class="accordion">Week 2: Data Visualization & Analysis <i class="fa-solid fa-chevron-down"></i></button>
+            <div class="panel">
+                <ul>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 8-10:</strong> Matplotlib & Seaborn Plots (Heatmaps, Scatter, Line).</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 11-13:</strong> Exploratory Data Analysis (EDA) techniques.</li>
+                    <li><i class="fa-solid fa-rocket"></i> <strong>Project:</strong> Visualizing Global Covid-19 Trends.</li>
+                </ul>
+            </div>
+
+             <button class="accordion">Week 3: Machine Learning Algorithms <i class="fa-solid fa-chevron-down"></i></button>
+            <div class="panel">
+                <ul>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 14-16:</strong> Supervised Learning: Linear & Logistic Regression.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 17-19:</strong> Decision Trees, Random Forests & SVMs.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Day 20-21:</strong> Model Evaluation (Accuracy, Precision, Recall, F1-Score).</li>
+                    <li><i class="fa-solid fa-rocket"></i> <strong>Project:</strong> House Price Prediction Model using Scikit-Learn.</li>
+                </ul>
+            </div>
+
+            <div style="text-align: center; margin-top: 40px;">
+                <h3 style="color: white; font-size: 2rem; margin-bottom: 20px;">₹200 <span style="font-size: 1rem; color: #888;">/ lifetime access</span></h3>
+                <a href="signup-ai.html" class="btn-primary" style="width: 100%; max-width: 300px; border-color: #ec4899; background: #ec4899;">Enroll in AI Track</a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-grid">
+            <div class="brand">
+                <h2>UniBolt.</h2>
+                <p>Building the next generation of tech leaders.</p>
+            </div>
+            <div class="links">
+                <h4>Platform</h4>
+                <a href="program.html">Programs</a>
+                <a href="/login">Student Login</a>
+                <a href="verify-certificate.html">Verify Certificate</a>
+            </div>
+            <div class="links">
+                <h4>Legal</h4>
+                <a href="faq.html">FAQ</a>
+                <a href="about.html">About Us</a>
+                <a href="privacy-policy.html">Privacy Policy</a>
+                <a href="term-of-use.html">Terms of Use</a>
+            </div>
+        </div>
+        <div class="copy">&copy; 2026 UniBolt Inc. Made with ❤️ in India.</div>
+    </footer>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script type="module" src="home.js"></script>
+    <script>
+        var acc = document.getElementsByClassName("accordion");
+        var i;
+        for (i = 0; i < acc.length; i++) {
+            acc[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var panel = this.nextElementSibling;
+                if (panel.style.maxHeight) {
+                    panel.style.maxHeight = null;
+                } else {
+                    panel.style.maxHeight = panel.scrollHeight + "px";
+                } 
+            });
+        }
+    </script>
+</body>
+</html>

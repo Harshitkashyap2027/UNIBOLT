@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Verification | UniBolt</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- GLOBAL THEME --- */
+        :root {
+            --primary: #8b5cf6;
+            --bg-dark: #0f0f13;
+            --card-bg: #1e1e24;
+            --text-main: #ffffff;
+            --text-sub: #a1a1aa;
+            --success: #10b981;
+            --error: #ef4444;
+            --gold: #d4af37;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* --- CONTAINER --- */
+        .verify-container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            padding: 40px 30px;
+            text-align: center;
+            border: 1px solid #333;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Top Bar Decoration */
+        .verify-container::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0;
+            height: 4px; background: linear-gradient(90deg, var(--primary), var(--gold));
+        }
+
+        /* --- LOGO --- */
+        .logo {
+            font-size: 24px; font-weight: 800; margin-bottom: 30px;
+            display: inline-block;
+        }
+
+        /* --- STATUS ICONS --- */
+        .status-icon-box {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px auto;
+            font-size: 35px;
+        }
+        
+        /* Animations */
+        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .status-loading { color: var(--primary); animation: spin 1s linear infinite; border: 3px solid transparent; border-top: 3px solid var(--primary); border-radius: 50%; }
+        .status-success { color: var(--success); border: 2px solid var(--success); animation: pulse-green 2s infinite; }
+        .status-error { color: var(--error); border: 2px solid var(--error); }
+
+        /* --- TEXT CONTENT --- */
+        .status-title { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+        .status-msg { color: var(--text-sub); font-size: 14px; line-height: 1.6; margin-bottom: 30px; }
+
+        /* --- CREDENTIAL CARD (For valid users) --- */
+        .credential-card {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: left;
+            border-left: 3px solid var(--gold);
+            display: none; /* Hidden by default */
+        }
+
+        .cred-row { display: flex; justify-content: space-between; margin-bottom: 12px; }
+        .cred-row:last-child { margin-bottom: 0; }
+        .cred-label { font-size: 12px; color: var(--text-sub); font-weight: 600; text-transform: uppercase; }
+        .cred-value { font-size: 14px; font-weight: 700; color: #fff; }
+
+        .verified-badge {
+            background: rgba(16, 185, 129, 0.15); color: var(--success);
+            padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
+            display: inline-block; margin-bottom: 20px;
+        }
+
+        /* --- FOOTER --- */
+        .footer { margin-top: 30px; font-size: 12px; color: #555; }
+        .footer a { color: var(--primary); text-decoration: none; }
+
+    </style>
+</head>
+<body>
+
+    <div class="verify-container">
+        <div class="logo">
+            <i class="fa-solid fa-dna" style="color: var(--primary);"></i> UniBolt.
+        </div>
+
+        <div id="view-loading">
+            <div class="status-icon-box status-loading" style="border: none;">
+                <i class="fa-solid fa-circle-notch"></i>
+            </div>
+            <div class="status-title">Verifying Credential...</div>
+            <p class="status-msg">Accessing the secure blockchain ledger to validate this certificate.</p>
+        </div>
+
+        <div id="view-success" style="display: none;">
+            <div class="status-icon-box status-success">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <div class="verified-badge"><i class="fa-solid fa-shield-halved"></i> OFFICIALLY VERIFIED</div>
+            
+            <h2 class="status-title" id="user-name">Student Name</h2>
+            <p class="status-msg" style="margin-bottom: 20px;">Has successfully completed the internship program.</p>
+
+            <div class="credential-card" style="display: block;">
+                <div class="cred-row">
+                    <span class="cred-label">Credential ID</span>
+                    <span class="cred-value" id="cred-id">INT-XXXXXX</span>
+                </div>
+                <div class="cred-row">
+                    <span class="cred-label">Domain</span>
+                    <span class="cred-value" id="cred-domain" style="color: var(--primary);">Loading...</span>
+                </div>
+                <div class="cred-row">
+                    <span class="cred-label">Status</span>
+                    <span class="cred-value" style="color: var(--success);">Completed</span>
+                </div>
+                <div class="cred-row">
+                    <span class="cred-label">Issued On</span>
+                    <span class="cred-value" id="cred-date">--</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-error" style="display: none;">
+            <div class="status-icon-box status-error">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="status-title" id="error-title" style="color: var(--error);">Verification Failed</div>
+            <p class="status-msg" id="error-msg">
+                We could not verify this certificate.
+            </p>
+        </div>
+
+        <div class="footer">
+            Verified by UniBolt Certification System<br>
+            <a href="index.html">Visit Official Website</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // --- YOUR CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- VERIFICATION LOGIC ---
+        async function verifyUser() {
+            // 1. Get Params from URL (?uid=xxxxx&track=WEB)
+            const urlParams = new URLSearchParams(window.location.search);
+            const uid = urlParams.get('uid');
+            const urlTrack = urlParams.get('track'); 
+
+            const viewLoading = document.getElementById('view-loading');
+            const viewSuccess = document.getElementById('view-success');
+            const viewError = document.getElementById('view-error');
+            const errorTitle = document.getElementById('error-title');
+            const errorMsg = document.getElementById('error-msg');
+
+            // --- FUNCTION TO SHOW ERROR ---
+            function triggerError(title, message) {
+                viewLoading.style.display = 'none';
+                viewSuccess.style.display = 'none';
+                viewError.style.display = 'block';
+                
+                errorTitle.innerText = title;
+                errorMsg.innerHTML = message; // Using innerHTML to allow <b> tags
+            }
+
+            // CHECK 1: Is the QR Code valid? (Must have UID)
+            if (!uid) {
+                triggerError(
+                    "Invalid QR Format", 
+                    "The scanned code is malformed or missing the Student ID. Please ensure you are scanning a valid UniBolt certificate."
+                );
+                return;
+            }
+
+            try {
+                // 2. Fetch User Data
+                const docRef = doc(db, "users", uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    // --- SUCCESS PATH ---
+                    const data = docSnap.data();
+                    
+                    document.getElementById('user-name').innerText = data.name || "Unknown Student";
+                    document.getElementById('cred-id').innerText = "INT-" + uid.substring(0, 8).toUpperCase();
+                    
+                    // --- INTELLIGENT TRACK DETECTION (Web, AI, or App) ---
+                    let domainName = "AI & Data Science"; // Default fallback
+                    
+                    // Priority 1: Check QR Code Param (Best for distinct certs)
+                    if (urlTrack === 'WEB') {
+                        domainName = "Full Stack Web Development";
+                    } else if (urlTrack === 'APP') {
+                         domainName = "Mobile App Development";
+                    } else if (urlTrack === 'AI') {
+                        domainName = "AI & Data Science";
+                    } 
+                    // Priority 2: Fallback to Database field
+                    else {
+                        const courseField = (data.course || data.track || "").toLowerCase();
+                        if (courseField.includes("web") || courseField.includes("full stack")) {
+                            domainName = "Full Stack Web Development";
+                        } else if (courseField.includes("app") || courseField.includes("android")) {
+                            domainName = "Mobile App Development";
+                        }
+                    }
+                    
+                    document.getElementById('cred-domain').innerText = domainName;
+
+                    // Date Logic
+                    let issueDate = new Date();
+                    if(data.createdAt) {
+                         // Default to createdAt + 2 months
+                         let joinDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+                         let endD = new Date(joinDate);
+                         endD.setMonth(joinDate.getMonth() + 2);
+                         issueDate = endD;
+                    }
+                    
+                    document.getElementById('cred-date').innerText = issueDate.toLocaleDateString('en-US', {
+                        year: 'numeric', month: 'short', day: 'numeric'
+                    });
+
+                    // Reveal Success Screen
+                    viewLoading.style.display = 'none';
+                    viewSuccess.style.display = 'block';
+
+                } else {
+                    // CHECK 2: User ID not found in database (Fake Cert)
+                    triggerError(
+                        "Student Not Found", 
+                        "The Student ID in this QR code <b>does not exist</b> in our database.<br><br>This certificate may be fake or the student is not enrolled in any program."
+                    );
+                }
+            } catch (error) {
+                console.error("Verification Error:", error);
+                triggerError(
+                    "System Error",
+                    "We are unable to connect to the verification server at this moment. Please check your internet connection."
+                );
+            }
+        }
+
+        // Run on load
+        verifyUser();
+    </script>
+
+</body>
+</html>

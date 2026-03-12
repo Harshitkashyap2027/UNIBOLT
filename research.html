@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <title>UniBolt - Research Hub</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Research Specific Styles */
+        .search-hero {
+            background: linear-gradient(135deg, rgba(118, 75, 162, 0.1), rgba(102, 126, 234, 0.1));
+            border: 1px solid #27272a;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .search-hero input {
+            width: 100%;
+            max-width: 600px;
+            padding: 15px 50px;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 50px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+        .search-hero input:focus { border-color: #8b5cf6; box-shadow: 0 0 20px rgba(139, 92, 246, 0.2); }
+        .search-icon { position: absolute; left: 50%; transform: translateX(-280px); top: 50%; color: #666; pointer-events: none; }
+
+        /* Filter Tags */
+        .filter-tags { display: flex; justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        .tag-btn {
+            background: #18181b; border: 1px solid #333; color: #a1a1aa;
+            padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: 0.2s; font-size: 13px;
+        }
+        .tag-btn:hover, .tag-btn.active { background: #fff; color: #000; border-color: #fff; }
+
+        /* Resource Grid */
+        .resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        
+        .resource-card {
+            background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 20px;
+            transition: transform 0.2s, border-color 0.2s;
+            position: relative;
+            display: flex; flex-direction: column; height: 100%;
+        }
+        .resource-card:hover { transform: translateY(-5px); border-color: #444; }
+        
+        .res-badge {
+            font-size: 10px; text-transform: uppercase; padding: 4px 8px; border-radius: 4px;
+            font-weight: bold; width: fit-content; margin-bottom: 10px;
+        }
+        .bg-ai { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+        .bg-web { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+        .bg-app { background: rgba(236, 72, 153, 0.15); color: #f472b6; }
+
+        .res-title { font-size: 16px; font-weight: 700; color: white; margin-bottom: 8px; line-height: 1.4; }
+        .res-desc { font-size: 13px; color: #a1a1aa; margin-bottom: 20px; flex: 1; line-height: 1.5; }
+        
+        .res-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #27272a; padding-top: 15px; margin-top: auto; }
+        
+        .btn-save { background: none; border: none; color: #666; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        .btn-save:hover { color: white; }
+        .btn-save.saved { color: #f59e0b; } /* Gold color for saved */
+
+        .btn-link { 
+            text-decoration: none; color: white; font-size: 12px; font-weight: 600; 
+            background: #27272a; padding: 6px 12px; border-radius: 6px; transition: 0.2s; 
+        }
+        .btn-link:hover { background: #3f3f46; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="brand"><i class="fa-solid fa-code cursor-default-hover" style="color: #10b981;"></i> UniBolt.</div>
+            <ul class="nav-menu">
+                <a href="/dashboard" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+                <a href="/arena" class="nav-item"><i class="fa-solid fa-code-branch"></i> Neural Lab</a>
+                <a href="/practice" class="nav-item"><i class="fa-solid fa-database"></i> Datasets</a>
+                <a href="/leaderboard" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+                <a href="/gallery" class="nav-item"><i class="fa-solid fa-trophy"></i> Hall of Fame</a>
+                <a href="/research" class="nav-item active"><i class="fa-solid fa-flask"></i> Research Hub</a>
+                <a href="/contact" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
+                <a href="/profile" class="nav-item"><i class="fa-solid fa-sliders"></i> Settings</a>
+        </aside>
+
+        <main class="main-content">
+            
+            <div class="search-hero">
+                <h1 style="margin:0 0 10px 0; color:white;">Knowledge Base</h1>
+                <p style="color:#a1a1aa; margin-bottom:25px; font-size:14px;">Access 500+ curated papers, documentation, and tutorials.</p>
+                
+                <div style="position: relative; max-width:600px; margin:0 auto;">
+                    <i class="fa-solid fa-search search-icon" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #666;"></i>
+                    <input type="text" id="search-input" placeholder="Search for topics (e.g., 'Neural Networks', 'React Hooks')...">
+                </div>
+
+                <div class="filter-tags" id="filter-container">
+                    <button class="tag-btn active" data-filter="all">All</button>
+                    <button class="tag-btn" data-filter="ai">🤖 AI & Data</button>
+                    <button class="tag-btn" data-filter="web">💻 Web Dev</button>
+                    <button class="tag-btn" data-filter="app">📱 App Dev</button>
+                    <button class="tag-btn" data-filter="saved">⭐ Saved</button>
+                </div>
+            </div>
+
+            <div class="page-body">
+                <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                    <h3 style="color:white; margin:0;">Latest Resources</h3>
+                    <span style="font-size:12px; color:#666;">Showing <span id="res-count">0</span> items</span>
+                </div>
+
+                <div id="resource-grid" class="resource-grid">
+                    <div style="color:#666; grid-column: span 3; text-align:center; padding:40px;">Loading Library...</div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script type="module" src="js/research-backend.js"></script>
+</body>
+</html>

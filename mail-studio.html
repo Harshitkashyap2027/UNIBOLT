@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UniBolt Admin - Email Studio</title>
+    
+    <link rel="manifest" href="mail-manifest.json">
+    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { 
+            --primary: #ef4444; 
+            --bg: #000000; 
+            --surface: #121212; 
+            --border: #27272a; 
+            --text: #e4e4e7;
+            --radius: 24px;
+            --shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+
+        /* --- SIDEBAR --- */
+        .sidebar { width: 280px; background: #000; border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sidebar-header { padding: 30px 24px 10px; }
+        .brand { font-size: 22px; font-weight: 800; display: flex; align-items: center; gap: 10px; color: white; letter-spacing: -0.5px; }
+        .brand i { color: var(--primary); }
+        .nav-link { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 14px 24px; 
+            color: #a1a1aa; 
+            text-decoration: none; 
+            font-weight: 600; 
+            transition: 0.2s; 
+            border-left: 3px solid transparent; 
+            font-size: 15px; 
+        }
+        .nav-link i { width: 20px; text-align: center; }
+        .nav-link:hover { color: white; background: rgba(255,255,255,0.03); }
+        .nav-link.active { border-left-color: var(--primary); background: rgba(239, 68, 68, 0.08); color: var(--primary); }
+
+        /* --- MAIN LAYOUT --- */
+        .main { flex: 1; padding: 30px; display: grid; grid-template-columns: 400px 1fr; gap: 30px; height: 100vh; overflow: hidden; position: relative; }
+
+        /* CONFIG PANEL (Left) */
+        .config-panel { display: flex; flex-direction: column; gap: 20px; overflow-y: auto; padding-right: 5px; scrollbar-width: none; }
+        .config-panel::-webkit-scrollbar { display: none; }
+        
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); position: relative; }
+        
+        h2 { margin: 0 0 5px 0; font-size: 22px; color: white; letter-spacing: -0.5px; }
+        p.subtitle { color: #a1a1aa; font-size: 13px; margin: 0 0 25px 0; font-weight: 500; }
+        
+        .input-group { margin-bottom: 20px; position: relative; }
+        label { display: block; font-size: 11px; font-weight: 700; color: #71717a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        input, select, textarea { 
+            width: 100%; background: #18181b; border: 1px solid #333; color: white; 
+            padding: 16px; border-radius: 16px; outline: none; 
+            font-family: inherit; font-size: 15px; transition: 0.2s; appearance: none;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); background: #202022; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1); }
+
+        /* STUDENT FOUND BADGE */
+        #student-badge {
+            display: none; align-items: center; gap: 12px; margin-top: 12px;
+            background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 12px; border-radius: 14px; color: #10b981; font-size: 13px; font-weight: 600;
+            animation: slideIn 0.3s ease;
+        }
+        #student-badge img { width: 32px; height: 32px; border-radius: 50%; background: #000; border: 1px solid rgba(16, 185, 129, 0.3); display:flex; justify-content:center; align-items:center; }
+
+        /* PREVIEW PANEL (Right) */
+        .preview-container { 
+            background: #ffffff; border-radius: 32px; overflow: hidden; 
+            position: relative; box-shadow: var(--shadow); 
+            display: flex; flex-direction: column; border: 8px solid #333;
+        }
+        .preview-header { 
+            background: #f1f5f9; padding: 18px 25px; border-bottom: 1px solid #e2e8f0; 
+            color: #64748b; font-size: 12px; font-weight: 800; text-transform: uppercase;
+            display: flex; justify-content: space-between; letter-spacing: 1px;
+        }
+        iframe { width: 100%; flex: 1; border: none; background: white; }
+
+        /* BUTTONS */
+        .btn { 
+            width: 100%; padding: 18px; background: var(--primary); color: white; 
+            border: none; border-radius: 16px; font-weight: 700; cursor: pointer; 
+            font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px; 
+            transition: transform 0.1s, background 0.2s; box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+        }
+        .btn:hover { background: #dc2626; transform: translateY(-2px); }
+        .btn:active { transform: scale(0.98); }
+
+        /* OVERLAYS */
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000; display: none; justify-content: center; align-items: center; flex-direction: column; }
+        .progress-box { width: 320px; background: #18181b; padding: 30px; border-radius: 24px; border: 1px solid #333; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .progress-bar-bg { width: 100%; height: 6px; background: #333; border-radius: 10px; margin-top: 20px; overflow: hidden; }
+        .progress-bar-fill { width: 0%; height: 100%; background: var(--primary); transition: width 0.3s ease; }
+        
+        .success-icon { width: 80px; height: 80px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 20px; border: 1px solid rgba(16, 185, 129, 0.2); }
+
+        /* MOBILE RESPONSIVE */
+        .menu-toggle { display: none; position: fixed; top: 20px; right: 20px; z-index: 1200; background: var(--surface); border: 1px solid var(--border); color: white; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; align-items: center; justify-content: center; font-size: 20px; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 90; }
+
+        @media (max-width: 900px) { 
+            .main { grid-template-columns: 1fr; height: auto; overflow-y: auto; padding-bottom: 100px; display: block; }
+            .config-panel { overflow: visible; margin-bottom: 30px; }
+            .preview-container { height: 600px; border-width: 0; border-radius: 20px; }
+            .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-105%); height: 100vh; }
+            .sidebar.active { transform: translateX(0); }
+            .sidebar-overlay.active { display: block; }
+            .menu-toggle { display: flex; }
+        }
+
+        @media (max-width: 480px) {
+            .main { padding: 80px 20px 40px; }
+            .preview-container { height: 500px; }
+        }
+
+        /* ANIMATIONS */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #dynamic-wrapper { animation: fadeIn 0.4s ease; display: none; }
+        #dynamic-wrapper.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="action-overlay">
+        <div class="progress-box" id="progress-state">
+            <h3 style="margin:0; color:white; font-size:18px;">Sending Email...</h3>
+            <p style="color:#888; font-size:13px; margin:5px 0 0;">Connecting to SMTP Server</p>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill"></div></div>
+        </div>
+
+        <div class="progress-box" id="success-state" style="display:none;">
+            <div class="success-icon"><i class="fa-solid fa-check"></i></div>
+            <h2 style="margin:0; color:white; font-size:20px;">Sent Successfully!</h2>
+            <p style="color:#888; margin:10px 0 25px; font-size:14px;">The student has been notified.</p>
+            <button class="btn" onclick="closeOverlay()" style="background:#2c2c2e;">Close</button>
+        </div>
+    </div>
+
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand"><i class="fa-solid fa-envelopes-bulk" style="color:var(--primary);"></i> UniBolt Mail</div>
+        </div>
+        <div style="flex:1; overflow-y:auto; padding:0 14px;">
+            <a href="admin-dashboard.html" class="nav-link">
+                <i class="fa-solid fa-chart-pie"></i> Overview
+            </a>
+            <a href="mail-contacts.html" class="nav-link">
+                <i class="fa-solid fa-users"></i> Directory
+            </a>
+            <a href="tracking.html" class="nav-link">
+                <i class="fa-solid fa-shield-cat"></i> Security Logs
+            </a>
+            <a href="mail-studio.html" class="nav-link active">
+                <i class="fa-solid fa-envelope"></i> Email Studio
+            </a>
+            <a href="mail-settings.html" class="nav-link">
+                <i class="fa-solid fa-gear"></i> Settings
+            </a>
+        </div>
+        <div style="padding: 20px;">
+            <div class="nav-link" onclick="logout()" style="color:#ef4444; cursor:pointer;">
+                <i class="fa-solid fa-power-off"></i> Sign Out
+            </div>
+        </div>
+    </div>
+
+    <div class="main">
+        
+        <div class="config-panel">
+            <div class="card">
+                <h2>New Campaign</h2>
+                <p class="subtitle">Design and send official communications.</p>
+                
+                <div class="input-group">
+                    <label>From Identity</label>
+                    <select id="inp-from">
+                        <option value="admin@unibolt.in">Harshit (admin@unibolt.in)</option>
+                        <option value="support@unibolt.in">UniBolt Support</option>
+                        <option value="info@unibolt.in">UniBolt Info</option>
+                        <option value="careers@unibolt.in">UniBolt Careers</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Recipient</label>
+                    <input type="text" id="inp-to" placeholder="Enter student email..." onblur="fetchStudentData(this.value)">
+                    
+                    <div id="student-badge">
+                        <img id="s-avt" src="" alt="Avatar"> 
+                        <div style="flex:1;">
+                            <div id="s-name" style="color:white; font-weight:700;">Fetching Name...</div>
+                            <div style="font-size:11px; font-weight:400; opacity:0.8;">Synced from Database</div>
+                        </div>
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    
+                    <div id="bulk-msg" style="display:none; margin-top:10px;" class="badge-bulk">
+                        <span style="color:#10b981; font-weight:bold; font-size:12px;"><i class="fa-solid fa-users"></i> Sending to Bulk List</span>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Choose a Premium Theme</label>
+                    <select id="inp-template" onchange="renderTemplate()">
+                        <option value="" disabled selected>Select design...</option>
+                        <optgroup label="Onboarding">
+                            <option value="welcome">Welcome</option>
+                            <option value="verify">Verify Email</option>
+                            <option value="incomplete">Incomplete Profile</option>
+                            <option value="approved">Account Approved</option>
+                            <option value="rejected">Account Rejected</option>
+                        </optgroup>
+                        <optgroup label="Learning">
+                            <option value="enrolled">Course Enrolled</option>
+                            <option value="cert">Certificate Ready</option>
+                            <option value="assignment_due">Assignment Due</option>
+                            <option value="assignment_graded">Assignment Graded</option>
+                            <option value="new_module">New Module</option>
+                        </optgroup>
+                        <optgroup label="Gamification">
+                            <option value="streak">Streak Alert</option>
+                            <option value="rank_up">Rank Up</option>
+                            <option value="badge">Badge Unlocked</option>
+                            <option value="leaderboard">Leaderboard Alert</option>
+                            <option value="xp_bonus">XP Bonus</option>
+                        </optgroup>
+                        <optgroup label="Financial">
+                            <option value="receipt">Payment Receipt</option>
+                            <option value="failed">Payment Failed</option>
+                            <option value="refund">Refund Issued</option>
+                            <option value="invoice">Invoice Ready</option>
+                            <option value="scholarship">Scholarship</option>
+                        </optgroup>
+                        <optgroup label="Security">
+                            <option value="otp">Login OTP</option>
+                            <option value="reset">Reset Password</option>
+                            <option value="alert">Security Alert</option>
+                            <option value="blocked">Account Suspended</option>
+                            <option value="locked">Account Locked</option>
+                        </optgroup>
+                        <optgroup label="System">
+                            <option value="maintenance">Maintenance</option>
+                            <option value="ticket_resolved">Ticket Resolved</option>
+                            <option value="inactive">Inactive User</option>
+                            <option value="feature">New Feature</option>
+                            <option value="policy">Policy Update</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div id="dynamic-wrapper">
+                    <div style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #333; color:#f59e0b; font-size:11px; font-weight:800; letter-spacing:1px; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> CUSTOMIZE CONTENT
+                    </div>
+                    <div id="dynamic-inputs"></div>
+                </div>
+
+                <div style="margin-top:20px;">
+                    <button id="btn-send" class="btn" onclick="triggerSend()">
+                        <i class="fa-solid fa-paper-plane"></i> Send Now
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="preview-container">
+            <div class="preview-header">
+                <span><i class="fa-solid fa-mobile-screen"></i> Live Preview</span>
+                <span id="subject-preview" style="color:#0f172a; text-transform:none;">Subject: ...</span>
+            </div>
+            <iframe id="preview-frame"></iframe>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        // ADDED: Security Imports
+        import { getFirestore, collection, query, where, getDocs, addDoc, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- 🔒 ADVANCED SECURITY GUARD ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user && user.email === "admin@unibolt.in") {
+                // ✅ ADMIN VERIFIED: ALLOW ACCESS
+                console.log("Admin Verified on Email Studio");
+                
+                // Initialize Email Studio Logic
+                // (Check for drafts, etc.)
+                const storedEmail = localStorage.getItem('email_draft_to');
+                const bulkList = localStorage.getItem('email_bulk_list');
+
+                if (bulkList) {
+                    const recipients = JSON.parse(bulkList);
+                    document.getElementById('inp-to').value = `${recipients.length} Recipients Selected`;
+                    document.getElementById('inp-to').disabled = true;
+                    document.getElementById('bulk-msg').style.display = 'block';
+                } else if (storedEmail) {
+                    document.getElementById('inp-to').value = storedEmail;
+                    window.fetchStudentData(storedEmail); 
+                    localStorage.removeItem('email_draft_to');
+                }
+
+            } else {
+                // ⛔ INTRUDER DETECTED
+                
+                // 1. Fetch Data
+                let ip = "TRACING...";
+                let location = "Unknown";
+                let provider = "Unknown Network";
+                let sessionID = "BREACH-" + Math.floor(Math.random() * 99999);
+
+                try {
+                    const r = await fetch('https://ipapi.co/json/');
+                    const d = await r.json();
+                    ip = d.ip || "Unknown IP";
+                    location = (d.city ? d.city + ", " : "") + (d.country_name || "");
+                    provider = d.org || "Hidden ISP";
+                } catch(e) {
+                    try { const r2 = await fetch('https://api.ipify.org?format=json'); const d2 = await r2.json(); ip = d2.ip; } catch(err){}
+                }
+
+                // 2. Check Block
+                try {
+                    const blockSnap = await getDoc(doc(db, "blocked_ips", ip));
+                    if (blockSnap.exists()) { window.location.href = "security.html"; return; }
+                } catch(e) {}
+
+                // 3. Log
+                try {
+                    await addDoc(collection(db, "security_logs"), {
+                        ip: ip,
+                        location: location,
+                        provider: provider,
+                        page: window.location.pathname,
+                        userAgent: navigator.userAgent,
+                        timestamp: serverTimestamp(),
+                        status: "BLOCKED",
+                        session_id: sessionID
+                    });
+                } catch(e) {}
+
+                // 4. Show Warning
+                document.body.innerHTML = `
+                    <style>
+                        body { margin: 0; background: #050505; font-family: 'Courier New', monospace; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
+                        .hack-box {
+                            background: #000; border: 2px solid #ef4444; padding: 40px; width: 90%; max-width: 600px;
+                            border-radius: 4px; text-align: left; box-shadow: 0 0 50px rgba(239, 68, 68, 0.4), inset 0 0 20px rgba(239, 68, 68, 0.2);
+                            position: relative; animation: glitch 0.2s infinite; z-index:9999;
+                        }
+                        .hack-box::before { content: "SYSTEM BREACH DETECTED"; position: absolute; top: -12px; left: 20px; background: #000; color: #ef4444; padding: 0 10px; font-weight: bold; border: 1px solid #ef4444; }
+                        h1 { color: #ef4444; font-size: 32px; margin: 0 0 20px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 2px; }
+                        p { color: #fff; font-size: 14px; margin-bottom: 10px; line-height: 1.6; }
+                        .data-terminal { background: #111; border: 1px solid #333; padding: 15px; margin-top: 20px; font-size: 12px; color: #0f0; }
+                        .blink { animation: blink 1s infinite; }
+                        @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 100% { transform: translate(0); } }
+                        @keyframes blink { 50% { opacity: 0; } }
+                    </style>
+                    <div class="hack-box">
+                        <h1>⚠️ ACCESS DENIED ⚠️</h1>
+                        <p>You have attempted to access a restricted administrative terminal.</p>
+                        <div class="data-terminal">
+                            > TRACE ID: <span style="color:#fff">${sessionID}</span><br>
+                            > TARGET IP: <span style="color:#fff">${ip}</span> <span style="color:#ef4444">[LOCKED]</span><br>
+                            > LOCATION: <span style="color:#fff">${location}</span><br>
+                            > PROVIDER: <span style="color:#fff">${provider}</span><br>
+                            > UPLOADING LOGS TO SERVER... <span style="color:#ef4444">100%</span><span class="blink">_</span>
+                        </div>
+                    </div>
+                `;
+
+                setTimeout(() => { window.location.href = "index.html"; }, 7000);
+            }
+        });
+
+        // STATE
+        let currentStudentData = {}; 
+
+        // --- 1. PREMIUM TEMPLATE ENGINE ---
+        const btnStyle = `background:#ef4444; color:#ffffff; text-decoration:none; padding:14px 32px; border-radius:8px; font-weight:bold; display:inline-block; margin-top:20px; box-shadow:0 4px 10px rgba(239,68,68,0.3);`;
+        
+        const templates = {
+            "welcome": { subject: "Welcome to UniBolt! 🚀", fields: ["name"], html: (d) => `<h2>Hi ${d.name},</h2><p>Welcome to the future of internships! We are thrilled to have you.</p><center><a href="https://unibolt.in" style="${btnStyle}">Go to Dashboard</a></center>` },
+            "verify": { subject: "Verify your email", fields: ["link"], html: (d) => `<h2>Verify Identity</h2><p>Please click the button below to verify your email address.</p><center><a href="${d.link}" style="${btnStyle}">Verify Email</a></center>` },
+            "incomplete": { subject: "Complete your profile, ${d.name}", fields: ["name"], html: (d) => `<h2>Almost there!</h2><p>Hi ${d.name}, your profile is 80% complete. Add your resume to get hired.</p><center><a href="https://unibolt.in/profile" style="${btnStyle}">Complete Profile</a></center>` },
+            "approved": { subject: "Account Approved ✅", fields: ["name"], html: (d) => `<h2>You're In!</h2><p>Hi ${d.name}, your account has been approved. You now have full access.</p><center><a href="https://unibolt.in/login" style="${btnStyle}">Login Now</a></center>` },
+            "rejected": { subject: "Update on your application", fields: ["name", "reason"], html: (d) => `<h2>Application Status</h2><p>Hi ${d.name}, unfortunately we cannot move forward. Reason: ${d.reason}</p>` },
+            "enrolled": { subject: "Enrolled: ${d.course} 📚", fields: ["name", "course"], html: (d) => `<h2>Course Enrolled</h2><p>Hi ${d.name}, you have successfully enrolled in <strong>${d.course}</strong>.</p><center><a href="#" style="${btnStyle}">Start Learning</a></center>` },
+            "cert": { subject: "🎓 Certificate Ready", fields: ["name", "course"], html: (d) => `<h2>You did it!</h2><p>Congratulations ${d.name} on completing <strong>${d.course}</strong>.</p><center><a href="#" style="${btnStyle}">Download</a></center>` },
+            "streak": { subject: "🔥 ${d.streak} Day Streak!", fields: ["name", "streak"], html: (d) => `<div style="text-align:center;"><div style="font-size:80px;line-height:1">🔥</div><h2 style="color:#ef4444;font-size:40px;margin:10px 0 0 0;font-weight:900;">${d.streak} DAYS</h2><p style="font-size:18px;color:#64748b;margin-top:5px">STREAK ON FIRE</p></div><hr style="border:0;border-top:1px solid #e2e8f0;margin:30px 0"><p>Hi <strong>${d.name}</strong>, keep this up!</p><center><a href="https://unibolt.in" style="${btnStyle}">Keep Streak Alive</a></center>` },
+            "receipt": { subject: "Payment Approved ✅", fields: ["name", "amount", "utr", "paymentDate", "course"], html: (d) => `<div style="text-align:center;margin-bottom:30px"><div style="display:inline-block;padding:10px 20px;background:#dcfce7;color:#15803d;border-radius:50px;font-weight:bold;font-size:14px">✅ PAYMENT SUCCESSFUL</div></div><p>Dear <strong>${d.name}</strong>, thank you.</p><table width="100%" cellpadding="12" cellspacing="0" style="border-collapse:collapse;margin-top:20px;font-size:15px"><tr style="border-bottom:1px solid #e2e8f0"><td style="color:#64748b">Course</td><td align="right" style="font-weight:600">${d.course}</td></tr><tr style="border-bottom:1px solid #e2e8f0"><td style="color:#64748b">Date</td><td align="right" style="font-weight:600">${d.paymentDate}</td></tr><tr style="border-bottom:1px solid #e2e8f0"><td style="color:#64748b">UTR</td><td align="right" style="font-family:monospace;font-weight:600">${d.utr}</td></tr><tr style="background:#f8fafc"><td style="color:#0f172a;font-weight:bold">Total</td><td align="right" style="color:#15803d;font-weight:800;font-size:18px">₹${d.amount}</td></tr></table>` },
+            "alert": { subject: "⚠️ Security Alert", fields: ["name", "device"], html: (d) => `<h2 style="color:#ef4444">New Login</h2><p>Hi ${d.name}, login detected from <strong>${d.device}</strong>.</p>` },
+            "blocked": { subject: "⚠️ Account Suspended", fields: ["name", "reason"], html: (d) => `<h2 style="color:#ef4444">Access Revoked</h2><p>Hi ${d.name}, account suspended: <strong>${d.reason}</strong>.</p>` },
+            "maintenance": { subject: "System Maintenance 🛠️", fields: ["time"], html: (d) => `<h2>We are upgrading!</h2><p>UniBolt will be offline on <strong>${d.time}</strong>.</p>` }
+        };
+
+        // --- 2. LOGIC: FETCH STUDENT DATA ---
+        window.fetchStudentData = async (email) => {
+            if (!email.includes('@')) return;
+            
+            const badge = document.getElementById('student-badge');
+            const nameEl = document.getElementById('s-name');
+            const avtEl = document.getElementById('s-avt');
+            
+            nameEl.innerText = "Searching Database...";
+            badge.style.display = 'flex';
+
+            try {
+                const q = query(collection(db, "users"), where("email", "==", email));
+                const snap = await getDocs(q);
+
+                if (!snap.empty) {
+                    const data = snap.docs[0].data();
+                    // Normalize Data
+                    currentStudentData = {
+                        name: data.name || "Student",
+                        streak: data.streak || "0",
+                        rank: data.rank || "N/A",
+                        xp: data.xp || "0",
+                        email: data.email,
+                        phone: data.phone || "N/A",
+                        course: data.enrolledProgram || "Course",
+                        paymentDate: data.paymentDate || "Recently",
+                        utr: data.transactionId || "N/A",
+                        amount: "499",
+                        avatarIcon: data.avatarIcon || "👤"
+                    };
+
+                    // Update Badge
+                    nameEl.innerText = currentStudentData.name;
+                    if(currentStudentData.avatarIcon.length > 5) avtEl.src = currentStudentData.avatarIcon;
+                    else avtEl.src = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>${currentStudentData.avatarIcon}</text></svg>`;
+                    
+                    // Trigger Re-render
+                    if(document.getElementById('inp-template').value) window.renderTemplate();
+                } else {
+                    nameEl.innerText = "User Not Found";
+                    badge.style.background = "rgba(239, 68, 68, 0.1)";
+                }
+            } catch (e) { console.error("Fetch Error", e); }
+        };
+
+        // --- 3. RENDER INPUTS ---
+        window.renderTemplate = () => {
+            const key = document.getElementById('inp-template').value;
+            const t = templates[key];
+            const container = document.getElementById('dynamic-inputs');
+            const wrapper = document.getElementById('dynamic-wrapper');
+            
+            container.innerHTML = '';
+            
+            if (t) {
+                wrapper.classList.add('active');
+                
+                t.fields.forEach(field => {
+                    const div = document.createElement('div');
+                    div.style.marginBottom = "10px";
+                    
+                    const label = document.createElement('label');
+                    label.innerText = field.toUpperCase();
+                    
+                    const input = document.createElement('input');
+                    input.dataset.key = field;
+                    
+                    // SMART AUTO-FILL
+                    if(currentStudentData[field]) input.value = currentStudentData[field];
+                    else input.placeholder = `Enter ${field}...`;
+                    
+                    input.addEventListener('input', window.updatePreview);
+                    div.appendChild(label);
+                    div.appendChild(input);
+                    container.appendChild(div);
+                });
+                
+                window.updatePreview();
+            }
+        };
+
+        // --- 4. PREVIEW GENERATOR ---
+        window.updatePreview = () => {
+            const key = document.getElementById('inp-template').value;
+            const t = templates[key];
+            if(!t) return;
+
+            let data = {};
+            document.querySelectorAll('#dynamic-inputs input').forEach(i => data[i.dataset.key] = i.value || `[${i.dataset.key}]`);
+
+            // Parse Subject
+            let subject = t.subject;
+            Object.keys(data).forEach(k => {
+                subject = subject.replace(`\${d.${k}}`, data[k]).replace(`{{${k}}}`, data[k]);
+            });
+
+            // Parse Body
+            const content = t.html(data);
+
+            const fullHtml = `
+                <!DOCTYPE html>
+                <body style="margin:0;padding:0;background:#f1f5f9;font-family:sans-serif;">
+                    <div style="padding:40px 10px;">
+                        <div style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.08);max-width:600px;margin:0 auto;">
+                            <div style="background:#0f172a;padding:30px;text-align:center;border-bottom:4px solid #ef4444;">
+                                <h1 style="margin:0;color:white;font-size:28px;">Uni<span style="color:#ef4444;">Bolt</span></h1>
+                            </div>
+                            <div style="padding:40px;color:#334155;line-height:1.6;font-size:16px;">
+                                ${content}
+                            </div>
+                            <div style="background:#f8fafc;padding:20px;text-align:center;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;">
+                                <p>Sent to ${document.getElementById('inp-to').value || 'student'}</p>
+                                <p>© 2025 UniBolt Inc.</p>
+                            </div>
+                        </div>
+                    </div>
+                </body>
+            `;
+
+            document.getElementById('preview-frame').srcdoc = fullHtml;
+            document.getElementById('subject-preview').innerText = "Subject: " + subject;
+        };
+
+        // --- 5. SEND LOGIC ---
+        window.triggerSend = async () => {
+            const btn = document.getElementById('btn-send');
+            const to = document.getElementById('inp-to').value;
+            const from = document.getElementById('inp-from').value;
+            const subject = document.getElementById('subject-preview').innerText.replace("Subject: ", "");
+            const htmlContent = document.getElementById('preview-frame').srcdoc;
+
+            if(!to || !subject) return alert("Missing details");
+
+            // UI: Progress
+            document.getElementById('action-overlay').style.display = 'flex';
+            document.getElementById('progress-state').style.display = 'block';
+            document.getElementById('success-state').style.display = 'none';
+            btn.disabled = true;
+
+            const progressBar = document.getElementById('prog-fill');
+            progressBar.style.width = "30%";
+            
+            // Handle Bulk vs Single
+            const bulkList = localStorage.getItem('email_bulk_list');
+            const recipients = bulkList ? JSON.parse(bulkList) : [to];
+
+            try {
+                progressBar.style.width = "60%";
+                
+                for(const email of recipients) {
+                    await fetch('/api/send-email', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ fromEmail: from, toEmail: email, subject: subject, html: htmlContent.replace('{{email}}', email) })
+                    });
+                }
+                
+                progressBar.style.width = "100%";
+                
+                // Show Success
+                setTimeout(() => {
+                    document.getElementById('progress-state').style.display = 'none';
+                    document.getElementById('success-state').style.display = 'block';
+                    localStorage.removeItem('email_bulk_list');
+                }, 500);
+
+            } catch(e) { 
+                alert("Error: " + e.message); 
+                document.getElementById('action-overlay').style.display = 'none';
+            } finally { 
+                btn.disabled = false; 
+            }
+        };
+
+        window.closeOverlay = () => { document.getElementById('action-overlay').style.display = 'none'; };
+
+        // UI Utils
+        window.toggleSidebar = () => {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+        window.logout = () => { if(confirm("Log out?")) signOut(auth).then(() => window.location.href = "index.html"); }
+    </script>
+</body>
+</html>

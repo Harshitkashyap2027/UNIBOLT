@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UniBolt Admin - Submissions</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/admin-style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="brand"><i class="fa-solid fa-bolt" style="color:var(--primary);"></i> UniBolt Admin</div>
+        <a href="/admin" class="nav-item"><i class="fa-solid fa-users"></i> Students</a>
+        <a href="/admin-submissions" class="nav-item active"><i class="fa-solid fa-list-check"></i> Submissions</a>
+        <a href="/admin-tickets" class="nav-item"><i class="fa-solid fa-ticket"></i> Tickets</a>
+        <a href="/admin-analytics" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+        <a href="/admin-reports" class="nav-item"><i class="fa-solid fa-file-contract"></i> Reports</a>
+        <a href="/admin-content" class="nav-item"><i class="fa-solid fa-book-open"></i> Content</a>
+        <a href="/admin-activity" class="nav-item"><i class="fa-solid fa-history"></i> Activity Logs</a>
+        <a href="/admin-registrations" class="nav-item"><i class="fa-solid fa-address-card"></i> Registrations</a>
+        <a href="/admin-settings" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+        <a href="/admin-notifications" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="/admin-team" class="nav-item"><i class="fa-solid fa-user-shield"></i> Team</a>
+        <a href="/admin-faq" class="nav-item"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+    </div>
+
+    <div class="main">
+        <div class="header animate-entry">
+            <div>
+                <h2 style="margin:0;">Task Submissions</h2>
+                <p style="margin:5px 0 0 0; color:#666; font-size:13px;">Review and grade student projects.</p>
+            </div>
+            <button class="btn btn-primary" onclick="loadSubmissions()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+        </div>
+
+        <div id="subs-container" class="animate-entry delay-1">
+            <p style="text-align:center; padding:20px; color:#666;">Scanning student data...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, getDoc, arrayRemove, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- 1. Load Pending Submissions ---
+        // This scans all users' 'completedTasks' array for status: "Pending"
+        window.loadSubmissions = async () => {
+            const container = document.getElementById("subs-container");
+            container.innerHTML = '<p style="text-align:center; color:#666;">Loading...</p>';
+
+            try {
+                const snap = await getDocs(collection(db, "users"));
+                let allSubs = [];
+
+                snap.forEach(docSnap => {
+                    const userData = docSnap.data();
+                    if(userData.completedTasks && Array.isArray(userData.completedTasks)) {
+                        userData.completedTasks.forEach(task => {
+                            // Filter for tasks that need review (assuming status 'Pending' or similar)
+                            // If your logic just adds them to array, we show all recent ones.
+                            // Here we assume tasks have a 'status' field. If not, we show all.
+                            if(task.status === "Pending" || !task.status) { 
+                                allSubs.push({
+                                    ...task,
+                                    uid: docSnap.id,
+                                    studentName: userData.name || userData.email,
+                                    studentEmail: userData.email
+                                });
+                            }
+                        });
+                    }
+                });
+
+                container.innerHTML = "";
+                if(allSubs.length === 0) {
+                    container.innerHTML = `<div class="card" style="text-align:center; color:#888;">No pending submissions found.</div>`;
+                    return;
+                }
+
+                allSubs.forEach(sub => {
+                    const div = document.createElement("div");
+                    div.className = "card";
+                    div.style.marginBottom = "15px";
+                    div.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:start;">
+                            <div>
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <span style="background:var(--primary); font-size:10px; font-weight:bold; padding:2px 6px; border-radius:4px;">DAY ${sub.day || "?"}</span>
+                                    <span style="font-weight:bold;">${sub.title || "Task Submission"}</span>
+                                </div>
+                                <div style="margin-top:5px; font-size:13px; color:#aaa;">
+                                    Student: <span style="color:white;">${sub.studentName}</span> (${sub.studentEmail})
+                                </div>
+                                ${sub.link ? `<a href="${sub.link}" target="_blank" style="display:inline-block; margin-top:8px; color:#3b82f6; font-size:12px;"><i class="fa-solid fa-external-link-alt"></i> Open Project Link</a>` : '<span style="font-size:12px; color:#666;">No link provided</span>'}
+                            </div>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn btn-primary" onclick="gradeTask('${sub.uid}', '${sub.day}', 'Approved')" style="background:#10b981; border:none;">Approve</button>
+                                <button class="btn btn-delete" onclick="gradeTask('${sub.uid}', '${sub.day}', 'Rejected')">Reject</button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+
+            } catch(e) { console.error(e); container.innerHTML = "Error loading data."; }
+        };
+
+        // --- 2. Grade Logic ---
+        window.gradeTask = async (uid, day, newStatus) => {
+            if(!confirm(`Mark this task as ${newStatus}?`)) return;
+
+            const userRef = doc(db, "users", uid);
+            const snap = await getDoc(userRef);
+            
+            if(snap.exists()) {
+                const data = snap.data();
+                // We need to remove the old task object and add the updated one
+                // OR map through the array and update the specific item
+                const updatedTasks = data.completedTasks.map(t => {
+                    if(t.day == day) return { ...t, status: newStatus };
+                    return t;
+                });
+
+                await updateDoc(userRef, { completedTasks: updatedTasks });
+                
+                // If Approved, maybe give XP?
+                if(newStatus === 'Approved') {
+                    const currentXP = data.xp || 0;
+                    await updateDoc(userRef, { xp: currentXP + 50 }); // Give 50 XP
+                    alert("Approved & 50 XP Awarded! 🌟");
+                } else {
+                    alert("Task Rejected.");
+                }
+                
+                loadSubmissions();
+            }
+        };
+
+        loadSubmissions();
+    </script>
+</body>
+</html>

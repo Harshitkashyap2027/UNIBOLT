@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>UniBolt - Student Registration</title>
+
+    <link rel="icon" type="image/png" href="UniBolt.png">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+
+
+    <style>
+
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+
+
+        :root {
+
+            --bg-dark: #09090b;
+
+            --panel: rgba(24, 24, 27, 0.75);
+
+            --primary: #8b5cf6;
+
+            --secondary: #06b6d4;
+
+            --text: #ffffff;
+
+            --text-muted: #a1a1aa;
+
+            --border: rgba(255, 255, 255, 0.1);
+
+        }
+
+
+
+        * { box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+
+
+
+        body {
+
+            margin: 0; background-color: var(--bg-dark); color: var(--text);
+
+            display: flex; justify-content: center; align-items: center;
+
+            min-height: 100vh; padding: 40px 20px; overflow-x: hidden; position: relative;
+
+        }
+
+
+
+        /* --- BACKGROUND --- */
+
+        .bg-glow {
+
+            position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
+
+            background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.15), transparent 50%),
+
+                        radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.1), transparent 40%);
+
+            z-index: -1; animation: drift 15s infinite linear; pointer-events: none;
+
+        }
+
+        @keyframes drift { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+
+
+        /* --- CONTAINER --- */
+
+        .register-container {
+
+            width: 100%; max-width: 650px; background: var(--panel);
+
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+
+            border: 1px solid var(--border); border-radius: 24px; padding: 50px;
+
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden;
+
+        }
+
+        .register-container::before {
+
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+
+        }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+
+
+
+        .brand {
+
+            text-align: center; font-size: 36px; font-weight: 800; margin-bottom: 5px;
+
+            color: white; display: flex; align-items: center; justify-content: center; gap: 12px;
+
+            letter-spacing: -1px; text-decoration: none; transition: 0.3s;
+
+            text-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+
+        }
+
+        .brand:hover { transform: scale(1.05); }
+
+        .brand i { color: var(--primary); font-size: 32px; animation: pulse 3s infinite ease-in-out; }
+
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+
+
+
+        .subtitle { text-align: center; color: var(--text-muted); font-size: 15px; margin-bottom: 40px; font-weight: 400; }
+
+
+
+        .form-group { margin-bottom: 24px; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; gap: 24px; } .register-container { padding: 30px; } }
+
+
+
+        label { display: block; font-size: 12px; font-weight: 700; color: #d4d4d8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+
+
+
+        input, select, textarea {
+
+            width: 100%; padding: 15px 16px; background: rgba(0, 0, 0, 0.4);
+
+            border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 15px;
+
+            outline: none; transition: all 0.3s ease; appearance: none;
+
+        }
+
+        input:focus, select:focus, textarea:focus {
+
+            border-color: var(--primary); box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
+
+            background: rgba(0, 0, 0, 0.6); transform: translateY(-2px);
+
+        }
+
+        input::placeholder, textarea::placeholder { color: #52525b; }
+
+
+
+        /* DROPDOWN STYLING */
+
+        select option { background-color: #18181b; color: white; padding: 10px; }
+
+        select optgroup { background-color: #18181b; color: #a1a1aa; font-weight: bold; font-style: normal; }
+
+        select {
+
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+
+            background-repeat: no-repeat; background-position: right 1rem center; background-size: 1em;
+
+        }
+
+
+
+        /* BUTTONS */
+
+        .btn-submit {
+
+            width: 100%; padding: 16px; background: linear-gradient(135deg, var(--primary), #7c3aed);
+
+            color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700;
+
+            cursor: pointer; transition: all 0.3s ease; margin-top: 15px;
+
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+
+            box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.4); position: relative; overflow: hidden;
+
+            text-decoration: none;
+
+        }
+
+        .btn-submit:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(139, 92, 246, 0.6); }
+
+       
+
+        .btn-whatsapp { background: #25D366; box-shadow: 0 10px 20px -5px rgba(37, 211, 102, 0.3); }
+
+        .btn-whatsapp:hover { background: #1ebe57; box-shadow: 0 15px 30px -5px rgba(37, 211, 102, 0.5); }
+
+
+
+        .btn-website { background: transparent; border: 1px solid var(--border); color: var(--text-muted); margin-top: 10px; }
+
+        .btn-website:hover { border-color: var(--primary); color: white; background: rgba(139, 92, 246, 0.1); }
+
+
+
+        /* MODAL */
+
+        .modal-overlay {
+
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+
+            display: flex; justify-content: center; align-items: center;
+
+            z-index: 1000; opacity: 0; pointer-events: none; transition: 0.3s;
+
+        }
+
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+
+        .modal-box {
+
+            background: #18181b; padding: 50px 40px; border-radius: 24px; text-align: center;
+
+            border: 1px solid var(--border); width: 450px; max-width: 90%;
+
+            transform: scale(0.9); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+
+        }
+
+        .modal-overlay.active .modal-box { transform: scale(1); }
+
+
+
+        .success-icon {
+
+            width: 80px; height: 80px; background: rgba(37, 211, 102, 0.1); color: #25D366;
+
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+
+            font-size: 36px; margin: 0 auto 25px; border: 2px solid #25D366;
+
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+        }
+
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 80% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
+
+
+
+        .feature-list { text-align: left; margin: 20px 0; padding: 0; list-style: none; }
+
+        .feature-list li { margin-bottom: 12px; color: #d4d4d8; font-size: 14px; display: flex; align-items: start; gap: 10px; }
+
+        .feature-list i { color: #06b6d4; margin-top: 3px; }
+
+        .highlight-box { background: rgba(239, 68, 68, 0.1); border: 1px dashed #ef4444; padding: 15px; border-radius: 12px; margin-top: 20px; }
+
+    </style>
+
+</head>
+
+<body>
+
+
+
+    <div class="bg-glow"></div>
+
+
+
+    <div class="register-container">
+
+        <a href="index.html" class="brand">
+
+            <i class="fa-solid fa-bolt"></i> UniBolt
+
+        </a>
+
+        <p class="subtitle">Join the Elite Internship Program</p>
+
+
+
+        <form id="regForm">
+
+            <div class="form-group">
+
+                <label>Full Name</label>
+
+                <input type="text" id="inp-name" placeholder="Enter your full name" required>
+
+            </div>
+
+
+
+            <div class="form-group">
+
+                <label>Email Address</label>
+
+                <input type="email" id="inp-email" placeholder="john@example.com" required>
+
+            </div>
+
+
+
+            <div class="form-group">
+
+                <label>College / University Name</label>
+
+                <input type="text" id="inp-college" placeholder="e.g. IIT Delhi" required>
+
+            </div>
+
+
+
+            <div class="form-row form-group">
+
+                <div>
+
+                    <label>WhatsApp Number</label>
+
+                    <input type="tel" id="inp-phone" placeholder="9876543210" maxlength="10" pattern="[0-9]{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+
+                </div>
+
+                <div>
+
+                    <label>Current Status</label>
+
+                    <select id="inp-status" required>
+
+                        <option value="" disabled selected>Select</option>
+
+                        <option value="Student">Student</option>
+
+                        <option value="Working Professional">Working Professional</option>
+
+                        <option value="Other">Other</option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="form-row form-group">
+
+                <div>
+
+                    <label>Course Pursuing</label>
+
+                    <select id="inp-course" required>
+
+                        <option value="" disabled selected>Select course</option>
+
+                        <optgroup label="B.Tech / B.E.">
+
+                            <option>B.Tech - CSE</option>
+
+                            <option>B.Tech - AIML</option>
+
+                            <option>B.Tech - Data Science</option>
+
+                            <option>B.Tech - ECE</option>
+
+                            <option>B.Tech - Electrical</option>
+
+                            <option>B.Tech - Mechanical</option>
+
+                            <option>B.Tech - Civil</option>
+
+                            <option>B.Tech - Other</option>
+
+                        </optgroup>
+
+                        <optgroup label="Computer Applications">
+
+                            <option>BCA</option>
+
+                            <option>MCA</option>
+
+                            <option>B.Sc - CS/IT</option>
+
+                            <option>M.Sc - CS/IT</option>
+
+                        </optgroup>
+
+                        <optgroup label="Management & Others">
+
+                            <option>BBA</option>
+
+                            <option>MBA</option>
+
+                            <option>B.Com</option>
+
+                            <option>B.A.</option>
+
+                            <option>Diploma / Polytechnic</option>
+
+                        </optgroup>
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label>Graduation Year</label>
+
+                    <select id="inp-gradYear" required>
+
+                        <option value="" disabled selected>Select Year</option>
+
+                        <option value="2024">2024</option>
+
+                        <option value="2025">2025</option>
+
+                        <option value="2026">2026</option>
+
+                        <option value="2027">2027</option>
+
+                        <option value="2028">2028</option>
+
+                        <option value="Graduated">Already Graduated</option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="form-row form-group">
+
+                <div>
+
+                    <label>City</label>
+
+                    <input type="text" id="inp-city" placeholder="e.g. Mumbai" required>
+
+                </div>
+
+                <div>
+
+                    <label>State</label>
+
+                    <select id="inp-state" required>
+
+                        <option value="" disabled selected>Select State</option>
+
+                        <option>Andaman and Nicobar Islands</option>
+
+                            <option>Andhra Pradesh</option>
+
+                            <option>Arunachal Pradesh</option>
+
+                            <option>Assam</option>
+
+                            <option>Bihar</option>
+
+                            <option>Chandigarh</option>
+
+                            <option>Chhattisgarh</option>
+
+                            <option>Dadra and Nagar Haveli</option>
+
+                            <option>Daman and Diu</option>
+
+                            <option>Delhi</option>
+
+                            <option>Goa</option>
+
+                            <option>Gujarat</option>
+
+                            <option>Haryana</option>
+
+                            <option>Himachal Pradesh</option>
+
+                            <option>Jammu and Kashmir</option>
+
+                            <option>Jharkhand</option>
+
+                            <option>Karnataka</option>
+
+                            <option>Kerala</option>
+
+                            <option>Ladakh</option>
+
+                            <option>Lakshadweep</option>
+
+                            <option>Madhya Pradesh</option>
+
+                            <option>Maharashtra</option>
+
+                            <option>Manipur</option>
+
+                            <option>Meghalaya</option>
+
+                            <option>Mizoram</option>
+
+                            <option>Nagaland</option>
+
+                            <option>Odisha</option>
+
+                            <option>Puducherry</option>
+
+                            <option>Punjab</option>
+
+                            <option>Rajasthan</option>
+
+                            <option>Sikkim</option>
+
+                            <option>Tamil Nadu</option>
+
+                            <option>Telangana</option>
+
+                            <option>Tripura</option>
+
+                            <option>Uttar Pradesh</option>
+
+                            <option>Uttarakhand</option>
+
+                            <option>West Bengal</option>
+
+                            <option>Other</option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="form-group">
+
+                <label>Interested Domain</label>
+
+                <select id="inp-domain" style="height: auto; padding: 15px;" required>
+
+                    <option value="" disabled selected>Select your Track</option>
+
+                    <option value="Full Stack Web">💻 Full Stack Web - Master React, Node & Firebase</option>
+
+                    <option value="AI & Data Science">🤖 AI & Data Science - Learn Python & ML Models</option>
+
+                    <option value="App Development">📱 App Development (Coming Soon)</option>
+
+                </select>
+
+            </div>
+
+
+
+            <div class="form-group">
+
+                <label>Why are you interested in this program?</label>
+
+                <textarea id="inp-reason" rows="3" placeholder="Tell us your motivation..." required></textarea>
+
+            </div>
+
+
+
+            <button type="submit" class="btn-submit" id="submitBtn">
+
+                Submit Application <i class="fa-solid fa-arrow-right"></i>
+
+            </button>
+
+        </form>
+
+    </div>
+
+
+
+    <div class="modal-overlay" id="welcomeModal">
+
+        <div class="modal-box" style="text-align: left;">
+
+            <div style="text-align: center; margin-bottom: 20px;">
+
+                <i class="fa-solid fa-gift" style="font-size: 50px; color: #8b5cf6;"></i>
+
+            </div>
+
+            <h2 style="color: white; text-align: center; margin: 0 0 10px;">Why Join UniBolt?</h2>
+
+            <p style="color: #a1a1aa; text-align: center; font-size: 14px; margin-bottom: 20px;">The Ultimate Gamified Learning Experience</p>
+
+            <ul class="feature-list">
+
+                <li><i class="fa-solid fa-certificate"></i> <span><strong>Verified Certificates:</strong> Instant QR verification.</span></li>
+
+                <li><i class="fa-solid fa-code"></i> <span><strong>Live Code Arena:</strong> No setup, just code in browser.</span></li>
+
+                <li><i class="fa-solid fa-robot"></i> <span><strong>AI Mentor:</strong> 24/7 hints & bug fixing.</span></li>
+
+                <li><i class="fa-solid fa-briefcase"></i> <span><strong>Job Ready:</strong> Startup referrals for top coders.</span></li>
+
+            </ul>
+
+            <div class="highlight-box" style="text-align: center;">
+
+                <strong style="color: #ef4444; font-size: 15px; display:block; margin-bottom:5px;">🔥 EXCLUSIVE PERK</strong>
+
+                <p style="color: #e4e4e7; font-size: 13px; margin: 0; line-height: 1.4;">The <strong>Top 10 Performers</strong> will receive a <br><u>Complete Final Year Project</u> on the house! 🎓</p>
+
+            </div>
+
+            <button onclick="closeWelcomeModal()" class="btn-submit" style="margin-top: 25px;">Register Now <i class="fa-solid fa-arrow-right"></i></button>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="modal-overlay" id="successModal">
+
+        <div class="modal-box">
+
+            <div class="success-icon"><i class="fa-brands fa-whatsapp"></i></div>
+
+            <h2 style="color:white; margin:0 0 10px;">Application Received!</h2>
+
+            <p style="color:#a1a1aa; font-size:15px; margin-bottom:20px; line-height: 1.6;">Thank you for registering. <br><strong>Join our WhatsApp Community</strong> to get updates.</p>
+
+            <a href="https://chat.whatsapp.com/E7Lot6xWb7412li4Tah0qZ" target="_blank" class="btn-submit btn-whatsapp">Join Community Now <i class="fa-solid fa-users"></i></a>
+
+            <a href="index.html" class="btn-submit btn-website">Visit Website <i class="fa-solid fa-globe"></i></a>
+
+            <button onclick="window.location.reload()" style="background:transparent; border:none; color:#71717a; margin-top:15px; cursor:pointer; font-size:13px; transition: color 0.2s;">Close & Register Another</button>
+
+        </div>
+
+    </div>
+
+
+
+    <script type="module">
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+
+
+        const firebaseConfig = {
+
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+
+            authDomain: "unibolt-f7005.firebaseapp.com",
+
+            projectId: "unibolt-f7005",
+
+            storageBucket: "unibolt-f7005.appspot.com",
+
+            messagingSenderId: "121987854250",
+
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+
+        };
+
+
+
+        const app = initializeApp(firebaseConfig);
+
+        const db = getFirestore(app);
+
+
+
+        window.addEventListener('load', () => { setTimeout(() => { document.getElementById('welcomeModal').classList.add('active'); }, 500); });
+
+        window.closeWelcomeModal = function() { document.getElementById('welcomeModal').classList.remove('active'); };
+
+
+
+        const form = document.getElementById('regForm');
+
+        const submitBtn = document.getElementById('submitBtn');
+
+
+
+        form.addEventListener('submit', async (e) => {
+
+            e.preventDefault();
+
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+            submitBtn.style.opacity = '0.7';
+
+            submitBtn.disabled = true;
+
+
+
+            const formData = {
+
+                name: document.getElementById('inp-name').value,
+
+                email: document.getElementById('inp-email').value,
+
+                college: document.getElementById('inp-college').value,
+
+                course: document.getElementById('inp-course').value,
+
+                phone: document.getElementById('inp-phone').value,
+
+                status: document.getElementById('inp-status').value,
+
+                gradYear: document.getElementById('inp-gradYear').value,
+
+                city: document.getElementById('inp-city').value,
+
+                state: document.getElementById('inp-state').value,
+
+                domain: document.getElementById('inp-domain').value,
+
+                reason: document.getElementById('inp-reason').value,
+
+                timestamp: serverTimestamp(),
+
+                applicationStatus: 'New'
+
+            };
+
+
+
+            try {
+
+                await addDoc(collection(db, "registrations"), formData);
+
+                if(typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+
+                document.getElementById('successModal').classList.add('active');
+
+                submitBtn.innerHTML = 'Submitted <i class="fa-solid fa-check"></i>';
+
+            } catch (error) {
+
+                console.error("Error:", error);
+
+                alert("Connection failed. Please check your internet.");
+
+                submitBtn.innerHTML = 'Try Again <i class="fa-solid fa-rotate-right"></i>';
+
+                submitBtn.style.opacity = '1';
+
+                submitBtn.disabled = false;
+
+            }
+
+        });
+
+    </script>
+
+</body>
+
+</html>
+

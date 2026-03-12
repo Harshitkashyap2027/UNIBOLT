@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBolt Admin - Practice Manager</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { 
+            --primary: #ff3b30; 
+            --bg: #000000; 
+            --surface: #1c1c1e; 
+            --surface-highlight: #2c2c2e;
+            --text: #ffffff; 
+            --text-dim: #8e8e93;
+            --border: rgba(255, 255, 255, 0.1); 
+            --bento-shadow: 0 20px 40px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            --radius: 24px;
+        }
+
+        body { 
+            background: var(--bg); 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            color: var(--text); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar { width: 280px; background: #000; border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 1100; height: 100vh; }
+        .sidebar-header { padding: 30px 24px 10px; flex-shrink: 0; }
+        .sidebar-scroll { flex: 1; overflow-y: auto; padding: 0 14px; }
+        .sidebar-footer { padding: 20px 24px; border-top: 1px solid var(--border); background: #000; flex-shrink: 0; }
+        .brand { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; }
+        .nav-item { padding: 14px 16px; color: var(--text-dim); cursor: pointer; border-radius: 14px; margin-bottom: 4px; display: flex; align-items: center; gap: 14px; text-decoration: none; font-size: 15px; font-weight: 500; transition: 0.2s; }
+        .nav-item:hover { background: var(--surface); color: white; }
+        .nav-item.active { background: var(--surface-highlight); color: white; font-weight: 600; }
+        .nav-item i { width: 20px; text-align: center; }
+
+        /* --- MAIN CONTENT --- */
+        .main { flex: 1; padding: 30px; overflow-y: auto; background: var(--bg); position: relative; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px; }
+        .header h2 { font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
+
+        /* --- CONTROLS --- */
+        .btn { padding: 14px 24px; border-radius: 14px; border: none; cursor: pointer; font-size: 15px; font-weight: 600; color: white; background: var(--surface); transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn:hover { background: var(--surface-highlight); transform: scale(1.02); }
+        .btn-primary { background: var(--primary); box-shadow: 0 4px 12px rgba(255, 59, 48, 0.4); }
+        .btn-icon { width: 36px; height: 36px; border-radius: 50%; border: none; background: #2c2c2e; color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-icon:hover { transform: scale(1.1); background: #3a3a3c; }
+
+        /* --- TABS --- */
+        .tab-menu { 
+            background: var(--surface); 
+            padding: 4px; 
+            border-radius: 14px; 
+            display: inline-flex; 
+            margin-bottom: 30px; 
+            border: 1px solid var(--border);
+        }
+        .tab-btn { 
+            background: transparent; 
+            border: none; 
+            color: var(--text-dim); 
+            padding: 10px 20px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            font-weight: 600; 
+            border-radius: 10px; 
+            transition: 0.2s; 
+        }
+        .tab-btn.active { background: var(--surface-highlight); color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+        /* --- CARDS --- */
+        .card-grid { display: grid; gap: 16px; }
+        .content-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--bento-shadow);
+            transition: transform 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .content-card:hover { transform: scale(1.01); background: var(--surface-highlight); }
+        
+        .card-info h4 { margin: 0 0 6px 0; font-size: 18px; font-weight: 600; }
+        .card-meta { font-size: 13px; color: var(--text-dim); display: flex; gap: 12px; align-items: center; }
+        .badge-day { background: var(--primary); color: white; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        
+        /* --- SUBMISSION CARDS --- */
+        .sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+        .sub-card { 
+            background: var(--surface); padding: 20px; border-radius: 20px; 
+            box-shadow: var(--bento-shadow); cursor: pointer; transition: 0.2s; 
+            position: relative; overflow: hidden;
+        }
+        .sub-card:hover { transform: translateY(-3px); background: var(--surface-highlight); }
+        .sub-card.cheated { border: 1px solid #ff3b30; background: rgba(255, 59, 48, 0.05); }
+        
+        .sub-header { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 12px; color: var(--text-dim); }
+        .sub-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; color: white; }
+        .sub-course { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; }
+        .sub-footer { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* --- MODAL --- */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(20px); display: flex; justify-content: center; align-items: center; z-index: 2000; visibility: hidden; opacity: 0; transition: 0.3s; padding: 20px; }
+        .modal.active { visibility: visible; opacity: 1; }
+        .modal-content { 
+            background: #1c1c1e; width: 100%; max-width: 650px; 
+            max-height: 90vh; overflow-y: auto; padding: 30px; 
+            border-radius: 24px; border: 1px solid var(--border); 
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6); transform: scale(0.95); transition: 0.3s; 
+        }
+        .modal.active .modal-content { transform: scale(1); }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+        input, select, textarea { width: 100%; background: #2c2c2e; border: none; color: white; padding: 14px; border-radius: 12px; box-sizing: border-box; outline: none; font-size: 15px; }
+        input:focus { background: #3a3a3c; box-shadow: 0 0 0 2px var(--primary); }
+
+        /* --- BUILDER --- */
+        .q-box { border: 1px dashed var(--border); padding: 20px; border-radius: 16px; background: rgba(255,255,255,0.02); margin-top: 20px; }
+        .added-item { background: var(--surface-highlight); padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary); }
+
+        /* --- MOBILE --- */
+        .menu-toggle { display: none; position: fixed; top: 20px; right: 20px; z-index: 1200; background: var(--surface); border: 1px solid var(--border); color: white; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; align-items: center; justify-content: center; font-size: 20px; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 1050; }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-105%); height: 100vh; visibility: hidden; }
+            .sidebar.active { transform: translateX(0); visibility: visible; }
+            .sidebar-overlay.active { display: block; }
+            .menu-toggle { display: flex; }
+            .main { padding: 90px 20px 40px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .content-card { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .sub-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand"><i class="fa-solid fa-shield-cat" style="color:var(--primary);"></i> UniBolt Admin</div>
+        </div>
+        <div class="sidebar-scroll">
+            <a href="/admin" class="nav-item"><i class="fa-solid fa-grid-2"></i> Overview</a>
+            <a href="/admin-tickets" class="nav-item"><i class="fa-solid fa-ticket"></i> Tickets</a>
+            <a href="/admin-analytics" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="/admin-reports" class="nav-item"><i class="fa-solid fa-file-contract"></i> Reports</a>
+            <a href="/admin-content" class="nav-item active"><i class="fa-solid fa-book-open"></i> Content</a>
+            <a href="/admin-activity" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Activity</a>
+            <a href="/admin-registrations" class="nav-item"><i class="fa-solid fa-address-card"></i> Registrations</a>
+            <a href="/admin-settings" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="/admin-notifications" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications</a>
+            <a href="/admin-team" class="nav-item"><i class="fa-solid fa-user-shield"></i> Team</a>
+            <a href="/admin-faq" class="nav-item"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+        </div>
+        <div class="sidebar-footer">
+            <div class="nav-item" onclick="logout()" style="color: #ff453a;"><i class="fa-solid fa-power-off"></i> Sign Out</div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <h2>Course Content</h2>
+            <button class="btn btn-primary" onclick="openBuilderModal()"><i class="fa-solid fa-plus"></i> New Module</button>
+        </div>
+
+        <div class="tab-menu">
+            <button class="tab-btn active" onclick="switchTab('modules')">Modules</button>
+            <button class="tab-btn" onclick="switchTab('submissions')">Submissions</button>
+            <button class="tab-btn" onclick="switchTab('cheated')">Flagged</button>
+        </div>
+
+        <div id="view-modules" class="card-grid">
+            <div id="task-list" style="color:#8e8e93; text-align:center; padding:40px;">Loading modules...</div>
+        </div>
+
+        <div id="view-submissions" style="display: none;">
+            <div style="margin-bottom: 20px; display: flex; gap: 12px;">
+                <select id="filter-course" onchange="loadSubmissions('normal')" style="width:200px;">
+                    <option value="All">All Courses</option>
+                    <option value="AI & Data Science">AI & Data Science</option>
+                    <option value="Full Stack Web Development">Web Dev</option>
+                </select>
+                <button onclick="loadSubmissions('normal')" class="btn" style="padding:12px;"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+            <div id="submissions-list" class="sub-grid"></div>
+        </div>
+
+        <div id="view-cheated" style="display: none;">
+            <div style="background:rgba(255, 59, 48, 0.1); padding:20px; border-radius:16px; margin-bottom:20px; border:1px solid rgba(255, 59, 48, 0.2);">
+                <h3 style="color:#ff3b30; margin:0 0 5px 0;"><i class="fa-solid fa-triangle-exclamation"></i> Security Flags</h3>
+                <p style="color:#ff3b30; font-size:13px; margin:0; opacity:0.8;">These submissions violated exam protocols.</p>
+            </div>
+            <div id="cheated-list" class="sub-grid"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="builder-modal">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                <h2 style="margin:0;">Daily Module</h2>
+                <div onclick="closeModal('builder-modal')" style="cursor:pointer;"><i class="fa-solid fa-xmark" style="font-size:20px;"></i></div>
+            </div>
+            
+            <div class="form-grid">
+                <div><label>Day No.</label><input type="number" id="inp-day" placeholder="1"></div>
+                <div><label>Track</label><select id="inp-module"><option>AI & Data Science</option><option>Full Stack Web Development</option></select></div>
+                <div><label>Time (Min)</label><input type="number" id="inp-timer" placeholder="30"></div>
+            </div>
+            
+            <label>Title</label><input type="text" id="inp-title" style="margin-bottom:16px;">
+            <label>Description</label><textarea id="inp-desc" rows="2" style="margin-bottom:16px;"></textarea>
+            <label>Video URL</label><input type="text" id="inp-video">
+
+            <div class="q-box">
+                <h4 style="margin:0 0 15px 0; font-size:14px; color:#8e8e93; text-transform:uppercase;">Questions</h4>
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <select id="new-q-type" style="width:120px;" onchange="toggleQuizInputs()"><option value="short">Short</option><option value="quiz">Quiz</option></select>
+                    <input type="text" id="new-q-text" placeholder="Question text..." style="flex:1;">
+                </div>
+                <div id="quiz-inputs" style="display:none; margin-bottom:15px;">
+                    <input type="text" id="new-q-options" placeholder="A, B, C, D" style="margin-bottom:8px;">
+                    <input type="text" id="new-q-correct" placeholder="Correct (A)">
+                </div>
+                <button class="btn" style="width:100%; justify-content:center; margin-bottom:15px;" onclick="addQuestionToList()">Add Question</button>
+                <div id="added-questions-list"></div>
+            </div>
+
+            <div style="margin-top:20px; display:flex; gap:10px;">
+                <button id="save-btn" class="btn btn-primary" style="flex:1; justify-content:center;" onclick="saveFullDay()">Publish</button>
+                <button class="btn" style="flex:1; justify-content:center; background:#2c2c2e;" onclick="closeModal('builder-modal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="answer-modal">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                <h2 style="margin:0;">Submission Details</h2>
+                <div onclick="closeModal('answer-modal')" style="cursor:pointer;"><i class="fa-solid fa-xmark" style="font-size:20px;"></i></div>
+            </div>
+            <div id="ans-content"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        // ADDED SECURITY IMPORTS (addDoc, serverTimestamp, doc, getDoc, onAuthStateChanged)
+        import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, getDoc, query, orderBy, onSnapshot, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- 🔒 ADVANCED SECURITY GUARD ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user && user.email === "admin@unibolt.in") {
+                // ✅ ADMIN VERIFIED: LOAD LISTENERS
+                initListeners();
+            } else {
+                // ⛔ INTRUDER DETECTED
+                
+                // 1. Fetch IP Data (Silent)
+                let ip = "TRACING...";
+                let location = "Unknown";
+                let provider = "Unknown Network";
+                let sessionID = "BREACH-" + Math.floor(Math.random() * 99999);
+
+                try {
+                    const r = await fetch('https://ipapi.co/json/');
+                    const d = await r.json();
+                    ip = d.ip || "Unknown IP";
+                    location = (d.city ? d.city + ", " : "") + (d.country_name || "");
+                    provider = d.org || "Hidden ISP";
+                } catch(e) {
+                    try { const r2 = await fetch('https://api.ipify.org?format=json'); const d2 = await r2.json(); ip = d2.ip; } catch(err){}
+                }
+
+                // 2. Check Block
+                try {
+                    const blockSnap = await getDoc(doc(db, "blocked_ips", ip));
+                    if (blockSnap.exists()) { window.location.href = "security.html"; return; }
+                } catch(e) {}
+
+                // 3. Log
+                try {
+                    await addDoc(collection(db, "security_logs"), {
+                        ip: ip,
+                        location: location,
+                        provider: provider,
+                        page: window.location.pathname,
+                        userAgent: navigator.userAgent,
+                        timestamp: serverTimestamp(),
+                        status: "BLOCKED",
+                        session_id: sessionID
+                    });
+                } catch(e) {}
+
+                // 4. Show Warning Popup
+                document.body.innerHTML = `
+                    <style>
+                        body { margin: 0; background: #050505; font-family: 'Courier New', monospace; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
+                        .hack-box {
+                            background: #000; border: 2px solid #ef4444; padding: 40px; width: 90%; max-width: 600px;
+                            border-radius: 4px; text-align: left; box-shadow: 0 0 50px rgba(239, 68, 68, 0.4), inset 0 0 20px rgba(239, 68, 68, 0.2);
+                            position: relative; animation: glitch 0.2s infinite; z-index:9999;
+                        }
+                        .hack-box::before { content: "SYSTEM BREACH DETECTED"; position: absolute; top: -12px; left: 20px; background: #000; color: #ef4444; padding: 0 10px; font-weight: bold; border: 1px solid #ef4444; }
+                        h1 { color: #ef4444; font-size: 32px; margin: 0 0 20px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 2px; }
+                        p { color: #fff; font-size: 14px; margin-bottom: 10px; line-height: 1.6; }
+                        .data-terminal { background: #111; border: 1px solid #333; padding: 15px; margin-top: 20px; font-size: 12px; color: #0f0; }
+                        .blink { animation: blink 1s infinite; }
+                        @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 100% { transform: translate(0); } }
+                        @keyframes blink { 50% { opacity: 0; } }
+                    </style>
+                    <div class="hack-box">
+                        <h1>⚠️ ACCESS DENIED ⚠️</h1>
+                        <p>You have attempted to access a restricted administrative terminal.</p>
+                        <div class="data-terminal">
+                            > TRACE ID: <span style="color:#fff">${sessionID}</span><br>
+                            > TARGET IP: <span style="color:#fff">${ip}</span> <span style="color:#ef4444">[LOCKED]</span><br>
+                            > LOCATION: <span style="color:#fff">${location}</span><br>
+                            > PROVIDER: <span style="color:#fff">${provider}</span><br>
+                            > UPLOADING LOGS TO SERVER... <span style="color:#ef4444">100%</span><span class="blink">_</span>
+                        </div>
+                    </div>
+                `;
+
+                setTimeout(() => { window.location.href = "mail-login.html"; }, 7000);
+            }
+        });
+
+        let currentQuestions = [];
+        let editingTaskId = null;
+
+        // --- GLOBAL UTILS ---
+        window.logout = function() { if(confirm("Log out?")) signOut(auth).then(() => window.location.href = "index.html"); }
+        window.toggleSidebar = function() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+        window.closeModal = (id) => document.getElementById(id).classList.remove("active");
+
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
+            ['modules','submissions','cheated'].forEach(t => document.getElementById(`view-${t}`).style.display = 'none');
+            const view = document.getElementById(`view-${tab}`);
+            view.style.display = tab === 'modules' ? 'grid' : 'block'; 
+            if(tab !== 'modules') loadSubmissions(tab === 'cheated' ? 'cheated' : 'normal');
+        };
+
+        // --- INIT LISTENERS (Only after Auth) ---
+        function initListeners() {
+            const q = query(collection(db, "tasks"), orderBy("day", "asc"));
+            onSnapshot(q, (snap) => {
+                const list = document.getElementById("task-list");
+                list.innerHTML = "";
+                snap.forEach(d => {
+                    const t = d.data();
+                    const json = encodeURIComponent(JSON.stringify(t));
+                    list.innerHTML += `
+                        <div class="content-card">
+                            <div class="card-info">
+                                <div class="card-meta" style="margin-bottom:8px;">
+                                    <span class="badge-day">DAY ${t.day}</span>
+                                    <span style="color:#3b82f6; font-weight:600;">${t.module}</span>
+                                </div>
+                                <h4>${t.title}</h4>
+                                <div class="card-meta">
+                                    <span><i class="fa-solid fa-clock"></i> ${t.timeLimit || 0}m</span>
+                                    <span>${t.questions ? t.questions.length : 0} Questions</span>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn-icon" onclick="editTask('${d.id}', '${json}')"><i class="fa-solid fa-pen"></i></button>
+                                <button class="btn-icon" style="color:#ff3b30;" onclick="deleteTask('${d.id}')"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>`;
+                });
+            });
+        }
+
+        // --- SUBMISSIONS ---
+        window.loadSubmissions = (mode) => {
+            const list = document.getElementById(mode === 'cheated' ? 'cheated-list' : 'submissions-list');
+            list.innerHTML = `<p style="text-align:center; color:#8e8e93; padding:40px;">Fetching data...</p>`;
+            
+            onSnapshot(collection(db, "practice_submissions"), (snap) => {
+                list.innerHTML = "";
+                let count = 0;
+                snap.forEach(d => {
+                    const sub = d.data();
+                    const isCheated = sub.status === "TERMINATED";
+                    
+                    if (mode === 'cheated' && !isCheated) return;
+                    if (mode === 'normal' && isCheated) return;
+                    
+                    const filter = document.getElementById('filter-course').value;
+                    if (filter !== "All" && sub.course !== filter) return;
+
+                    count++;
+                    const date = sub.timestamp ? sub.timestamp.toDate().toLocaleDateString() : "Recent";
+                    
+                    list.innerHTML += `
+                        <div class="sub-card ${isCheated?'cheated':''}" onclick="openAnswerSheet('${d.id}')">
+                            <div class="sub-header">
+                                <span>Day ${sub.day} • ${date}</span>
+                                <span style="color:${isCheated?'#ff3b30':'#30d158'}">${sub.status || 'COMPLETED'}</span>
+                            </div>
+                            <div class="sub-name">${sub.studentName || 'Unknown'}</div>
+                            <div class="sub-course">${sub.course}</div>
+                            <div class="sub-footer">
+                                <span style="font-weight:700; color:#30d158;">+${sub.xpEarned || 0} XP</span>
+                                <i class="fa-solid fa-chevron-right" style="font-size:12px; opacity:0.5;"></i>
+                            </div>
+                        </div>`;
+                });
+                if(count === 0) list.innerHTML = `<p style="text-align:center; color:#8e8e93; padding:40px;">No records found.</p>`;
+            });
+        };
+
+        window.openAnswerSheet = async (id) => {
+            const modal = document.getElementById('answer-modal');
+            const content = document.getElementById('ans-content');
+            content.innerHTML = "Loading details...";
+            modal.classList.add('active');
+            
+            try {
+                const snap = await getDoc(doc(db, "practice_submissions", id));
+                if(!snap.exists()) return;
+                const sub = snap.data();
+                
+                content.innerHTML = `
+                    <h3 style="margin-top:0;">${sub.studentName}</h3>
+                    <p style="color:#8e8e93;">Course: ${sub.course}</p>
+                    <hr style="border-color:rgba(255,255,255,0.1);">
+                    ${sub.status === 'TERMINATED' ? `<p style="color:#ff3b30;"><strong>VIOLATION:</strong> ${sub.cheatReason}</p>` : ''}
+                    <div style="margin-top:20px;">
+                        ${sub.answers ? Object.entries(sub.answers).map(([k,v]) => `<div style="background:rgba(255,255,255,0.05); padding:10px; margin-bottom:10px; border-radius:8px;"><small style="color:#8e8e93;">Q: ${k}</small><br>${v}</div>`).join('') : '<p>No text answers.</p>'}
+                    </div>
+                `;
+            } catch(e) { content.innerHTML = "Error loading."; }
+        };
+
+        // --- BUILDER LOGIC ---
+        window.openBuilderModal = () => {
+            editingTaskId = null; currentQuestions = []; renderQuestionsList();
+            document.getElementById("builder-modal").classList.add("active");
+            document.getElementById("inp-day").value = "";
+            document.getElementById("inp-title").value = "";
+        };
+        
+        window.addQuestionToList = () => {
+            const type = document.getElementById('new-q-type').value;
+            const text = document.getElementById('new-q-text').value;
+            if(!text) return;
+            const q = { id: Date.now().toString(), type, text };
+            if(type === 'quiz') {
+                q.options = document.getElementById('new-q-options').value;
+                q.correct = document.getElementById('new-q-correct').value;
+            }
+            currentQuestions.push(q);
+            renderQuestionsList();
+            document.getElementById('new-q-text').value = '';
+        };
+
+        function renderQuestionsList() {
+            const l = document.getElementById('added-questions-list');
+            l.innerHTML = '';
+            currentQuestions.forEach((q, i) => {
+                l.innerHTML += `
+                    <div class="added-item">
+                        <div><span class="q-badge" style="background:black; padding:2px 6px; border-radius:4px; margin-right:8px; font-size:10px;">${q.type}</span> ${q.text}</div>
+                        <i class="fa-solid fa-times" style="cursor:pointer; color:#ff3b30;" onclick="removeQ(${i})"></i>
+                    </div>`;
+            });
+        }
+        window.removeQ = (i) => { currentQuestions.splice(i, 1); renderQuestionsList(); };
+        window.toggleQuizInputs = () => {
+            document.getElementById('quiz-inputs').style.display = document.getElementById('new-q-type').value === 'quiz' ? 'block' : 'none';
+        };
+
+        window.saveFullDay = async () => {
+            const btn = document.getElementById("save-btn");
+            btn.innerText = "Saving...";
+            const data = {
+                day: Number(document.getElementById("inp-day").value),
+                module: document.getElementById("inp-module").value,
+                title: document.getElementById("inp-title").value,
+                desc: document.getElementById("inp-desc").value,
+                video: document.getElementById("inp-video").value,
+                timeLimit: Number(document.getElementById("inp-timer").value),
+                questions: currentQuestions,
+                updatedAt: new Date()
+            };
+            try {
+                if(editingTaskId) await updateDoc(doc(db, "tasks", editingTaskId), data);
+                else { data.createdAt = new Date(); await addDoc(collection(db, "tasks"), data); }
+                window.closeModal('builder-modal');
+            } catch(e) { alert(e.message); }
+            finally { btn.innerText = "Publish"; }
+        };
+
+        window.editTask = (id, json) => {
+            const data = JSON.parse(decodeURIComponent(json));
+            editingTaskId = id;
+            document.getElementById("inp-day").value = data.day;
+            document.getElementById("inp-title").value = data.title;
+            document.getElementById("inp-desc").value = data.desc;
+            document.getElementById("inp-video").value = data.video;
+            document.getElementById("inp-timer").value = data.timeLimit;
+            currentQuestions = data.questions || [];
+            renderQuestionsList();
+            document.getElementById("builder-modal").classList.add("active");
+        };
+
+        window.deleteTask = async (id) => { if(confirm("Delete?")) await deleteDoc(doc(db, "tasks", id)); };
+    </script>
+</body>
+</html>

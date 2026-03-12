@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vault_OS - System Health</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
+        :root { --primary: #ef4444; --accent: #10b981; --bg: #020617; --surface: #0f172a; --border: #1e293b; --text: #f8fafc; }
+        body { background: var(--bg); font-family: 'Outfit', sans-serif; color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        .sidebar { width: 280px; background: #000; border-right: 1px solid var(--border); padding: 25px; display: flex; flex-direction: column; }
+        .nav-item { padding: 14px; color: #64748b; cursor: pointer; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; transition: 0.3s; text-decoration: none; font-weight: 500; }
+        .nav-item:hover, .nav-item.active { background: var(--surface); color: white; }
+        .nav-item.active { border-right: 4px solid var(--primary); background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.1)); }
+
+        .main { flex: 1; padding: 30px; }
+        .health-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 25px; max-width: 600px; margin-top: 20px; }
+        .status-row { margin-bottom: 25px; }
+        .bar-bg { height: 8px; background: #1e293b; border-radius: 10px; margin-top: 8px; }
+        .bar-fill { height: 100%; background: var(--accent); border-radius: 10px; transition: 2s; width: 0%; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 style="font-size: 22px; margin-bottom: 40px;"><i class="fa-solid fa-bolt" style="color: var(--primary);"></i> Vault_OS</h2>
+        <a href="admin-activity.html" class="nav-item"><i class="fa-solid fa-satellite-dish"></i> Real-time Feed</a>
+        <a href="admin-watch.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Admin Watch</a>
+        <a href="student-watch.html" class="nav-item"><i class="fa-solid fa-user-graduate"></i> Student Watch</a>
+        <a href="system-health.html" class="nav-item active"><i class="fa-solid fa-microchip"></i> System Health</a>
+    </div>
+
+    <div class="main">
+        <header>
+            <h1 style="margin: 0; font-size: 24px;">Core Health</h1>
+            <p style="color: #64748b; margin-top: 5px;">Service pulse and database performance.</p>
+        </header>
+        
+        <div class="health-card">
+            <div class="status-row">
+                <div style="display:flex; justify-content:space-between"><span>Cloud Firestore</span><span style="color:var(--accent)">ONLINE</span></div>
+                <div class="bar-bg"><div class="bar-fill" id="bar-db"></div></div>
+            </div>
+            <div class="status-row">
+                <div style="display:flex; justify-content:space-between"><span>Audit Engine</span><span style="color:var(--accent)">ACTIVE</span></div>
+                <div class="bar-bg"><div class="bar-fill" id="bar-audit"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = () => {
+            setTimeout(() => { document.getElementById('bar-db').style.width = "100%"; }, 500);
+            setTimeout(() => { document.getElementById('bar-audit').style.width = "95%"; }, 1000);
+        };
+    </script>
+</body>
+</html>

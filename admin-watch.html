@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vault_OS - Admin Watch</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600&display=swap');
+        :root { --primary: #ef4444; --accent: #10b981; --bg: #020617; --surface: #0f172a; --border: #1e293b; --text: #f8fafc; }
+        body { background: var(--bg); font-family: 'Outfit', sans-serif; color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar Styles */
+        .sidebar { width: 280px; background: #000; border-right: 1px solid var(--border); padding: 25px; display: flex; flex-direction: column; }
+        .nav-item { padding: 14px; color: #64748b; cursor: pointer; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; transition: 0.3s; text-decoration: none; font-weight: 500; }
+        .nav-item:hover, .nav-item.active { background: var(--surface); color: white; }
+        .nav-item.active { border-right: 4px solid var(--primary); background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.1)); }
+
+        .main { flex: 1; padding: 30px; overflow-y: auto; }
+        .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #0f172a; padding: 15px; text-align: left; color: #64748b; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; font-family: 'JetBrains Mono'; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 style="font-size: 22px; margin-bottom: 40px;"><i class="fa-solid fa-bolt" style="color: var(--primary);"></i> Vault_OS</h2>
+        <a href="admin-activity.html" class="nav-item"><i class="fa-solid fa-satellite-dish"></i> Real-time Feed</a>
+        <a href="admin-watch.html" class="nav-item active"><i class="fa-solid fa-user-shield"></i> Admin Watch</a>
+        <a href="student-watch.html" class="nav-item"><i class="fa-solid fa-user-graduate"></i> Student Watch</a>
+        <a href="system-health.html" class="nav-item"><i class="fa-solid fa-microchip"></i> System Health</a>
+    </div>
+
+    <div class="main">
+        <header style="margin-bottom: 30px;">
+            <h1 style="margin: 0; font-size: 24px;">Admin Watch</h1>
+            <p style="color: #64748b; margin-top: 5px;">Surveillance of Master Admin mutations.</p>
+        </header>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Time</th><th>Admin Email</th><th>Action Log</th><th>Mutation</th></tr>
+                </thead>
+                <tbody id="admin-feed"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY", authDomain: "unibolt-f7005.firebaseapp.com", projectId: "unibolt-f7005", storageBucket: "unibolt-f7005.appspot.com", messagingSenderId: "121987854250", appId: "1:121987854250:web:21a9f50aad54b2143a85d3" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const q = query(collection(db, "audit_logs"), where("role", "==", "Admin"), orderBy("timestamp", "desc"));
+        onSnapshot(q, (snap) => {
+            const feed = document.getElementById('admin-feed');
+            feed.innerHTML = snap.docs.map(doc => {
+                const log = doc.data();
+                return `<tr>
+                    <td>${log.timestamp?.toDate().toLocaleTimeString()}</td>
+                    <td style="color:white">${log.userName}</td>
+                    <td>${log.message}</td>
+                    <td style="color:var(--primary)">${log.type}</td>
+                </tr>`;
+            }).join('');
+        });
+    </script>
+</body>
+</html>

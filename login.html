@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBolt - Secure Student Portal</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+    <div class="circle circle-3"></div>
+
+    <div id="toast" class="toast hidden">
+        <div class="toast-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="toast-content">
+            <span id="toast-title">Access Denied</span>
+            <span id="toast-msg">Invalid Credentials</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="login-card" id="tiltCard">
+            
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fa-solid fa-bolt"></i></div>
+                <h1>UniBolt<span class="dot">.</span></h1>
+            </div>
+
+            <p class="subtitle">Secure Gateway for <b>Enrolled Students</b></p>
+
+            <form id="loginForm">
+                
+                <div class="input-group">
+                    <select id="courseSelect" required>
+                        <option value="" disabled selected>Select Your Course Domain</option>
+                        <option value="web">💻 Full Stack Web Development</option>
+                        <option value="ai">🤖 AI & Data Science</option>
+                        <option value="app">📱 App Development</option>
+                    </select>
+                    <i class="fa-solid fa-layer-group icon"></i>
+                    <div class="bar"></div>
+                </div>
+
+                <div class="input-group">
+                    <input type="email" id="email" required placeholder=" " autocomplete="off">
+                    <label>Student Email ID</label>
+                    <i class="fa-solid fa-user-graduate icon"></i>
+                    <div class="bar"></div>
+                </div>
+
+                <div class="input-group">
+                    <input type="password" id="password" required placeholder=" " autocomplete="off">
+                    <label>Password</label>
+                    <i class="fa-solid fa-eye-slash icon toggle-password" id="togglePassword"></i>
+                    <div class="bar"></div>
+                </div>
+
+                <button type="submit" class="btn-login" id="loginBtn">
+                    <span id="btnText">Access Dashboard</span>
+                    <div class="liquid"></div>
+                </button>
+            </form>
+
+            <div class="restricted-box">
+                <i class="fa-solid fa-shield-halved"></i>
+                <p>Not enrolled? <a href="/index">Purchase a Course</a></p>
+                <small>System monitors all login attempts.</small>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBolt Admin - Reports</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { 
+            --primary: #ff3b30; 
+            --bg: #000000; 
+            --surface: #1c1c1e; 
+            --surface-highlight: #2c2c2e;
+            --text: #ffffff; 
+            --text-dim: #8e8e93;
+            --border: rgba(255, 255, 255, 0.1); 
+            --bento-shadow: 0 20px 40px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            --radius: 24px;
+        }
+
+        body { 
+            background: var(--bg); 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            color: var(--text); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* --- SIDEBAR (Standardized) --- */
+        .sidebar { 
+            width: 280px; 
+            background: #000; 
+            border-right: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 1100;
+            height: 100vh;
+        }
+
+        .sidebar-header { padding: 30px 24px 10px; flex-shrink: 0; }
+        .sidebar-scroll { flex: 1; overflow-y: auto; padding: 0 14px; }
+        .sidebar-footer { padding: 20px 24px; border-top: 1px solid var(--border); background: #000; flex-shrink: 0; }
+
+        .brand { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; }
+        .nav-item { padding: 14px 16px; color: var(--text-dim); cursor: pointer; border-radius: 14px; margin-bottom: 4px; display: flex; align-items: center; gap: 14px; text-decoration: none; font-size: 15px; font-weight: 500; transition: 0.2s; }
+        .nav-item:hover { background: var(--surface); color: white; }
+        .nav-item.active { background: var(--surface-highlight); color: white; font-weight: 600; }
+        .nav-item i { width: 20px; text-align: center; }
+
+        /* --- MAIN CONTENT --- */
+        .main { flex: 1; padding: 30px; overflow-y: auto; background: var(--bg); position: relative; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px; }
+        .header h2 { font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
+
+        /* --- CONTROLS --- */
+        .btn { 
+            padding: 14px 24px; 
+            border-radius: 14px; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 15px; 
+            font-weight: 600; 
+            color: white; 
+            background: var(--surface); 
+            transition: 0.2s; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 8px; 
+        }
+        .btn:hover { background: var(--surface-highlight); transform: scale(1.02); }
+        .btn-primary { background: var(--primary); box-shadow: 0 4px 12px rgba(255, 59, 48, 0.4); }
+
+        /* --- REPORT TABLE (Bento Style) --- */
+        .table-container { 
+            background: var(--surface); 
+            border-radius: var(--radius); 
+            overflow: hidden; 
+            box-shadow: var(--bento-shadow); 
+            min-height: 400px; 
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 20px; color: var(--text-dim); font-size: 12px; font-weight: 600; text-transform: uppercase; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+        td { padding: 20px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; font-size: 15px; }
+        tr:last-child td { border-bottom: none; }
+
+        /* --- MOBILE RESPONSIVE --- */
+        .menu-toggle { display: none; position: fixed; top: 20px; right: 20px; z-index: 1200; background: var(--surface); border: 1px solid var(--border); color: white; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; align-items: center; justify-content: center; font-size: 20px; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 1050; }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-105%); height: 100vh; visibility: hidden; }
+            .sidebar.active { transform: translateX(0); visibility: visible; }
+            .sidebar-overlay.active { display: block; }
+            .menu-toggle { display: flex; }
+            .main { padding: 90px 20px 40px; }
+
+            /* Mobile Card View */
+            .table-container { background: transparent; box-shadow: none; border-radius: 0; }
+            .table-container thead { display: none; }
+            .table-container tr { 
+                display: block; 
+                background: var(--surface); 
+                margin-bottom: 16px; 
+                border-radius: 20px; 
+                padding: 20px;
+                position: relative;
+                box-shadow: var(--bento-shadow);
+            }
+            .table-container td { 
+                display: block; 
+                text-align: right; 
+                padding: 8px 0; 
+                border: none; 
+            }
+            .table-container td::before { 
+                content: attr(data-label); 
+                float: left; 
+                font-weight: 600; 
+                color: var(--text-dim); 
+                font-size: 12px; 
+                text-transform: uppercase;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            .sidebar, .menu-toggle, .btn { display: none !important; }
+            .main { padding: 0; background: white; }
+            .table-container { box-shadow: none; border-radius: 0; background: white; }
+            body, td, th { color: black; }
+            th { border-bottom: 2px solid #000; }
+            td { border-bottom: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand"><i class="fa-solid fa-shield-cat" style="color:var(--primary);"></i> UniBolt Admin</div>
+        </div>
+        <div class="sidebar-scroll">
+            <a href="/admin" class="nav-item"><i class="fa-solid fa-grid-2"></i> Overview</a>
+            <a href="/admin-tickets" class="nav-item"><i class="fa-solid fa-ticket"></i> Tickets</a>
+            <a href="/admin-analytics" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="/admin-reports" class="nav-item active"><i class="fa-solid fa-file-contract"></i> Reports</a>
+            <a href="/admin-content" class="nav-item"><i class="fa-solid fa-book-open"></i> Content</a>
+            <a href="/admin-activity" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Activity</a>
+            <a href="/admin-registrations" class="nav-item"><i class="fa-solid fa-address-card"></i> Registrations</a>
+            <a href="/admin-settings" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="/admin-notifications" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications</a>
+            <a href="/admin-team" class="nav-item"><i class="fa-solid fa-user-shield"></i> Team</a>
+            <a href="/admin-faq" class="nav-item"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+        </div>
+        <div class="sidebar-footer">
+            <div class="nav-item" onclick="logout()" style="color: #ff453a;"><i class="fa-solid fa-power-off"></i> Sign Out</div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <h2>System Reports</h2>
+            <button class="btn btn-primary" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Report</button>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="padding-left: 24px;">Date</th>
+                        <th>User</th>
+                        <th>Event Type</th>
+                        <th style="padding-right: 24px;">Details</th>
+                    </tr>
+                </thead>
+                <tbody id="report-body">
+                    <tr><td colspan="4" style="text-align:center; padding:40px; color:#8e8e93;">Generating Logs...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        // ADDED: Security Imports (addDoc, serverTimestamp, doc, getDoc)
+        import { getFirestore, collection, getDocs, addDoc, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- 🔒 ADVANCED SECURITY GUARD ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user && user.email === "admin@unibolt.in") {
+                // ✅ ADMIN VERIFIED: LOAD REPORTS
+                genReports();
+            } else {
+                // ⛔ INTRUDER DETECTED
+                
+                // 1. Fetch IP Data (Silent)
+                let ip = "TRACING...";
+                let location = "Unknown";
+                let provider = "Unknown Network";
+                let sessionID = "BREACH-" + Math.floor(Math.random() * 99999);
+
+                try {
+                    const r = await fetch('https://ipapi.co/json/');
+                    const d = await r.json();
+                    ip = d.ip || "Unknown IP";
+                    location = (d.city ? d.city + ", " : "") + (d.country_name || "");
+                    provider = d.org || "Hidden ISP";
+                } catch(e) {
+                    try { const r2 = await fetch('https://api.ipify.org?format=json'); const d2 = await r2.json(); ip = d2.ip; } catch(err){}
+                }
+
+                // 2. Check Block
+                try {
+                    const blockSnap = await getDoc(doc(db, "blocked_ips", ip));
+                    if (blockSnap.exists()) { window.location.href = "security.html"; return; }
+                } catch(e) {}
+
+                // 3. Log
+                try {
+                    await addDoc(collection(db, "security_logs"), {
+                        ip: ip,
+                        location: location,
+                        provider: provider,
+                        page: window.location.pathname,
+                        userAgent: navigator.userAgent,
+                        timestamp: serverTimestamp(),
+                        status: "BLOCKED",
+                        session_id: sessionID
+                    });
+                } catch(e) {}
+
+                // 4. Show Warning Popup
+                document.body.innerHTML = `
+                    <style>
+                        body { margin: 0; background: #050505; font-family: 'Courier New', monospace; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
+                        .hack-box {
+                            background: #000; border: 2px solid #ef4444; padding: 40px; width: 90%; max-width: 600px;
+                            border-radius: 4px; text-align: left; box-shadow: 0 0 50px rgba(239, 68, 68, 0.4), inset 0 0 20px rgba(239, 68, 68, 0.2);
+                            position: relative; animation: glitch 0.2s infinite; z-index:9999;
+                        }
+                        .hack-box::before { content: "SYSTEM BREACH DETECTED"; position: absolute; top: -12px; left: 20px; background: #000; color: #ef4444; padding: 0 10px; font-weight: bold; border: 1px solid #ef4444; }
+                        h1 { color: #ef4444; font-size: 32px; margin: 0 0 20px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 2px; }
+                        p { color: #fff; font-size: 14px; margin-bottom: 10px; line-height: 1.6; }
+                        .data-terminal { background: #111; border: 1px solid #333; padding: 15px; margin-top: 20px; font-size: 12px; color: #0f0; }
+                        .blink { animation: blink 1s infinite; }
+                        @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 100% { transform: translate(0); } }
+                        @keyframes blink { 50% { opacity: 0; } }
+                    </style>
+                    <div class="hack-box">
+                        <h1>⚠️ ACCESS DENIED ⚠️</h1>
+                        <p>You have attempted to access a restricted administrative terminal.</p>
+                        <div class="data-terminal">
+                            > TRACE ID: <span style="color:#fff">${sessionID}</span><br>
+                            > TARGET IP: <span style="color:#fff">${ip}</span> <span style="color:#ef4444">[LOCKED]</span><br>
+                            > LOCATION: <span style="color:#fff">${location}</span><br>
+                            > PROVIDER: <span style="color:#fff">${provider}</span><br>
+                            > UPLOADING LOGS TO SERVER... <span style="color:#ef4444">100%</span><span class="blink">_</span>
+                        </div>
+                    </div>
+                `;
+
+                setTimeout(() => { window.location.href = "mail-login.html"; }, 7000);
+            }
+        });
+
+        // --- GLOBAL UTILS ---
+        window.logout = function() {
+            if(confirm("Log out?")) signOut(auth).then(() => window.location.href = "index.html");
+        }
+
+        window.toggleSidebar = function() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+
+        // --- REPORTS LOGIC ---
+        async function genReports() {
+            const snap = await getDocs(collection(db, "users"));
+            let logs = [];
+
+            snap.forEach(doc => {
+                const d = doc.data();
+                if(d.paymentStatus === 'Verified') {
+                    logs.push({
+                        date: d.paymentDate || "Unknown Date",
+                        user: d.name || "Unknown",
+                        type: "PAYMENT_VERIFIED",
+                        detail: `Received ₹200 (UTR: ${d.transactionId})`,
+                        color: "#30d158"
+                    });
+                }
+                logs.push({
+                    date: d.paymentDate ? d.paymentDate.split(' ')[0] : "Recent",
+                    user: d.name || "Unknown",
+                    type: "USER_REGISTERED",
+                    detail: `Email: ${d.email}`,
+                    color: "#0a84ff"
+                });
+            });
+
+            logs.sort((a, b) => a.date > b.date ? -1 : 1);
+
+            const tbody = document.getElementById("report-body");
+            tbody.innerHTML = "";
+            
+            if(logs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:#8e8e93;">No logs found.</td></tr>`;
+                return;
+            }
+
+            logs.forEach(l => {
+                const row = `
+                    <tr>
+                        <td data-label="Date" style="padding-left:24px; color:#8e8e93;">${l.date}</td>
+                        <td data-label="User" style="font-weight:600; color:white;">${l.user}</td>
+                        <td data-label="Event" style="color:${l.color}; font-weight:700; font-size:12px; letter-spacing:0.5px;">${l.type}</td>
+                        <td data-label="Details" style="padding-right:24px; color:#ccc;">${l.detail}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+    </script>
+</body>
+</html>

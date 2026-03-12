@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Credentials - UniBolt Ecosystem</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="home.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        /* Force Centering of Hero Section */
+        .scanner-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 85vh;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .verify-card {
+            background: rgba(17, 17, 17, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 550px;
+            box-shadow: 0 0 80px rgba(139, 92, 246, 0.15);
+            position: relative;
+            z-index: 2;
+        }
+
+        .input-group { position: relative; margin-bottom: 20px; }
+        .input-group input {
+            width: 100%;
+            padding: 15px 15px 15px 50px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+        }
+        .input-group input:focus { border-color: #8b5cf6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.2); }
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8b5cf6;
+        }
+
+        /* Result Box Styles */
+        #result-container { display: none; margin-top: 30px; animation: slideUp 0.4s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .result-box {
+            padding: 25px;
+            border-radius: 12px;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .result-success { background: rgba(0, 255, 136, 0.08); border: 1px solid #00ff88; }
+        .result-pending { background: rgba(255, 212, 59, 0.08); border: 1px solid #ffd43b; }
+        .result-fake { background: rgba(255, 68, 68, 0.08); border: 1px solid #ff4444; text-align: center; }
+
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;}
+        .data-label { color: #888; }
+        .data-value { color: #fff; font-weight: bold; }
+        
+        .verified-stamp {
+            color: #00ff88;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(0,255,136,0.3);
+            padding-bottom: 15px;
+        }
+        
+        /* Ticker */
+        .live-ticker {
+            background: #000;
+            border-top: 1px solid #222;
+            border-bottom: 1px solid #222;
+            padding: 12px 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .ticker-content { display: inline-block; animation: marquee 25s linear infinite; }
+        .ticker-item { display: inline-block; color: #666; margin: 0 30px; font-size: 0.9rem; }
+        .ticker-item span { color: #00ff88; font-weight: 500; }
+        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        /* Security Grid */
+        .security-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 80px auto;
+        }
+        .sec-card {
+            background: #111;
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid #222;
+            text-align: center;
+        }
+        .sec-card i { font-size: 2rem; color: #8b5cf6; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">UniBolt<span class="dot">.</span></div>
+        <ul class="nav-links">
+            <li><a href="how-it-works.html">How It Works</a></li>
+            <li><a href="why-unibolt.html">Why UniBolt</a></li>
+            <li><a href="about.html">About Us</a></li>
+            <li><a href="verify-certificate.html">Verify Certificate</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+        </ul>
+        <div class="nav-buttons">
+            <a href="/login" class="btn-glow">Student Login</a>
+            <a href="program.html" class="btn-glow">Register Now</a>
+        </div>
+        <div class="menu-btn"><i class="fa-solid fa-bars"></i></div>
+    </nav>
+
+    <header class="scanner-section">
+        <div style="text-align: center;margin-top: 50px; margin-bottom: 40px; width: 100%; max-width: 800px;" data-aos="fade-down">
+            <span class="badge">Blockchain Ledger Access</span>
+            <h1 style="margin-top: 10px;">Verify <span class="gradient-text">Credentials</span></h1>
+            <p style="color: #aaa; font-size: 1.1rem;">Instant authentication for recruiters and universities. Ensure the certificate is legitimate.</p>
+        </div>
+
+        <div class="verify-card" data-aos="zoom-in">
+            <div id="reader" style="display:none; width: 100%; border-radius: 10px; margin-bottom: 20px; border: 2px solid #8b5cf6;"></div>
+            
+            <div class="input-group">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="cert-id" placeholder="Enter Certificate ID (e.g., UB-WEB-2025-HK)">
+            </div>
+            
+            <div style="display: flex; gap: 10px; flex-direction: column;">
+                <button class="btn-primary" style="width: 100%; justify-content: center;" onclick="verifyCertificate()">
+                    Check Status <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; color: #555; font-size: 0.9rem; margin: 10px 0;">
+                    <span style="height: 1px; background: #333; width: 40%;"></span> OR <span style="height: 1px; background: #333; width: 40%;"></span>
+                </div>
+                <button class="btn-secondary" style="width: 100%; border: 1px solid #333; justify-content: center;" onclick="alert('Camera functionality will be enabled in production environment.')">
+                    <i class="fa-solid fa-qrcode"></i> Scan QR Code
+                </button>
+            </div>
+            
+            <div id="result-container"></div>
+            
+            <p style="margin-top: 25px; font-size: 0.8rem; color: #555; text-align: center;">
+                <i class="fa-solid fa-shield-halved"></i> Verification requests are logged for security purposes.
+            </p>
+        </div>
+    </header>
+
+    <div class="live-ticker">
+        <div class="ticker-content">
+            <div class="ticker-item"><i class="fa-solid fa-check"></i> Amazon HR just verified <span>Harshit K.</span></div>
+            <div class="ticker-item"><i class="fa-solid fa-check"></i> TCS Recruitment verified <span>Certificate #UB-9921</span></div>
+            <div class="ticker-item"><i class="fa-solid fa-check"></i> Infosys Talent verified <span>Anjali S.</span></div>
+            <div class="ticker-item"><i class="fa-solid fa-check"></i> Wipro HR verified <span>Web Dev Track</span></div>
+            <div class="ticker-item"><i class="fa-solid fa-check"></i> StartupInc verified <span>Rohan M.</span></div>
+        </div>
+    </div>
+
+    <section class="section">
+        <div class="section-header" style="text-align: center;" data-aos="fade-up">
+            <h2>Why Trust <span class="gradient-text">UniBolt?</span></h2>
+            <p>Our certification engine uses cryptographic hashing to prevent forgery.</p>
+        </div>
+
+        <div class="security-grid" data-aos="fade-up">
+            <div class="sec-card">
+                <i class="fa-solid fa-fingerprint"></i>
+                <h3>Unique Fingerprint</h3>
+                <p>Each certificate is generated with a unique alphanumeric hash that corresponds to the student's specific project submissions.</p>
+            </div>
+            <div class="sec-card">
+                <i class="fa-solid fa-database"></i>
+                <h3>Immutable Ledger</h3>
+                <p>Once a certificate is issued, it is permanently recorded in our centralized database. It cannot be altered or deleted.</p>
+            </div>
+            <div class="sec-card">
+                <i class="fa-solid fa-server"></i>
+                <h3>99.9% Uptime</h3>
+                <p>Our verification API is hosted on high-availability clusters, ensuring recruiters can verify credentials 24/7/365.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-grid">
+            <div class="brand">
+                <h2>UniBolt.</h2>
+                <p>Building the next generation of tech leaders.</p>
+            </div>
+            <div class="links">
+                <h4>Platform</h4>
+                <a href="program.html">Programs</a>
+                <a href="/login">Student Login</a>
+                <a href="verify-certificate.html">Verify Certificate</a>
+            </div>
+            <div class="links">
+                <h4>Legal</h4>
+                <a href="faq.html">FAQ</a>
+                <a href="about.html">About Us</a>
+                <a href="privacy-policy.html">Privacy Policy</a>
+                <a href="term-of-use.html">Terms of Use</a>
+            </div>
+        </div>
+        <div class="copy">&copy; 2026 UniBolt Inc. Made with ❤️ in India.</div>
+    </footer>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script type="module" src="home.js"></script>
+    <script>
+        // --- MOCK DATABASE ---
+        // This data simulates the server response.
+        const studentDatabase = [
+            {
+                id: "UB-WEB-2025-HK",
+                name: "Harshit Kashyap",
+                course: "Full Stack Web Development",
+                status: "verified",
+                issueDate: "December 20, 2025",
+                score: "98/100"
+            },
+            {
+                id: "UB-AI-2025-RK",
+                name: "Rahul Kumar",
+                course: "AI & Data Science Architect",
+                status: "pending",
+                issueDate: "N/A",
+                score: "In Progress"
+            },
+            {
+                id: "UB-APP-2025-AS",
+                name: "Anjali Singh",
+                course: "Mobile App Development",
+                status: "verified",
+                issueDate: "January 05, 2026",
+                score: "92/100"
+            }
+        ];
+
+        function verifyCertificate() {
+            const inputId = document.getElementById('cert-id').value.trim();
+            const resultContainer = document.getElementById('result-container');
+            
+            // UI Reset
+            resultContainer.innerHTML = '<p style="color:#888; text-align:center;"><i class="fa-solid fa-circle-notch fa-spin"></i> Searching Ledger...</p>';
+            resultContainer.style.display = 'block';
+
+            // Simulate Network Delay
+            setTimeout(() => {
+                if (!inputId) {
+                    resultContainer.innerHTML = `<p style="color:#ff4444; text-align:center;">Please enter a Certificate ID.</p>`;
+                    return;
+                }
+
+                // Search Logic
+                const student = studentDatabase.find(s => s.id === inputId);
+
+                if (student) {
+                    if (student.status === 'verified') {
+                        // SCENARIO 1: VALID & VERIFIED
+                        resultContainer.innerHTML = `
+                            <div class="result-box result-success">
+                                <div class="verified-stamp"><i class="fa-solid fa-circle-check"></i> UniBolt Verified</div>
+                                <div class="data-row"><span class="data-label">Student Name:</span> <span class="data-value">${student.name}</span></div>
+                                <div class="data-row"><span class="data-label">Track:</span> <span class="data-value">${student.course}</span></div>
+                                <div class="data-row"><span class="data-label">Issue Date:</span> <span class="data-value">${student.issueDate}</span></div>
+                                <div class="data-row"><span class="data-label">Final Score:</span> <span class="data-value">${student.score}</span></div>
+                                <div class="data-row"><span class="data-label">Status:</span> <span class="data-value" style="color:#00ff88">COMPLETED</span></div>
+                            </div>
+                        `;
+                    } else {
+                        // SCENARIO 2: VALID ID BUT PENDING
+                        resultContainer.innerHTML = `
+                            <div class="result-box result-pending">
+                                <div class="verified-stamp" style="color:#ffd43b; border-color:rgba(255,212,59,0.2)">
+                                    <i class="fa-solid fa-clock"></i> Completion Pending
+                                </div>
+                                <div class="data-row"><span class="data-label">Student Name:</span> <span class="data-value">${student.name}</span></div>
+                                <div class="data-row"><span class="data-label">Track:</span> <span class="data-value">${student.course}</span></div>
+                                <div class="data-row"><span class="data-label">Current Status:</span> <span class="data-value" style="color:#ffd43b">IN PROGRESS (85%)</span></div>
+                                <p style="margin-top:15px; font-size:0.8rem; color:#ccc; line-height:1.5;">
+                                    This student is currently enrolled but has not yet generated their final certificate. Please check back later.
+                                </p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    // SCENARIO 3: INVALID / FAKE
+                    resultContainer.innerHTML = `
+                        <div class="result-box result-fake">
+                            <i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem; color:#ff4444; margin-bottom:15px;"></i>
+                            <h3 style="color:#ff4444; margin:0 0 10px 0;">Invalid Certificate ID</h3>
+                            <p style="color:#ccc; font-size:0.95rem; line-height:1.6;">
+                                The ID <strong>${inputId}</strong> does not exist in our secure ledger. 
+                                <br><br>
+                                This certificate may be forged, or the ID was entered incorrectly. Please contact <a href="mailto:security@unibolt.in" style="color:#ff4444;">security@unibolt.in</a> for assistance.
+                            </p>
+                        </div>
+                    `;
+                }
+            }, 800); // 800ms delay for realism
+        }
+    </script>
+</body>
+</html>

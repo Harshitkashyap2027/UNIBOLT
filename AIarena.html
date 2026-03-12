@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <title>UniBolt - Neural Lab</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        .app-container { height: 100vh; overflow: hidden; }
+        .page-body { height: 100%; padding: 15px; box-sizing: border-box; }
+        .editor-frame { display: flex; height: 100%; gap: 15px; }
+
+        /* Sidebar Styles */
+        .task-sidebar {
+            flex: 0 0 300px; background: #111; border: 1px solid #333;
+            border-radius: 12px; display: flex; flex-direction: column;
+        }
+        .task-header { padding: 20px; border-bottom: 1px solid #222; }
+        
+        .step-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex: 1; }
+        .step-item {
+            padding: 15px 20px; border-bottom: 1px solid #222; cursor: pointer;
+            display: flex; align-items: center; gap: 12px; transition: 0.2s;
+            opacity: 0.5;
+        }
+        .step-item:hover { background: #18181b; }
+        .step-item.active { opacity: 1; background: rgba(139, 92, 246, 0.1); border-left: 3px solid #8b5cf6; }
+        .step-item.completed { opacity: 1; }
+        .step-item.locked { pointer-events: none; }
+
+        .step-circle {
+            width: 24px; height: 24px; border-radius: 50%; border: 2px solid #444;
+            display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;
+        }
+        .step-item.active .step-circle { border-color: #8b5cf6; color: #8b5cf6; }
+        .step-item.completed .step-circle { background: #10b981; border-color: #10b981; color: black; }
+
+        /* Code Editor Styles */
+        .code-pane { flex: 1; background: #1e1e1e; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+        .code-area { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 20px; font-family: 'Fira Code', monospace; resize: none; outline: none; font-size: 14px; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="result-modal" class="modal-overlay hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999; display:flex; justify-content:center; align-items:center;">
+        <div class="modal-content" style="background:#09090b; padding:40px; border:1px solid #10b981; border-radius:12px; text-align:center; width:400px;">
+            <div style="font-size: 50px; margin-bottom: 20px;">🏆</div>
+            <h2 style="color:white; margin:0 0 10px;">Day Complete!</h2>
+            <p style="color:#a1a1aa; font-size:14px;">Great work. Tomorrow's tasks will unlock automatically.</p>
+            <button onclick="window.location.href='/datasets'" class="btn-primary" style="width:100%; justify-content:center; margin-top:20px; padding:12px; background:#10b981; color:white; border:none; cursor:pointer;">
+                Return to Dashboard
+            </button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <aside class="sidebar" style="width: 60px;">
+            <div class="brand" style="justify-content: center;"><i class="fa-solid fa-bolt" style="color: #06b6d4;"></i></div>
+            <ul class="nav-menu">
+                <a href="/datasets" class="nav-item"><i class="fa-solid fa-arrow-left"></i></a>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-body">
+                <div class="editor-frame">
+                    
+                    <div class="task-sidebar">
+                        <div class="task-header">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                                <h2 style="margin: 0; font-size: 18px; color: white;" id="project-title">Loading...</h2>
+                                <span id="timer" style="color: #ef4444; font-weight: bold;">45:00</span>
+                            </div>
+                            <div style="font-size: 12px; color: #8b5cf6;" id="project-meta">...</div>
+                        </div>
+                        
+                        <ul class="step-list" id="step-list-container"></ul>
+
+                        <div style="padding: 20px; border-top: 1px solid #222;">
+                            <div style="color: #666; font-size: 12px;">Daily Progress</div>
+                            <div class="progress-bar" style="height: 6px; margin-top: 8px;">
+                                <div class="fill" id="overall-progress" style="width: 0%; background: #8b5cf6;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="code-pane">
+                        <div class="code-header" style="padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; background: #252526;">
+                            <div>
+                                <strong style="color: white; display: block;" id="current-step-title">Select a Task</strong>
+                                <span style="font-size: 12px; color: #a1a1aa;" id="current-step-desc">...</span>
+                            </div>
+                            <button id="run-btn" style="background: #22c55e; border: none; color: white; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                                <i class="fa-solid fa-play"></i> &nbsp; Run Code
+                            </button>
+                        </div>
+                        
+                        <textarea class="code-area" id="code-editor" spellcheck="false"></textarea>
+                        
+                        <div style="height: 120px; background: #111; padding: 15px; font-family: 'Fira Code', monospace; font-size: 12px; border-top: 1px solid #333; overflow-y: auto;">
+                            <div style="color: #666; margin-bottom: 5px;">CONSOLE OUTPUT:</div>
+                            <div id="console-output" style="color: #a1a1aa;">Ready...</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/AIarena-backend.js"></script>
+</body>
+</html>

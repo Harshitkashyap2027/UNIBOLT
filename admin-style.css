@@ -1,0 +1,184 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary: #ef4444; 
+    --primary-hover: #dc2626;
+    --bg-dark: #09090b;
+    --bg-card: #18181b;
+    --border: #27272a;
+    --text-main: #e4e4e7;
+    --text-muted: #a1a1aa;
+    --sidebar-width: 260px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Outfit', sans-serif; background: var(--bg-dark); color: var(--text-main); overflow-x: hidden; }
+
+/* --- LOADING SPINNER --- */
+#app-loader {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+    background: #000; z-index: 9999;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    transition: opacity 0.5s ease;
+}
+#app-loader.hidden { opacity: 0; pointer-events: none; }
+.spinner {
+    width: 40px; height: 40px; border: 4px solid #333;
+    border-top: 4px solid var(--primary); border-radius: 50%;
+    animation: spin 1s linear infinite; margin-bottom: 15px;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* --- LAYOUT --- */
+.app-wrapper { display: flex; min-height: 100vh; }
+
+.sidebar {
+    width: var(--sidebar-width); background: #000000;
+    border-right: 1px solid var(--border);
+    position: fixed; top: 0; left: 0; height: 100vh;
+    padding: 20px; z-index: 100;
+    display: flex; flex-direction: column;
+}
+
+.main-content {
+    flex: 1; margin-left: var(--sidebar-width); padding: 30px;
+    width: calc(100% - var(--sidebar-width));
+}
+
+/* --- COMPONENTS --- */
+.brand { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+.brand i { color: var(--primary); }
+
+.nav-link {
+    display: flex; align-items: center; gap: 12px;
+    color: var(--text-muted); text-decoration: none;
+    padding: 12px 15px; margin-bottom: 5px;
+    border-radius: 8px; font-size: 14px; font-weight: 500;
+    transition: 0.2s;
+}
+.nav-link:hover, .nav-link.active { background: #27272a; color: #fff; }
+.nav-link.active { border-left: 3px solid var(--primary); }
+
+/* Cards & Grid */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; }
+
+.stat-card { display: flex; align-items: center; justify-content: space-between; }
+.stat-card h2 { font-size: 28px; margin: 5px 0 0; }
+.stat-card p { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+.stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+
+/* Tables */
+.table-container { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th { text-align: left; padding: 15px; color: var(--text-muted); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; }
+.data-table td { padding: 15px; border-bottom: 1px solid var(--border); }
+.data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* Elements */
+.btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-icon { background: transparent; color: var(--text-muted); padding: 5px; font-size: 14px; }
+.btn-icon:hover { color: white; }
+
+.badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+
+/* Mobile */
+@media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); transition: 0.3s; }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-left: 0; width: 100%; }
+}
+/* --- Add this to admin-style.css --- */
+
+/* Glass Panel (The container) */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Glass Inputs (Search & Select) */
+.glass-input, .glass-select {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    outline: none;
+    width: 100%;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.glass-input:focus, .glass-select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+}
+
+/* Table Avatar (The circle with initials) */
+.table-avatar {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #333, #555);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: #fff;
+    font-size: 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.status-success {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.status-pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Action Buttons (Edit/Delete) */
+.action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.action-btn.verify {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+.action-btn.verify:hover {
+    background: #10b981;
+    color: #fff;
+}
+.action-btn.delete {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+.action-btn.delete:hover {
+    background: #ef4444;
+    color: #fff;
+}

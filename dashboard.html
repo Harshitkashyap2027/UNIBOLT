@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>UniBolt - Student Dashboard</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="manifest" href="manifest-ai.json">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // --- CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- 1. MAIN LOGIC ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Admin Check
+                if(user.email === "harshit@gmail.com") {
+                     window.location.href = "admin.html";
+                     return;
+                }
+
+                try {
+                    // Fetch User Data
+                    const docRef = doc(db, "users", user.uid);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+
+                        // 1. Lock Check
+                        if (data.paymentStatus === 'Pending' || data.paymentStatus === 'Rejected') {
+                            activateLockdown(data);
+                        } else if (data.paymentStatus === "Verified" && !data.welcomeShown) {
+                            showCelebration(docRef);
+                        }
+
+                        // 2. Load UI Data
+                        loadUserData(data);
+                        loadNotifications(data.notifications || []);
+                        calculateRank(data.xp); // Fixes Rank Display
+                        
+                        // 3. Load Daily Mission
+                        loadDailyMission(data);
+
+                    } else {
+                        console.log("User document missing.");
+                    }
+                } catch (error) {
+                    console.error("Error loading dashboard data:", error);
+                }
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        // --- 2. DATA FUNCTIONS ---
+
+        function loadUserData(data) {
+            // IDs must match HTML exactly
+            const uiName = document.getElementById("dash-name");
+            const uiLevel = document.getElementById("dash-level");
+            const uiCerts = document.getElementById("dash-certs");
+            const uiTasksDone = document.getElementById("dash-tasks-done");
+            const uiProgTxt = document.getElementById("dash-progress-txt");
+            const uiProgBar = document.getElementById("dash-progress-bar");
+            const uiMastTxt = document.getElementById("dash-mastery-txt");
+            const uiMastBar = document.getElementById("dash-mastery-bar");
+            const headerXP = document.getElementById("header-xp");
+            const headerStreak = document.getElementById("header-streak");
+            const headerAvatar = document.getElementById("header-avatar");
+
+            if(uiName) uiName.innerText = data.name || "Student";
+            if(headerXP) headerXP.innerText = data.xp || 0;
+            if(headerStreak) headerStreak.innerText = data.streak || 0;
+            
+            // Avatar Logic
+            if (headerAvatar) {
+                if (data.avatarIcon) {
+                    headerAvatar.innerText = data.avatarIcon;
+                } else {
+                    headerAvatar.innerText = (data.name || "U").charAt(0).toUpperCase();
+                }
+            }
+
+            // Progress & Level Logic
+            const totalTasks = data.completedTasks ? data.completedTasks.length : 0;
+            if(uiCerts) uiCerts.innerText = Math.floor(totalTasks / 100); 
+            
+            // Fix Level Display
+            if(uiLevel) uiLevel.innerText = `Level ${Math.floor(totalTasks / 5) + 1}`;
+            
+            if(uiTasksDone) uiTasksDone.innerText = totalTasks;
+
+            const progPct = Math.min(100, (totalTasks / 100) * 100);
+            if(uiProgTxt) uiProgTxt.innerText = `${Math.round(progPct)}%`;
+            if(uiProgBar) uiProgBar.style.width = `${progPct}%`;
+
+            const mastPct = Math.min(100, ((data.xp || 0) / 2000) * 100);
+            if(uiMastTxt) uiMastTxt.innerText = `${Math.round(mastPct)}%`;
+            if(uiMastBar) uiMastBar.style.width = `${mastPct}%`;
+        }
+
+        async function loadDailyMission(data) {
+            const courseName = data.enrolledProgram || data.course;
+            if(!courseName) return;
+
+            try {
+                const q = query(
+                    collection(db, "tasks"), 
+                    where("module", "==", courseName), 
+                    orderBy("day", "desc"), 
+                    limit(1)
+                );
+                const taskSnap = await getDocs(q);
+                if (!taskSnap.empty) {
+                    const latest = taskSnap.docs[0].data();
+                    const dayLabel = document.getElementById("daily-task-number");
+                    if(dayLabel) dayLabel.innerText = `Day ${latest.day}`;
+                }
+            } catch (e) { console.log("Task error", e); }
+        }
+
+        async function calculateRank(userXP) {
+            const uiRank = document.getElementById("dash-rank");
+            const uiTopPct = document.getElementById("dash-top-pct");
+            
+            if (!userXP) {
+                if(uiRank) uiRank.innerText = "--"; 
+                return;
+            }
+
+            try {
+                // Get top 50 users to find rank
+                const q = query(collection(db, "users"), orderBy("xp", "desc"), limit(50));
+                const snapshot = await getDocs(q);
+                
+                let rank = -1;
+                snapshot.docs.forEach((doc, index) => {
+                    if (doc.data().xp === userXP) rank = index + 1;
+                });
+
+                if (uiRank) {
+                    if (rank > 0) {
+                        uiRank.innerText = `#${rank}`;
+                        if(uiTopPct) uiTopPct.innerText = "1";
+                    } else {
+                        uiRank.innerText = "50+";
+                        if(uiTopPct) uiTopPct.innerText = "5";
+                    }
+                }
+            } catch (e) { console.log("Rank error", e); }
+        }
+
+        function loadNotifications(notifs) {
+            const notifDot = document.getElementById("notif-dot");
+            const notifList = document.getElementById("notif-list");
+            const newsMsg = document.getElementById("news-msg");
+            const newsDate = document.getElementById("news-date");
+
+            if (notifs.length > 0 && notifDot) notifDot.style.display = "block";
+            
+            if (notifList) {
+                notifList.innerHTML = "";
+                if (notifs.length === 0) {
+                    notifList.innerHTML = `<p style="padding: 20px; text-align: center; color: #666; font-size: 13px;">No new messages</p>`;
+                } else {
+                    [...notifs].reverse().forEach(note => {
+                        const item = document.createElement("div");
+                        item.className = "notif-item";
+                        item.innerHTML = `
+                            <div style="width: 30px; height: 30px; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;"><i class="fa-solid fa-bullhorn"></i></div>
+                            <div>
+                                <p style="margin: 0; font-size: 13px; color: #ddd; line-height: 1.4;">${note.message}</p>
+                                <span style="font-size: 10px; color: #666; display: block; margin-top: 4px;">${note.date}</span>
+                            </div>`;
+                        notifList.appendChild(item);
+                    });
+                }
+            }
+
+            // Fixes "Latest Update Message is not working"
+            if (newsMsg && newsDate) {
+                if (notifs.length > 0) {
+                    const latest = notifs[notifs.length - 1];
+                    newsMsg.innerText = latest.message;
+                    newsDate.innerText = latest.date;
+                } else {
+                    newsMsg.innerText = "No new announcements.";
+                    newsDate.innerText = "--";
+                }
+            }
+        }
+
+        function activateLockdown(userData) {
+            const lockedModal = document.getElementById("locked-modal");
+            const lockUtrDisplay = document.getElementById("lock-utr-display");
+            const whatsappBtn = document.getElementById("whatsapp-btn");
+
+            // Disable nav items
+            document.querySelectorAll('.nav-item').forEach(link => {
+                if (!link.href.includes('dashboard.html')) {
+                    link.classList.add('locked-nav-item');
+                    link.innerHTML += ' <i class="fa-solid fa-lock" style="font-size:10px;"></i>';
+                    link.onclick = (e) => { e.preventDefault(); lockedModal.classList.remove("hidden"); };
+                }
+            });
+
+            // Set Lock Data
+            const utr = userData.transactionId || "N/A";
+            if(lockUtrDisplay) lockUtrDisplay.innerText = utr;
+
+            if(whatsappBtn) {
+                whatsappBtn.onclick = () => {
+                    const msg = `*Verification Request*\nUser: ${userData.name}\nUTR: ${utr}`;
+                    window.open(`https://wa.me/919258837596?text=${encodeURIComponent(msg)}`, '_blank');
+                };
+            }
+            
+            if(lockedModal) lockedModal.classList.remove("hidden");
+        }
+
+        async function showCelebration(docRef) {
+            const verifiedModal = document.getElementById("verified-modal");
+            if(verifiedModal) verifiedModal.classList.remove("hidden");
+            
+            // Confetti
+            const duration = 3000;
+            const end = Date.now() + duration;
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#10b981', '#ffffff'] });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#10b981', '#ffffff'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+
+            await updateDoc(docRef, { welcomeShown: true });
+        }
+
+        // Live Feed Animation
+        const feedContainer = document.getElementById("live-feed-container");
+        if (feedContainer) {
+            const names = ["Rahul", "Anjali", "Vikas", "Priya", "Amit", "Sneha"];
+            const actions = ["passed Level 4", "earned 100 XP", "started React", "won a certificate"];
+            const colors = ["#10b981", "#06b6d4", "#8b5cf6", "#f59e0b"];
+
+            function addFeedItem() {
+                const name = names[Math.floor(Math.random() * names.length)];
+                const action = actions[Math.floor(Math.random() * actions.length)];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const time = Math.floor(Math.random() * 5) + 1;
+
+                const div = document.createElement("div");
+                div.className = "feed-item";
+                div.style.cssText = "display:flex; gap:10px; align-items:center; padding:10px; border-bottom:1px solid rgba(255,255,255,0.05); animation:fadeIn 0.5s;";
+                div.innerHTML = `
+                    <div style="width: 30px; height: 30px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: ${color};">
+                        <i class="fa-solid fa-bolt" style="font-size:12px;"></i>
+                    </div>
+                    <div>
+                        <p style="margin: 0; font-weight: 500; font-size: 13px;">${name} ${action}</p>
+                        <small style="color: #666; font-size: 11px;">${time} mins ago</small>
+                    </div>
+                `;
+                feedContainer.prepend(div);
+                if (feedContainer.children.length > 4) feedContainer.removeChild(feedContainer.lastChild);
+            }
+            addFeedItem();
+            setInterval(addFeedItem, 5000);
+        }
+
+        // UI Helpers
+        window.clearNotifications = async () => {
+            const user = auth.currentUser;
+            if(!user) return;
+            try {
+                await updateDoc(doc(db, "users", user.uid), { notifications: [] });
+                document.getElementById('notif-list').innerHTML = '<p style="padding: 20px; text-align: center; color: #666; font-size: 13px;">No new alerts</p>';
+                document.getElementById('notif-dot').style.display = 'none';
+            } catch(e) { console.error(e); }
+        };
+    </script>
+
+    <style>
+        /* =========================================
+           2. IPHONE 3D BENTO THEME
+           ========================================= */
+        :root {
+            --bg-deep: #0f0e13;
+            --sidebar-bg: #050507;
+            --card-surface: #1a1920;
+            --accent-primary: #8b5cf6; /* Violet */
+            --accent-secondary: #ec4899; /* Pink */
+            --accent-green: #10b981;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --sidebar-width: 260px;
+            
+            /* 3D Shadows */
+            --shadow-3d: 0 10px 40px -10px rgba(0,0,0,0.6), 
+                         0 0 0 1px rgba(255,255,255,0.08) inset,
+                         0 20px 25px -5px rgba(0,0,0,0.2);
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            font-family: 'Outfit', sans-serif;
+            margin: 0; color: var(--text-main);
+            overflow-x: hidden;
+            background-image: radial-gradient(#2d2b3b 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        /* --- LAYOUT --- */
+        .app-container { display: flex; min-height: 100vh; }
+        
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0;
+            background: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,0.05);
+            padding: 30px 20px; display: flex; flex-direction: column; z-index: 1001;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto; scrollbar-width: none;
+        }
+        .sidebar::-webkit-scrollbar { display: none; }
+
+        .brand { font-size: 24px; font-weight: 700; color: white; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+        .nav-menu { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .nav-item {
+            display: flex; align-items: center; gap: 14px; padding: 12px 16px;
+            color: var(--text-muted); text-decoration: none; border-radius: 14px;
+            font-weight: 500; font-size: 15px; transition: all 0.2s ease;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.2), transparent);
+            color: var(--accent-primary); border-left: 3px solid var(--accent-primary); padding-left: 13px;
+        }
+        .sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            flex: 1; margin-left: var(--sidebar-width); padding: 30px;
+            max-width: 1400px; padding-bottom: 120px;
+        }
+
+        /* --- HEADER --- */
+        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .page-title { display: none; }
+        .user-area { display: flex; align-items: center; gap: 15px; margin-left: auto; }
+        
+        .xp-pill {
+            background: #18181b; border: 1px solid rgba(255,255,255,0.1);
+            padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .avatar {
+            width: 40px; height: 40px; background: linear-gradient(135deg, #4338ca, #6366f1);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 20px; border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        /* --- BENTO GRID (3D CARDS) --- */
+        .bento-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 20px; grid-auto-rows: minmax(160px, auto); perspective: 1000px;
+        }
+
+        .card {
+            background: var(--card-surface); border-radius: 24px; padding: 25px;
+            border: 1px solid rgba(255,255,255,0.08); position: relative;
+            overflow: hidden; display: flex; flex-direction: column; justify-content: center;
+            
+            /* 3D Properties */
+            box-shadow: var(--shadow-3d);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform-style: preserve-3d;
+        }
+
+
+        /* Add this new class for 50% width cards */
+        .card-wide { 
+            grid-column: span 2; 
+        }
+
+        /* On mobile, keep them full width (stacking) or side-by-side */
+        @media (max-width: 768px) {
+            /* If you want them side-by-side on mobile too, remove the line below. 
+            Currently, this makes them full width on mobile for better readability. */
+            .card-wide { grid-column: span 2; } 
+        }
+
+        .card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px -5px rgba(0,0,0,0.6);
+            border-color: rgba(255,255,255,0.2);
+            z-index: 10;
+        }
+
+        /* Grid Sizes */
+        .card-large { grid-column: span 2; grid-row: span 2; }
+        .card-tall { grid-column: span 1; grid-row: span 2; }
+        #daily-mission-card { grid-column: span 2; }
+
+
+        /* Typography */
+        h1 { font-size: 32px; margin-bottom: 25px; font-weight: 700; }
+        h2 { margin: 0; font-weight: 700; letter-spacing: -0.5px; }
+        small, p { color: var(--text-muted); font-size: 14px; }
+
+        .btn-primary {
+            background: white; color: black; padding: 12px 24px; border-radius: 14px;
+            font-weight: 700; text-decoration: none; display: inline-flex;
+            align-items: center; gap: 8px; font-size: 14px; border: none; cursor: pointer;
+            transition: 0.2s; margin-top: auto; width: fit-content;
+        }
+        .btn-primary:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.3); }
+
+        /* --- NOTIFICATIONS --- */
+        .notif-dropdown {
+            position: absolute; top: 55px; right: 0; width: 320px;
+            background: #1a1920; border: 1px solid rgba(255,255,255,0.1); border-radius: 18px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8); z-index: 100;
+            overflow: hidden; transform-origin: top right; transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .notif-dropdown.hidden { transform: scale(0.9) translateY(-20px); opacity: 0; pointer-events: none; }
+        .notif-header { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; background: #202026; }
+        .notif-list { max-height: 300px; overflow-y: auto; padding: 5px 0; }
+        .notif-item { padding: 12px 15px; display: flex; gap: 12px; align-items: flex-start; border-bottom: 1px solid rgba(255,255,255,0.03); }
+
+        /* --- MODALS --- */
+        .locked-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+            display: flex; justify-content: center; align-items: center; z-index: 2000;
+        }
+        .hidden { display: none !important; }
+        .modal-content { z-index: 2001; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.9); }
+        
+        /* Locked Styles */
+        .locked-card-style { border: 1px solid #ef4444 !important; background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), #1a0505) !important; }
+        .locked-btn-style { background: rgba(239, 68, 68, 0.15) !important; color: #ef4444 !important; border: 1px solid #ef4444 !important; cursor: not-allowed; }
+
+        /* --- INSTALL OVERLAY --- */
+        #install-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: center;
+            z-index: 99999; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        #install-overlay.active { opacity: 1; pointer-events: all; }
+
+        /* Spinner & Animations */
+        .big-spinner { width: 60px; height: 60px; border: 5px solid rgba(255,255,255,0.1); border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        .success-circle { width: 80px; height: 80px; background: rgba(139, 92, 246, 0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; border: 2px solid var(--accent-primary); animation: popIn 0.5s ease; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .install-text { font-size: 20px; color: white; font-weight: 700; text-align: center; }
+        .install-sub { font-size: 14px; color: #a1a1aa; margin-top: 10px; }
+
+        /* --- MOBILE --- */
+        .mobile-menu-toggle { display: none; }
+        .sidebar-overlay { display: none; }
+
+        @media (max-width: 900px) {
+            .bento-grid { grid-template-columns: repeat(2, 1fr); }
+            .card-large, #daily-mission-card, .card-tall { grid-column: span 2; }
+        }
+
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column; } 
+            .main-content { margin-left: 0; padding: 20px; padding-bottom: 100px; }
+            
+            .sidebar { transform: translateX(-100%); width: 270px; box-shadow: 50px 0 100px rgba(0,0,0,0.8); }
+            .sidebar.active { transform: translateX(0); }
+            
+            .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; display: none; }
+            .sidebar-overlay.active { display: block; }
+            
+            .top-header { position: sticky; top: 0; z-index: 50; background: rgba(15, 14, 19, 0.9); backdrop-filter: blur(12px); margin: -20px -20px 20px -20px; padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+            
+            .mobile-menu-toggle { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; font-size: 18px; width: 40px; height: 40px; border-radius: 10px; margin-right: 15px; cursor: pointer; }
+            
+            .bento-grid { display: flex; flex-direction: column; gap: 15px; } 
+            .card { min-height: 140px; }
+            
+            .notif-dropdown { position: fixed; top: 75px; right: 15px; width: calc(100% - 30px); max-width: 350px; z-index: 1000; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="install-overlay"></div>
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
+
+    <div id="verified-modal" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; display:flex; justify-content:center; align-items:center;">
+        <div class="modal-content" style="text-align: center; width: 400px; padding: 40px; background: #1a1920; border: 1px solid #10b981; box-shadow: 0 0 50px rgba(16, 185, 129, 0.2); border-radius:20px;">
+            <div style="font-size: 60px; margin-bottom: 20px;">🎉</div>
+            <h1 style="color: white; font-size: 28px; margin: 0 0 10px;">You're In!</h1>
+            <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 30px;">
+                Your payment has been <strong style="color: #10b981;">Verified</strong> by the Admin.<br>
+                Welcome to the UniBolt Internship Program.
+            </p>
+            <button onclick="closeVerifiedModal()" class="btn-primary" style="width: 100%; justify-content: center; background: #10b981; color: white;">
+                Start My Journey 🚀
+            </button>
+        </div>
+    </div>
+
+    <div id="locked-modal" class="locked-overlay hidden">
+        <div class="modal-content" style="text-align: center; width: 400px; border: 1px solid #ef4444; background: #09090b; padding: 30px; border-radius: 20px;">
+            <div style="width: 60px; height: 60px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <i class="fa-solid fa-lock" style="color: #ef4444; font-size: 24px;"></i>
+            </div>
+            <h2 style="color: white; margin: 0;">Access Restricted</h2>
+            <p style="color: #a1a1aa; font-size: 13px; margin: 10px 0 20px; line-height: 1.5;">
+                Your payment is <strong>Pending Verification</strong>.<br>
+                Send your UTR to Admin via WhatsApp for instant approval.
+            </p>
+            <div style="background: #111; padding: 15px; border-radius: 8px; font-size: 12px; color: #666; margin-bottom: 20px; text-align: left; border: 1px dashed #333;">
+                <span style="color: #aaa;">Your UTR:</span> 
+                <strong style="color: white; font-family: monospace; letter-spacing: 1px; display:block; margin-top:5px;" id="lock-utr-display">LOADING...</strong>
+            </div>
+            <button id="whatsapp-btn" class="btn-primary" style="width: 100%; justify-content: center; background: #25D366; color: white; box-shadow: none;">
+                <i class="fa-brands fa-whatsapp" style="font-size: 18px;"></i> &nbsp; Verify on WhatsApp
+            </button>
+            <button onclick="closeLockModal()" style="width: 100%; margin-top: 10px; border: none; background:none; color: #666; padding:10px; cursor:pointer;">
+                Close & Wait
+            </button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        
+        <aside class="sidebar" id="mobile-sidebar">
+            <div class="brand"><i class="fa-solid fa-dna" style="color: #8b5cf6;"></i> UniBolt.</div>
+    
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-item active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+                <a href="arena.html" class="nav-item"><i class="fa-solid fa-code"></i> Code Arena</a>
+                <a href="practice.html" class="nav-item"><i class="fa-solid fa-dumbbell"></i> Practice Zone</a>
+                <a href="leaderboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+                <a href="gallery.html" class="nav-item"><i class="fa-solid fa-trophy"></i> Hall of Fame</a>
+                <a href="research.html" class="nav-item"><i class="fa-solid fa-flask"></i> Research Hub</a>
+                <a href="contact.html" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
+                <a href="profile.html" class="nav-item"><i class="fa-solid fa-sliders"></i> Settings</a>
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="install-pwa-btn" class="nav-item" style="width:100%; justify-content:center; background:#1f1e26; border:1px solid #333; margin-bottom:10px; cursor:pointer;">
+                    <i class="fa-solid fa-download"></i> Install App
+                </button>
+                <a href="login.html" class="nav-item logout-btn" style="color:#ef4444;"><i class="fa-solid fa-power-off"></i> Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <header class="top-header">
+                <button class="mobile-menu-toggle" onclick="toggleMobileSidebar()">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+
+                <div class="page-title">Dashboard</div>
+
+                <div class="user-area">
+                    <div style="position: relative;">
+                        <div onclick="toggleNotifications()" style="cursor:pointer; padding:8px; position:relative;">
+                            <i class="fa-solid fa-bell" style="font-size: 20px; color: #a1a1aa;"></i>
+                            <div id="notif-dot" style="display: none; position:absolute; top:5px; right:5px; width:8px; height:8px; background:red; border-radius:50%;"></div>
+                        </div>
+                        <div id="notif-dropdown" class="notif-dropdown hidden">
+                            <div class="notif-header">
+                                <span>Notifications</span>
+                                <small onclick="clearNotifications()" style="cursor: pointer; color: var(--accent-primary);">Clear All</small>
+                            </div>
+                            <div id="notif-list" class="notif-list">
+                                <p style="padding: 20px; text-align: center; color: #666; font-size: 13px;">No new alerts</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="xp-pill"><i class="fa-solid fa-bolt" style="color:#fbbf24;"></i> <span id="header-xp">0</span> XP</div>
+                    <div class="xp-pill" style="border-color: #f59e0b; color: #f59e0b; background: rgba(245, 158, 11, 0.1);"><i class="fa-solid fa-fire"></i> <span id="header-streak">0</span></div>
+                    <div class="avatar" id="header-avatar">?</div>
+                </div>
+            </header>
+
+            <div class="page-body">
+                <h1 style="margin-bottom: 25px;">Welcome, <span id="dash-name">Student</span>! 👋</h1>
+
+                <div class="bento-grid">
+                    
+                    <div class="card card-large" style="background: linear-gradient(135deg, #4c1d95, #7c3aed) !important; border: none; align-items: flex-start;">
+                        <div style="z-index: 2; width: 100%;">
+                            <span style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                                🚀 <span id="dash-level">Level 1</span>
+                            </span>
+                            <h2 style="font-size: 32px; margin: 20px 0 10px; color: white;">Ready to build?</h2>
+                            <p style="color: #ddd6fe; margin-bottom: 25px;">Continue your learning streak today.</p>
+                            <a href="arena.html" class="btn-primary">
+                                <i class="fa-solid fa-play"></i> Start Mission
+                            </a>
+                        </div>
+                        <i class="fa-solid fa-rocket" style="position: absolute; right: -20px; bottom: -20px; font-size: 180px; opacity: 0.15; color: white; transform: rotate(-15deg);"></i>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; color: #a1a1aa;">
+                            <span>Certificates</span> <i class="fa-solid fa-certificate"></i>
+                        </div>
+                        <h2 id="dash-certs" style="font-size: 36px; color: var(--accent-green); margin: 10px 0;">0</h2>
+                        <small>Verified Earned</small>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; color: #a1a1aa;">
+                            <span>Rank</span> <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <h2 style="font-size: 36px; color: var(--accent-blue); margin: 10px 0;"><span id="dash-rank">--</span></h2>
+                        <small>Top <span id="dash-top-pct">--</span>%</small>
+                    </div>
+
+                    <div id="daily-mission-card" class="card">
+                        <div style="display: flex; justify-content: space-between; color: #a1a1aa; align-items: center;">
+                            <span>Daily Mission</span> <i id="mission-icon" class="fa-solid fa-calendar-day"></i>
+                        </div>
+                        <h2 id="daily-task-number" style="font-size: 36px; color: var(--accent-primary); margin: 15px 0;">Day 1</h2>
+                        <small style="display: block; margin-bottom: 20px;">Next Assignment Pending</small>
+                        <a id="start-task-btn" href="admin-practice.html" class="btn-primary" style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); color: var(--accent-primary); width: 100%; justify-content: center; box-shadow:none;">
+                            Start Task <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="card card-large">
+                        <h3 style="margin-top: 0;">Course Progress</h3>
+                        <div style="display: flex; justify-content: space-between; margin-top: 20px; font-size: 14px;">
+                            <span style="color: #a1a1aa;">Full Stack Track (<span id="dash-tasks-done">0</span>/100)</span>
+                            <span style="font-weight: bold;" id="dash-progress-txt">0%</span>
+                        </div>
+                        <div class="progress-bar" style="background:#333;"><div class="fill" id="dash-progress-bar" style="width: 0%; background: var(--accent-green);"></div></div>
+
+                        <div style="display: flex; justify-content: space-between; margin-top: 20px; font-size: 14px;">
+                            <span style="color: #a1a1aa;">Skill Mastery</span>
+                            <span style="font-weight: bold;" id="dash-mastery-txt">0%</span>
+                        </div>
+                        <div class="progress-bar" style="background:#333;"><div class="fill" id="dash-mastery-bar" style="width: 0%; background: var(--accent-blue);"></div></div>
+                    </div>
+
+                    <div class="card card-tall">
+                        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">
+                            <span style="width: 8px; height: 8px; background: red; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px red;"></span> Live Feed
+                        </h3>
+                        <div id="live-feed-container" style="margin-top: 25px; overflow: hidden; height: 300px; display:flex; flex-direction:column; gap:15px;"></div>
+                    </div>
+
+                    <div class="card" style="background: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.3) !important;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <h4 style="margin: 0; color: #10b981; font-size: 14px; margin-bottom: 8px;">📢 Latest Update</h4>
+                                <p id="news-msg" style="font-size: 13px; color: #e0e0e0; margin: 0; line-height: 1.4;">Checking updates...</p>
+                                <small id="news-date" style="color: #888; font-size: 11px; margin-top: 8px; display: block;">--</small>
+                            </div>
+                            <i class="fa-solid fa-bullhorn" style="color: #10b981; font-size: 18px;"></i>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleMobileSidebar() {
+            document.getElementById('mobile-sidebar').classList.toggle('active');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+        function toggleNotifications() {
+            document.getElementById('notif-dropdown').classList.toggle('hidden');
+        }
+        function closeLockModal() { window.location.href = "login.html"; }
+        function closeVerifiedModal() { document.getElementById('verified-modal').classList.add('hidden'); }
+
+        // PWA Install UI Logic
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-pwa-btn');
+        const overlay = document.getElementById('install-overlay');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if(installBtn) installBtn.style.display = 'block';
+        });
+
+        if(installBtn) {
+            installBtn.addEventListener('click', async () => {
+                overlay.innerHTML = `
+                    <div class="big-spinner"></div>
+                    <div class="install-text">Please wait...</div>
+                    <div class="install-sub">Installing UniBolt...</div>
+                `;
+                overlay.classList.add('active');
+
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                } else {
+                    setTimeout(() => { showSuccessMessage(); }, 3000);
+                }
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            showSuccessMessage();
+        });
+
+        function showSuccessMessage() {
+            overlay.innerHTML = `
+                <div class="success-circle"><i class="fa-solid fa-check" style="color: #10b981; font-size: 32px;"></i></div>
+                <div class="install-text">App Install Successful!</div>
+                <div class="install-sub">Open your App</div>
+                <button onclick="document.getElementById('install-overlay').classList.remove('active')" style="margin-top:20px; background:transparent; border:1px solid #555; color:#aaa; padding:8px 20px; border-radius:8px; cursor:pointer;">Close</button>
+            `;
+            if(installBtn) installBtn.style.display = 'none';
+            setTimeout(() => { overlay.classList.remove('active'); }, 5000);
+        }
+    </script>
+</body>
+</html>

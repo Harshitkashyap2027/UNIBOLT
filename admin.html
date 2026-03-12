@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBolt Admin - Master Control</title>
+    
+    <link rel="manifest" href="manifest-admin.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { 
+            --primary: #ff3b30; /* Apple Red */
+            --bg: #000000; 
+            --surface: #1c1c1e; /* Apple Dark Gray */
+            --surface-highlight: #2c2c2e;
+            --text: #ffffff; 
+            --text-dim: #8e8e93;
+            --border: rgba(255, 255, 255, 0.1); 
+            --bento-shadow: 0 20px 40px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            --radius: 24px;
+        }
+
+        body { 
+            background: var(--bg); 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            color: var(--text); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* --- SIDEBAR: Fixed Bottom Section --- */
+        .sidebar { 
+            width: 280px; 
+            background: #000; 
+            border-right: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 1100;
+            height: 100vh;
+        }
+
+        .sidebar-header { padding: 30px 24px 10px; flex-shrink: 0; }
+        .sidebar-scroll { flex: 1; overflow-y: auto; padding: 0 14px; } /* Scrollable Area */
+        .sidebar-footer { padding: 20px 24px; border-top: 1px solid var(--border); background: #000; flex-shrink: 0; } /* Pinned Bottom */
+
+        .brand { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; }
+        .brand i { color: var(--primary); }
+        
+        .nav-item { 
+            padding: 14px 16px; 
+            color: var(--text-dim); 
+            cursor: pointer; 
+            border-radius: 14px; 
+            margin-bottom: 4px; 
+            display: flex; 
+            align-items: center; 
+            gap: 14px; 
+            transition: 0.2s; 
+            text-decoration: none; 
+            font-size: 15px; 
+            font-weight: 500; 
+        }
+        .nav-item:hover { background: var(--surface); color: white; }
+        .nav-item.active { background: var(--surface-highlight); color: white; font-weight: 600; }
+        .nav-item i { width: 20px; text-align: center; }
+
+        /* --- MAIN CONTENT --- */
+        .main { flex: 1; padding: 30px; overflow-y: auto; background: var(--bg); position: relative; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px; }
+        .header h2 { font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
+        .header p { color: var(--text-dim); margin: 6px 0 0 0; font-size: 15px; }
+
+        /* --- IPHONE BENTO STATS --- */
+        .stats { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 16px; 
+            margin-bottom: 30px; 
+        }
+        .card { 
+            background: var(--surface); 
+            border-radius: var(--radius); 
+            padding: 24px; 
+            position: relative; 
+            box-shadow: var(--bento-shadow); 
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 120px;
+        }
+        .card:hover { transform: scale(1.02); background: var(--surface-highlight); }
+        .card h3 { margin: 0; font-size: 36px; font-weight: 700; color: white; letter-spacing: -1px; }
+        .card p { margin: 0; color: var(--text-dim); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        /* Stats Icon Decoration */
+        .card-icon { position: absolute; top: 20px; right: 20px; font-size: 24px; opacity: 0.2; }
+
+        /* --- TABLE / LIST VIEW --- */
+        .table-container { 
+            background: var(--surface); 
+            border-radius: var(--radius); 
+            overflow: hidden; 
+            box-shadow: var(--bento-shadow); 
+            min-height: 400px; 
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 20px; color: var(--text-dim); font-size: 12px; font-weight: 600; text-transform: uppercase; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+        td { padding: 20px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; font-size: 15px; }
+        
+        /* Action Buttons */
+        .btn-group { display: flex; gap: 8px; justify-content: flex-end; }
+        .btn-icon { 
+            width: 36px; height: 36px; 
+            border-radius: 50%; /* Circle Buttons */
+            border: none; 
+            background: #2c2c2e; 
+            color: #fff; 
+            cursor: pointer; 
+            display: inline-flex; align-items: center; justify-content: center; 
+            transition: 0.2s; 
+            font-size: 14px;
+        }
+        .btn-icon:hover { transform: scale(1.1); filter: brightness(1.2); }
+        .btn-approve { background: rgba(48, 209, 88, 0.15); color: #30d158; } /* Apple Green */
+        .btn-reset { background: rgba(255, 159, 10, 0.15); color: #ff9f0a; } /* Apple Orange */
+        .btn-delete { background: rgba(255, 69, 58, 0.15); color: #ff453a; } /* Apple Red */
+        .btn-msg { background: rgba(10, 132, 255, 0.15); color: #0a84ff; } /* Apple Blue */
+
+        /* --- CONTROLS --- */
+        .search-bar { 
+            background: var(--surface); 
+            border: none; 
+            color: white; 
+            padding: 14px 20px; 
+            border-radius: 14px; 
+            width: 300px; 
+            outline: none; 
+            font-size: 16px; 
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .search-bar:focus { background: var(--surface-highlight); }
+        
+        .btn { 
+            padding: 14px 24px; 
+            border-radius: 14px; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 15px; 
+            font-weight: 600; 
+            color: white; 
+            background: var(--surface); 
+            transition: 0.2s; 
+            display: inline-flex; align-items: center; gap: 8px; 
+        }
+        .btn:hover { background: var(--surface-highlight); transform: scale(1.02); }
+        .btn-primary { background: var(--primary); box-shadow: 0 4px 12px rgba(255, 59, 48, 0.4); }
+        .btn-primary:hover { background: #ff4f44; }
+
+        /* --- MOBILE RESPONSIVE (Key Logic) --- */
+        .menu-toggle { display: none; position: fixed; top: 20px; right: 20px; z-index: 1200; background: var(--surface); border: 1px solid var(--border); color: white; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; align-items: center; justify-content: center; font-size: 20px; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 1050; }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-105%); height: 100vh; visibility: hidden; }
+            .sidebar.active { transform: translateX(0); visibility: visible; }
+            .sidebar-overlay.active { display: block; }
+            .menu-toggle { display: flex; }
+            
+            .main { padding: 90px 20px 40px; } /* More top padding for labels */
+            .header { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .header > div:last-child { width: 100%; display: flex; gap: 10px; }
+            .header .btn { flex: 1; justify-content: center; padding: 12px; font-size: 14px; }
+            .search-bar { width: 100%; box-sizing: border-box; }
+
+            /* SIDE-BY-SIDE STATS FIX */
+            .stats { 
+                grid-template-columns: 1fr 1fr; /* 2 Columns for Mobile */
+                gap: 12px; 
+            }
+            .stats .card:last-child { 
+                grid-column: span 2; /* Revenue takes full width at bottom */
+            }
+            .card h3 { font-size: 28px; }
+            
+            /* MOBILE CARD LIST (iPhone Settings Style) */
+            .table-container { background: transparent; box-shadow: none; border-radius: 0; }
+            .table-container thead { display: none; }
+            .table-container tr { 
+                display: block; 
+                background: var(--surface); 
+                margin-bottom: 16px; 
+                border-radius: 20px; 
+                padding: 20px;
+                position: relative;
+                box-shadow: var(--bento-shadow);
+            }
+            .table-container td { 
+                display: block; 
+                text-align: right; 
+                padding: 4px 0; 
+                border: none; 
+            }
+            
+            /* The "Student" Label Fix */
+            .table-container td[data-label="Student"] {
+                text-align: left;
+                padding-bottom: 15px;
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+                margin-bottom: 15px;
+                padding-top: 0;
+            }
+            
+            /* Action Buttons Row */
+            .table-container td:last-child { 
+                margin-top: 15px; 
+                padding-top: 15px; 
+                border-top: 1px solid rgba(255,255,255,0.05);
+                justify-content: space-between;
+                display: flex;
+            }
+            
+            /* Labels for other fields */
+            .table-container td:not(:first-child):not(:last-child)::before {
+                content: attr(data-label);
+                float: left;
+                font-weight: 600;
+                color: var(--text-dim);
+                font-size: 12px;
+                text-transform: uppercase;
+            }
+        }
+
+        /* --- MODALS (Apple Style) --- */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(20px); display: flex; justify-content: center; align-items: center; z-index: 2000; visibility: hidden; opacity: 0; transition: 0.3s; padding: 20px; }
+        .modal.active { visibility: visible; opacity: 1; }
+        .modal-content { 
+            background: #1c1c1e; 
+            width: 100%; max-width: 500px; 
+            max-height: 85vh; overflow-y: auto; 
+            padding: 30px; 
+            border-radius: 24px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6); 
+            transform: scale(0.95); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal.active .modal-content { transform: scale(1); }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
+        
+        label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select, textarea { 
+            width: 100%; background: #2c2c2e; border: none; 
+            color: white; padding: 14px; border-radius: 12px; 
+            box-sizing: border-box; outline: none; font-size: 15px; transition: 0.2s;
+        }
+        input:focus, select:focus, textarea:focus { background: #3a3a3c; box-shadow: 0 0 0 2px var(--primary); }
+        .section-title { color: white; font-size: 16px; font-weight: 700; margin: 30px 0 15px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+
+        /* Custom Toast */
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px 24px; border-radius: 50px; font-weight: 600; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 3000; display: flex; align-items: center; gap: 10px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); opacity: 0; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="modal" id="confirm-modal">
+        <div class="modal-content" style="text-align: center; max-width: 350px;">
+            <div style="font-size: 48px; margin-bottom: 20px;" id="confirm-icon">⚠️</div>
+            <h2 style="margin: 0 0 10px 0; font-size: 22px;">Are you sure?</h2>
+            <p style="color: var(--text-dim); font-size: 15px; margin-bottom: 30px; line-height: 1.5;" id="confirm-msg">This action cannot be undone.</p>
+            <div style="display: flex; gap: 12px;">
+                <button id="confirm-yes" class="btn btn-primary" style="flex: 1; justify-content: center; background: var(--primary);">Yes</button>
+                <button onclick="closeModal('confirm-modal')" class="btn" style="flex: 1; justify-content: center; background: #2c2c2e;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand"><i class="fa-solid fa-shield-cat" style="color:var(--primary);"></i> UniBolt Admin</div>
+        </div>
+        
+        <div class="sidebar-scroll">
+            <a href="/admin" class="nav-item active"><i class="fa-solid fa-grid-2"></i> Overview</a>
+            <a href="/admin-tickets" class="nav-item"><i class="fa-solid fa-ticket"></i> Tickets</a>
+            <a href="/admin-analytics" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="/admin-reports" class="nav-item"><i class="fa-solid fa-file-contract"></i> Reports</a>
+            <a href="/admin-content" class="nav-item"><i class="fa-solid fa-book-open"></i> Content</a>
+            <a href="/admin-activity" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Activity</a>
+            <a href="/admin-registrations" class="nav-item"><i class="fa-solid fa-address-card"></i> Registrations</a>
+            <a href="/admin-settings" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="/admin-notifications" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications</a>
+            <a href="/admin-team" class="nav-item"><i class="fa-solid fa-user-shield"></i> Team</a>
+            <a href="/admin-faq" class="nav-item"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+        </div>
+        
+        <div class="sidebar-footer">
+            <button id="install-btn" class="btn" style="width:100%; justify-content:center; margin-bottom:10px; display:none; background:#30d158; color:#000;" onclick="installAdminApp()">
+                <i class="fa-solid fa-download"></i> Install App
+            </button>
+            <div class="nav-item" onclick="logout()" style="color: #ff453a;"><i class="fa-solid fa-power-off"></i> Sign Out</div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <div>
+                <h2>Dashboard</h2>
+                <p>Welcome back, Administrator.</p>
+            </div>
+            <div>
+                <button class="btn" onclick="showToast('Refreshing data...', 'info'); location.reload();"><i class="fa-solid fa-rotate"></i></button>
+                <button class="btn" onclick="openBroadcastModal('all')"><i class="fa-solid fa-bullhorn"></i></button>
+                <button class="btn btn-primary" onclick="openAddModal()"><i class="fa-solid fa-plus"></i> New Student</button>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 30px; display: flex; gap: 16px; flex-wrap: wrap;">
+            <input type="text" class="search-bar" placeholder="Search students..." onkeyup="filterTable(this.value)" style="flex:1;">
+            <select id="course-filter" onchange="filterTable()" style="width: 200px; background: var(--surface); border: none; color: white; padding: 14px; border-radius: 14px; outline: none; -webkit-appearance: none; font-size: 15px;">
+                <option value="all">All Courses</option>
+                <option value="Full Stack Web Development">Web Development</option>
+                <option value="AI & Data Science">AI & Data Science</option>
+            </select>
+        </div>
+
+        <div class="stats">
+            <div class="card">
+                <i class="fa-solid fa-users card-icon"></i>
+                <h3 id="stat-total">0</h3>
+                <p>Total Students</p>
+            </div>
+            <div class="card" style="background: #2c2c2e;">
+                <i class="fa-solid fa-clock card-icon" style="color:#ff9f0a; opacity:1;"></i>
+                <h3 id="stat-pending" style="color:#ff9f0a;">0</h3>
+                <p style="color:#ff9f0a;">Pending</p>
+            </div>
+            <div class="card">
+                <i class="fa-solid fa-indian-rupee-sign card-icon"></i>
+                <h3 id="stat-rev">₹0</h3>
+                <p style="color:#30d158;">Revenue</p>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="padding-left: 24px;">Student</th>
+                        <th>Program</th>
+                        <th>Payment</th>
+                        <th style="text-align:right; padding-right: 24px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr><td colspan="4" style="text-align:center; padding:40px; color:#8e8e93;">Loading Database...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal" id="student-modal">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; font-size:24px;">Edit Profile</h2>
+                <div onclick="closeModal('student-modal')" style="background:#2c2c2e; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;"><i class="fa-solid fa-xmark"></i></div>
+            </div>
+
+            <form id="student-form">
+                <input type="hidden" id="inp-uid">
+
+                <div class="section-title"><i class="fa-solid fa-user-circle"></i> Identity</div>
+                <div class="form-grid">
+                    <div><label>Name</label><input type="text" id="inp-name" required></div>
+                    <div><label>Phone</label><input type="text" id="inp-phone"></div>
+                </div>
+                <div class="form-grid">
+                    <div><label>Email</label><input type="email" id="inp-email" required></div>
+                    <div>
+                        <label>Avatar</label>
+                        <select id="inp-avatarIcon">
+                            <option value="🐶">🐶 Dog</option>
+                            <option value="🐱">🐱 Cat</option>
+                            <option value="👽">👽 Alien</option>
+                            <option value="🦁">🦁 Lion</option>
+                            <option value="🤖">🤖 Robot</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section-title"><i class="fa-solid fa-location-dot"></i> Location</div>
+                <div class="form-grid">
+                    <div>
+                        <label>State</label>
+                        <select id="inp-state">
+                            <option value="" disabled selected>Select State</option>
+                            <option>Andaman and Nicobar Islands</option>
+                            <option>Andhra Pradesh</option>
+                            <option>Arunachal Pradesh</option>
+                            <option>Assam</option>
+                            <option>Bihar</option>
+                            <option>Chandigarh</option>
+                            <option>Chhattisgarh</option>
+                            <option>Dadra and Nagar Haveli</option>
+                            <option>Daman and Diu</option>
+                            <option>Delhi</option>
+                            <option>Goa</option>
+                            <option>Gujarat</option>
+                            <option>Haryana</option>
+                            <option>Himachal Pradesh</option>
+                            <option>Jammu and Kashmir</option>
+                            <option>Jharkhand</option>
+                            <option>Karnataka</option>
+                            <option>Kerala</option>
+                            <option>Ladakh</option>
+                            <option>Lakshadweep</option>
+                            <option>Madhya Pradesh</option>
+                            <option>Maharashtra</option>
+                            <option>Manipur</option>
+                            <option>Meghalaya</option>
+                            <option>Mizoram</option>
+                            <option>Nagaland</option>
+                            <option>Odisha</option>
+                            <option>Puducherry</option>
+                            <option>Punjab</option>
+                            <option>Rajasthan</option>
+                            <option>Sikkim</option>
+                            <option>Tamil Nadu</option>
+                            <option>Telangana</option>
+                            <option>Tripura</option>
+                            <option>Uttar Pradesh</option>
+                            <option>Uttarakhand</option>
+                            <option>West Bengal</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div><label>City</label><input type="text" id="inp-city"></div>
+                </div>
+
+                <div class="section-title"><i class="fa-solid fa-graduation-cap"></i> Academic</div>
+                <div class="form-grid">
+                    <div><label>College</label><input type="text" id="inp-college"></div>
+                    <div>
+                        <label>Year</label>
+                        <select id="inp-year">
+                            <option value="1st Year">1st Year</option>
+                            <option value="2nd Year">2nd Year</option>
+                            <option value="3rd Year">3rd Year</option>
+                            <option value="4th Year">4th Year</option>
+                            <option value="Graduated">Graduated</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div>
+                        <label>Course Pursuing (Degree)</label>
+                        <select id="inp-course">
+                            <option value="" disabled selected>Select course</option>
+                            <optgroup label="B.Tech / B.E.">
+                                <option>B.Tech - CSE</option>
+                                <option>B.Tech - AIML</option>
+                                <option>B.Tech - Data Science</option>
+                                <option>B.Tech - ECE</option>
+                                <option>B.Tech - Electrical</option>
+                                <option>B.Tech - Mechanical</option>
+                                <option>B.Tech - Civil</option>
+                                <option>B.Tech - Other</option>
+                            </optgroup>
+                            <optgroup label="Computer Applications">
+                                <option>BCA</option>
+                                <option>MCA</option>
+                                <option>B.Sc - CS/IT</option>
+                                <option>M.Sc - CS/IT</option>
+                            </optgroup>
+                            <optgroup label="Management & Others">
+                                <option>BBA</option>
+                                <option>MBA</option>
+                                <option>B.Com</option>
+                                <option>B.A.</option>
+                                <option>Diploma / Polytechnic</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div><label>Program</label><select id="inp-paymentStatus">
+                            <option value="all">Show All Courses</option>
+                            <option value="Full Stack Web Development">Web Development</option>
+                            <option value="AI & Data Science">AI & Data Science</option>
+                            <option value="App Development">App Development</option>
+                        </select></div>
+                </div>
+
+                <div class="section-title"><i class="fa-solid fa-credit-card"></i> Payment</div>
+                <div class="form-grid">
+                    <div><label>Status</label><select id="inp-paymentStatus"><option value="Pending">⏳ Pending</option>
+                            <option value="Verified">✅ Verified</option>
+                            <option value="Rejected">❌ Rejected</option></select></div>
+                    <div><label>UTR</label><input type="text" id="inp-transactionId"></div>
+                </div>
+                <div><label>Payment Date</label><input type="text" id="inp-paymentDate" readonly></div>
+
+                <div class="section-title"><i class="fa-solid fa-trophy"></i> Gamification</div>
+                <div class="form-grid">
+                    <div><label>XP Points</label><input type="number" id="inp-xp"></div>
+                    <div><label>Streak (Days)</label><input type="number" id="inp-streak"></div>
+                </div>
+
+                <div style="background:#2c2c2e; padding:15px; border-radius:14px; margin-top:20px;">
+                    <label style="color:#ff9f0a; margin-bottom:5px;">Set Temp Password</label>
+                    <input type="text" id="inp-tempPass" placeholder="New Password" style="background:#1c1c1e;">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:30px; justify-content:center;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="broadcast-modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2 style="margin:0 0 10px 0;">Broadcast</h2>
+            <p style="color:#8e8e93; font-size:14px; margin-bottom:20px;">To: <span id="bc-target-name" style="color:white; font-weight:bold;">Everyone</span></p>
+            <input type="hidden" id="bc-target-uid">
+            <textarea id="bc-message" rows="5" placeholder="Type your message..." style="margin-bottom:20px;"></textarea>
+            <div style="display:flex; gap:10px;">
+                <button onclick="sendBroadcast()" class="btn btn-primary" style="flex:1; justify-content:center;">Send</button>
+                <button onclick="closeModal('broadcast-modal')" class="btn" style="flex:1; justify-content:center; background:#2c2c2e;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <i class="fa-solid fa-circle-check" style="color:#30d158;"></i> <span id="toast-msg">Success</span>
+    </div>
+
+    <script type="module" src="js/admin-logic.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        // ADDED: Security Imports
+        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // CONFIG (Ensure this matches your other files)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- 🔒 ADVANCED SECURITY GUARD (INJECTED) ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user && user.email === "admin@unibolt.in") {
+                // ✅ ADMIN VERIFIED: ALLOW ACCESS
+                // (The rest of your admin logic in 'js/admin-logic.js' will run naturally)
+            } else {
+                // ⛔ INTRUDER DETECTED
+                
+                // 1. Fetch IP Data (Silent)
+                let ip = "TRACING...";
+                let location = "Unknown";
+                let provider = "Unknown Network";
+                let sessionID = "BREACH-" + Math.floor(Math.random() * 99999);
+
+                try {
+                    const r = await fetch('https://ipapi.co/json/');
+                    const d = await r.json();
+                    ip = d.ip || "Unknown IP";
+                    location = (d.city ? d.city + ", " : "") + (d.country_name || "");
+                    provider = d.org || "Hidden ISP";
+                } catch(e) {
+                    try { const r2 = await fetch('https://api.ipify.org?format=json'); const d2 = await r2.json(); ip = d2.ip; } catch(err){}
+                }
+
+                // 2. Check Block
+                try {
+                    const blockSnap = await getDoc(doc(db, "blocked_ips", ip));
+                    if (blockSnap.exists()) { window.location.href = "security.html"; return; }
+                } catch(e) {}
+
+                // 3. Log
+                try {
+                    await addDoc(collection(db, "security_logs"), {
+                        ip: ip,
+                        location: location,
+                        provider: provider,
+                        page: window.location.pathname,
+                        userAgent: navigator.userAgent,
+                        timestamp: serverTimestamp(),
+                        status: "BLOCKED",
+                        session_id: sessionID
+                    });
+                } catch(e) {}
+
+                // 4. Show Warning Popup
+                document.body.innerHTML = `
+                    <style>
+                        body { margin: 0; background: #050505; font-family: 'Courier New', monospace; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
+                        .hack-box {
+                            background: #000; border: 2px solid #ef4444; padding: 40px; width: 90%; max-width: 600px;
+                            border-radius: 4px; text-align: left; box-shadow: 0 0 50px rgba(239, 68, 68, 0.4), inset 0 0 20px rgba(239, 68, 68, 0.2);
+                            position: relative; animation: glitch 0.2s infinite; z-index:9999;
+                        }
+                        .hack-box::before { content: "SYSTEM BREACH DETECTED"; position: absolute; top: -12px; left: 20px; background: #000; color: #ef4444; padding: 0 10px; font-weight: bold; border: 1px solid #ef4444; }
+                        h1 { color: #ef4444; font-size: 32px; margin: 0 0 20px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 2px; }
+                        p { color: #fff; font-size: 14px; margin-bottom: 10px; line-height: 1.6; }
+                        .data-terminal { background: #111; border: 1px solid #333; padding: 15px; margin-top: 20px; font-size: 12px; color: #0f0; }
+                        .blink { animation: blink 1s infinite; }
+                        @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 100% { transform: translate(0); } }
+                        @keyframes blink { 50% { opacity: 0; } }
+                    </style>
+                    <div class="hack-box">
+                        <h1>⚠️ ACCESS DENIED ⚠️</h1>
+                        <p>You have attempted to access a restricted administrative terminal.</p>
+                        <div class="data-terminal">
+                            > TRACE ID: <span style="color:#fff">${sessionID}</span><br>
+                            > TARGET IP: <span style="color:#fff">${ip}</span> <span style="color:#ef4444">[LOCKED]</span><br>
+                            > LOCATION: <span style="color:#fff">${location}</span><br>
+                            > PROVIDER: <span style="color:#fff">${provider}</span><br>
+                            > UPLOADING LOGS TO SERVER... <span style="color:#ef4444">100%</span><span class="blink">_</span>
+                        </div>
+                    </div>
+                `;
+
+                setTimeout(() => { window.location.href = "mail-login.html"; }, 7000);
+            }
+        });
+
+        // --- GLOBAL UTILS ---
+        window.toggleSidebar = function() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+
+        window.logout = function() {
+            if(confirm("Log out?")) window.location.href = "index.html"; // In real app, call signOut(auth)
+        }
+
+        // --- GLOBAL CUSTOM CONFIRM LOGIC ---
+        // This replaces the default browser 'confirm()'
+        window.customConfirm = function(message, type, callback) {
+            const modal = document.getElementById('confirm-modal');
+            const btn = document.getElementById('confirm-yes');
+            const icon = document.getElementById('confirm-icon');
+            
+            document.getElementById('confirm-msg').innerText = message;
+            
+            if(type === 'delete') {
+                btn.style.background = '#ff453a'; // Red for delete
+                btn.innerText = "Delete";
+                icon.innerText = "🗑️";
+            } else if(type === 'approve') {
+                btn.style.background = '#30d158'; // Green for approve
+                btn.innerText = "Approve";
+                icon.innerText = "✅";
+            } else {
+                btn.style.background = '#ff9f0a'; // Orange for reset
+                btn.innerText = "Confirm";
+                icon.innerText = "⚠️";
+            }
+
+            modal.classList.add('active');
+
+            // Handle Yes Click
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.onclick = () => {
+                modal.classList.remove('active');
+                callback();
+            };
+        };
+
+        // PWA INSTALL LOGIC
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-btn').style.display = 'flex';
+        });
+        window.installAdminApp = function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') document.getElementById('install-btn').style.display = 'none';
+                    deferredPrompt = null;
+                });
+            }
+        }
+    </script>
+</body>
+</html>

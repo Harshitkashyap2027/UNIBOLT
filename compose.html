@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compose – UniBolt Premium</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{
+  --bg:#000;
+  --card:#0b0b11;
+  --border:#27272a;
+  --primary:#38bdf8;
+  --text:#f4f4f5;
+  --muted:#94a3b8;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:110px;
+}
+
+/* HEADER */
+.header{padding:22px}
+
+/* FORM */
+.form{padding:0 22px}
+input,select,textarea{
+  width:100%;
+  padding:15px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background:var(--card);
+  color:white;
+  margin-bottom:14px;
+}
+textarea{resize:none}
+
+/* THEMES */
+.theme-title{
+  padding:20px 22px 10px;
+  font-weight:800;
+}
+.theme-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:14px;
+  padding:0 22px;
+}
+.theme{
+  background:linear-gradient(180deg,#111827,#020617);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:16px;
+  cursor:pointer;
+  transition:.25s;
+}
+.theme:hover{transform:translateY(-4px);border-color:var(--primary)}
+.theme.active{
+  border-color:var(--primary);
+  box-shadow:0 0 0 1px var(--primary);
+}
+.theme .icon{font-size:26px}
+.theme span{font-size:12px;color:var(--muted)}
+
+/* ACTIONS */
+.actions{
+  display:flex;
+  gap:12px;
+  padding:20px 22px;
+}
+.send-btn,.preview-btn{
+  flex:1;
+  padding:16px;
+  border:none;
+  border-radius:18px;
+  font-weight:900;
+  cursor:pointer;
+}
+.send-btn{
+  background:linear-gradient(135deg,#38bdf8,#818cf8);
+  color:#020617;
+}
+.preview-btn{
+  background:#111827;
+  color:white;
+  border:1px solid var(--border);
+}
+
+/* PREVIEW MODAL */
+.preview-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.85);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+}
+.preview-box{
+  background:#e5e7eb;
+  width:92%;
+  max-width:640px;
+  max-height:85vh;
+  overflow:auto;
+  border-radius:16px;
+  position:relative;
+}
+.preview-close{
+  position:absolute;
+  top:12px;
+  right:14px;
+  background:#000;
+  color:white;
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+#previewContent{padding:0}
+
+/* BOTTOM NAV */
+.bottom-nav{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  height:84px;
+  background:#050509;
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+}
+.bottom-nav a{
+  color:#94a3b8;
+  text-decoration:none;
+  font-size:11px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+.bottom-nav a.active{color:var(--primary)}
+.bottom-nav i{font-size:22px}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h1>Compose Message</h1>
+</div>
+
+<div class="form">
+  <select id="from">
+    <option value="admin@unibolt.in">admin@unibolt.in</option>
+    <option value="support@unibolt.in">support@unibolt.in</option>
+    <option value="info@unibolt.in">info@unibolt.in</option>
+  </select>
+
+  <input id="toName" readonly>
+  <input id="subject" placeholder="Email subject">
+  <textarea id="message" rows="6" placeholder="Message (auto-filled by template)"></textarea>
+</div>
+
+<div class="theme-title">Premium Templates (30)</div>
+<div class="theme-grid" id="themes"></div>
+
+<div class="actions">
+  <button class="preview-btn" onclick="openPreview()">
+    <i class="fa-solid fa-eye"></i> Preview
+  </button>
+  <button class="send-btn" onclick="sendMail()">
+    Send
+  </button>
+</div>
+
+<!-- PREVIEW -->
+<div class="preview-modal" id="previewModal">
+  <div class="preview-box">
+    <div class="preview-close" onclick="closePreview()">✕</div>
+    <div id="previewContent"></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="bottom-nav">
+  <a><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></a>
+  <a><i class="fa-solid fa-users"></i><span>Students</span></a>
+  <a class="active"><i class="fa-solid fa-pen"></i><span>Compose</span></a>
+  <a><i class="fa-solid fa-user-plus"></i><span>Register</span></a>
+  <a><i class="fa-solid fa-gear"></i><span>Settings</span></a>
+</div>
+
+<script>
+/* STUDENT */
+const student = JSON.parse(sessionStorage.getItem("compose_student")) || {
+  name:"Harshit",
+  rank:12,
+  xp:1240,
+  streak:7
+};
+toName.value = student.name;
+
+let SELECTED_HTML = "";
+
+/* EMAIL WRAPPERS */
+const light = c=>`
+<table width="100%" bgcolor="#f8fafc"><tr><td align="center">
+<table width="600" bgcolor="#ffffff" style="padding:40px;border-radius:14px;font-family:sans-serif">
+${c}
+</table></td></tr></table>`;
+
+const dark = c=>`
+<table width="100%" bgcolor="#020617"><tr><td align="center">
+<table width="600" bgcolor="#0f172a" style="padding:40px;border-radius:14px;color:white;font-family:sans-serif">
+${c}
+</table></td></tr></table>`;
+
+/* 30 REAL TEMPLATES */
+const TEMPLATES=[
+{n:"Welcome",i:"🚀",s:s=>`Welcome to UniBolt, ${s.name}`,h:s=>light(`
+<h1>Welcome ${s.name} 🚀</h1>
+<p>Your journey into real-world tech starts now.</p>` )},
+
+{n:"Streak",i:"🔥",s:s=>`${s.streak} Day Streak`,h:s=>light(`
+<h1 style="font-size:50px">🔥</h1>
+<h2>${s.streak} Day Streak</h2>
+<p>Consistency creates champions.</p>` )},
+
+{n:"Rank",i:"👑",s:s=>`Rank #${s.rank}`,h:s=>dark(`
+<h1>👑 Rank #${s.rank}</h1>
+<p>Push harder to enter Top 10.</p>` )},
+
+{n:"XP Boost",i:"⭐",s:s=>"XP Update",h:s=>dark(`
+<h2>⭐ XP Earned</h2>
+<p>Total XP: <b>${s.xp}</b></p>` )},
+
+{n:"Receipt",i:"🧾",s:s=>"Payment Receipt ₹200",h:s=>light(`
+<h3>🧾 Payment Receipt</h3>
+<p>Name: ${s.name}</p>
+<p>Amount: ₹200</p>
+<p>Status: ✅ Verified</p>` )},
+
+...Array.from({length:25}).map((_,i)=>({
+n:`Premium ${i+1}`,i:"✨",
+s:s=>"UniBolt Notification",
+h:s=>dark(`<h2>✨ System Update</h2><p>Hello ${s.name}, this is a premium notification.</p>`)
+}))
+];
+
+/* RENDER */
+const grid=document.getElementById("themes");
+TEMPLATES.forEach(t=>{
+ const d=document.createElement("div");
+ d.className="theme";
+ d.innerHTML=`<div class="icon">${t.i}</div><b>${t.n}</b><br><span>Custom HTML</span>`;
+ d.onclick=()=>{
+   document.querySelectorAll(".theme").forEach(x=>x.classList.remove("active"));
+   d.classList.add("active");
+   subject.value=t.s(student);
+   message.value=`${t.n} template selected`;
+   SELECTED_HTML=t.h(student);
+ };
+ grid.appendChild(d);
+});
+
+/* PREVIEW */
+function openPreview(){
+ if(!SELECTED_HTML) return alert("Select a template");
+ previewContent.innerHTML=SELECTED_HTML;
+ previewModal.style.display="flex";
+}
+function closePreview(){previewModal.style.display="none";}
+
+/* SEND */
+async function sendMail(){
+ if(!SELECTED_HTML) return alert("Select a template");
+
+ await fetch("/api/send-email",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({
+    fromEmail:from.value,
+    toEmail:student.email || "test@example.com",
+    name:student.name,
+    subject:subject.value,
+    html:SELECTED_HTML
+  })
+ });
+
+ alert("Email Sent Successfully");
+}
+</script>
+
+</body>
+</html>

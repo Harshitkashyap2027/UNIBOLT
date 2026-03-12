@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>UniBolt - Practice Gym</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // DATA LIBRARY
+        const BUG_CHALLENGES = [
+            { id: 1, title: "Infinite Loop", desc: "Which line crashes the browser?", code: "for (let i=0; i<10; i--) { log(i) }", options: ["i < 10", "i--", "log(i)"], correct: 1 },
+            { id: 2, title: "CSS Centering", desc: "Why isn't it centered?", code: ".box { display: flex; justify-content: center; }", options: ["Missing align-items", "Wrong justify", "Needs float"], correct: 0 },
+            { id: 3, title: "Array Index", desc: "Accessing last item of arr[5]", code: "let last = arr[5];", options: ["arr[5]", "arr[4]", "arr.length"], correct: 1 }
+        ];
+
+        const QUIZ_QUESTIONS = {
+            html: [
+                { id: "h1", q: "Tag for largest heading?", options: ["<head>", "<h6>", "<h1>"], ans: 2 },
+                { id: "h2", q: "Tag for numbered list?", options: ["<ul>", "<ol>", "<li>"], ans: 1 }
+            ],
+            css: [
+                { id: "c1", q: "Property for text color?", options: ["font-color", "color", "text"], ans: 1 },
+                { id: "c2", q: "Select ID 'box'?", options: [".box", "#box", "box"], ans: 1 }
+            ],
+            js: [
+                { id: "j1", q: "Declare constant?", options: ["var", "let", "const"], ans: 2 },
+                { id: "j2", q: "2 + '2' = ?", options: ["4", "22", "NaN"], ans: 1 }
+            ]
+        };
+
+        // GLOBAL STATE
+        let completedQuizIDs = [];
+        let currentAttempts = 2;
+
+        // INIT LOGIC
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userRef = doc(db, "users", user.uid);
+                const docSnap = await getDoc(userRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    // Load Skills
+                    updateSkillRadar(data.skills || {});
+                    
+                    // Load Completed IDs
+                    completedQuizIDs = data.completedQuizIDs || [];
+
+                    // Load Bug Hunt (Simple Random Logic for Demo)
+                    loadDailyBug();
+                }
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        function updateSkillRadar(skills) {
+            const setBar = (id, val) => {
+                const pct = Math.min(100, ((val || 0) / 20) * 100); // Max 20 points
+                document.getElementById(id + "-bar").style.width = `${pct}%`;
+                document.getElementById(id + "-txt").innerText = `${Math.round(pct)}%`;
+            };
+            setBar("stat-html", skills.html);
+            setBar("stat-css", skills.css);
+            setBar("stat-js", skills.js);
+        }
+
+        function loadDailyBug() {
+            // Pick random bug for demo
+            const challenge = BUG_CHALLENGES[Math.floor(Math.random() * BUG_CHALLENGES.length)];
+            
+            document.getElementById("bug-title").innerText = challenge.title;
+            document.getElementById("bug-desc").innerText = challenge.desc;
+            document.getElementById("bug-code").innerText = challenge.code;
+            
+            const optsDiv = document.getElementById("bug-options");
+            optsDiv.innerHTML = "";
+            
+            challenge.options.forEach((opt, idx) => {
+                const btn = document.createElement("button");
+                btn.className = "btn-outline";
+                btn.innerText = opt;
+                btn.onclick = () => checkBug(idx, challenge.correct, btn);
+                optsDiv.appendChild(btn);
+            });
+        }
+
+        async function checkBug(selected, correct, btn) {
+            if (selected === correct) {
+                btn.style.background = "#10b981";
+                btn.style.color = "white";
+                confetti({ particleCount: 50, origin: { y: 0.7 } });
+                
+                const user = auth.currentUser;
+                if(user) await updateDoc(doc(db, "users", user.uid), { xp: increment(50) });
+                
+                setTimeout(() => {
+                    document.getElementById("bug-container").style.display = "none";
+                    document.getElementById("bug-complete").style.display = "block";
+                }, 1000);
+            } else {
+                btn.style.background = "#ef4444";
+                setTimeout(() => btn.style.background = "transparent", 500);
+            }
+        }
+
+        // QUIZ LOGIC (Global Scope)
+        window.startQuiz = function(topic) {
+            const questions = QUIZ_QUESTIONS[topic];
+            // Filter completed
+            const available = questions.filter(q => !completedQuizIDs.includes(q.id));
+
+            if (available.length === 0) {
+                alert("🎉 You have mastered this topic!");
+                return;
+            }
+
+            const q = available[Math.floor(Math.random() * available.length)];
+            currentAttempts = 2;
+
+            document.getElementById("quiz-modal").classList.remove("hidden");
+            document.getElementById("quiz-topic").innerText = topic.toUpperCase() + " Drill";
+            document.getElementById("quiz-question").innerText = q.q;
+            document.getElementById("quiz-feedback").innerText = "";
+
+            const optDiv = document.getElementById("quiz-options");
+            optDiv.innerHTML = "";
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement("button");
+                btn.className = "btn-outline";
+                btn.innerText = opt;
+                btn.onclick = async () => {
+                    if (currentAttempts <= 0) return;
+
+                    if (idx === q.ans) {
+                        // Correct
+                        btn.style.background = "#10b981";
+                        document.getElementById("quiz-feedback").innerText = "Correct! +5 XP";
+                        document.getElementById("quiz-feedback").style.color = "#10b981";
+                        
+                        const user = auth.currentUser;
+                        if(user) {
+                            const updates = { 
+                                xp: increment(5), 
+                                completedQuizIDs: arrayUnion(q.id) 
+                            };
+                            updates[`skills.${topic}`] = increment(1);
+                            await updateDoc(doc(db, "users", user.uid), updates);
+                        }
+                        
+                        setTimeout(() => {
+                            document.getElementById("quiz-modal").classList.add("hidden");
+                            location.reload(); // Refresh to update bars
+                        }, 1000);
+                    } else {
+                        // Wrong
+                        currentAttempts--;
+                        btn.style.background = "#ef4444";
+                        if(currentAttempts > 0) {
+                            document.getElementById("quiz-feedback").innerText = "Try again!";
+                            document.getElementById("quiz-feedback").style.color = "#f59e0b";
+                        } else {
+                            document.getElementById("quiz-feedback").innerText = "Failed. Locked.";
+                            document.getElementById("quiz-feedback").style.color = "#ef4444";
+                            setTimeout(() => document.getElementById("quiz-modal").classList.add("hidden"), 1500);
+                        }
+                    }
+                };
+                optDiv.appendChild(btn);
+            });
+        };
+    </script>
+
+    <style>
+        :root {
+            --bg-deep: #0f0e13;
+            --sidebar-bg: #050507;
+            --card-surface: #1a1920;
+            --accent-primary: #10b981; /* Green */
+            --accent-blue: #3b82f6;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255,255,255,0.08);
+            --sidebar-width: 260px;
+            
+            /* 3D Shadows */
+            --shadow-3d: 0 10px 40px -10px rgba(0,0,0,0.6), 
+                         0 0 0 1px rgba(255,255,255,0.08) inset,
+                         0 20px 25px -5px rgba(0,0,0,0.2);
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            font-family: 'Outfit', sans-serif;
+            margin: 0; color: var(--text-main);
+            overflow-x: hidden;
+            background-image: radial-gradient(#2d2b3b 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        /* Layout */
+        .app-container { display: flex; min-height: 100vh; }
+        .main-content { flex: 1; margin-left: var(--sidebar-width); padding: 30px; max-width: 1400px; padding-bottom: 120px; }
+
+        /* Sidebar */
+        .sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: var(--sidebar-bg); border-right: 1px solid var(--border); padding: 30px 20px; display: flex; flex-direction: column; z-index: 1001; transition: transform 0.3s; overflow-y: auto; }
+        .brand { font-size: 24px; font-weight: 800; color: white; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+        .nav-menu { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; color: var(--text-muted); text-decoration: none; border-radius: 14px; font-weight: 500; font-size: 15px; transition: 0.2s; }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .nav-item.active { background: rgba(16, 185, 129, 0.15); color: var(--accent-primary); border-left: 3px solid var(--accent-primary); padding-left: 13px; }
+        .sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); }
+
+        /* Cards & Grid */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        
+        .card {
+            background: var(--card-surface); border-radius: 24px; padding: 25px;
+            border: 1px solid var(--border); position: relative; overflow: hidden;
+            box-shadow: var(--shadow-3d); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .card:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.2); }
+        .card-glow:hover { box-shadow: 0 0 30px rgba(16, 185, 129, 0.2); }
+
+        /* UI Elements */
+        h1 { font-size: 28px; margin-bottom: 25px; font-weight: 700; }
+        h3 { margin-top: 0; font-weight: 700; font-size: 18px; }
+        h4 { margin: 0; font-weight: 600; font-size: 16px; }
+        
+        .btn-primary { background: var(--accent-primary); color: #000; padding: 10px 20px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-primary:hover { transform: scale(1.05); }
+        
+        .btn-outline {
+            background: transparent; border: 1px solid #444; color: #ccc;
+            padding: 10px; border-radius: 8px; cursor: pointer; width: 100%;
+            text-align: left; transition: 0.2s; font-size: 13px;
+        }
+        .btn-outline:hover { border-color: white; color: white; }
+
+        /* Header */
+        .mobile-header { display: none; align-items: center; justify-content: space-between; padding: 15px 20px; background: rgba(15, 14, 19, 0.95); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; margin: -30px -30px 30px -30px; backdrop-filter: blur(10px); }
+        .mobile-menu-toggle { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+
+        /* Skill Bars */
+        .xp-pill { background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid rgba(16, 185, 129, 0.2); }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+        .hidden { display: none !important; }
+        .modal-content { background: #1a1920; padding: 30px; border-radius: 24px; border: 1px solid var(--border); width: 90%; max-width: 450px; animation: popIn 0.3s ease; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* Mobile Responsive */
+        .sidebar-overlay { display: none; }
+
+        @media (max-width: 900px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column; }
+            .main-content { margin-left: 0; padding: 20px; padding-bottom: 100px; }
+            
+            .sidebar { transform: translateX(-100%); width: 260px; box-shadow: 50px 0 100px rgba(0,0,0,0.8); }
+            .sidebar.active { transform: translateX(0); }
+            
+            .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; display: none; }
+            .sidebar-overlay.active { display: block; }
+            
+            .mobile-header { display: flex; margin: -20px -20px 20px -20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="quiz-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <span class="xp-pill" id="quiz-topic">HTML Basics</span>
+                <i class="fa-solid fa-xmark" onclick="document.getElementById('quiz-modal').classList.add('hidden')" style="cursor: pointer; font-size: 20px; color: #666;"></i>
+            </div>
+            
+            <h2 id="quiz-question" style="margin: 0 0 20px; font-size: 20px;">Question...</h2>
+            
+            <div id="quiz-options" style="display: flex; flex-direction: column; gap: 10px;">
+                </div>
+
+            <div id="quiz-feedback" style="margin-top: 20px; font-weight: bold; min-height: 20px; text-align: center;"></div>
+        </div>
+    </div>
+
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="app-container">
+        
+        <aside class="sidebar" id="mobile-sidebar">
+            <div class="brand"><i class="fa-solid fa-code" style="color: #10b981;"></i> UniBolt.</div>
+            <ul class="nav-menu">
+                <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-bolt"></i> Dashboard</a>
+                <a href="arena.html" class="nav-item"><i class="fa-solid fa-code"></i> Code Arena</a>
+                <a href="practice.html" class="nav-item active"><i class="fa-solid fa-dumbbell"></i> Practice Zone</a>
+                <a href="leaderboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+                <a href="gallery.html" class="nav-item"><i class="fa-solid fa-trophy"></i> Hall of Fame</a>
+                <a href="research.html" class="nav-item"><i class="fa-solid fa-flask"></i> Research Hub</a>
+                <a href="contact.html" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
+                <a href="profile.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            </ul>
+            <div class="sidebar-footer">
+                <a href="login.html" class="nav-item" style="color:#ef4444;">
+                    <i class="fa-solid fa-power-off"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <header class="mobile-header">
+                <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div style="font-weight: 700; font-size: 18px; color: white;">Practice Gym</div>
+                <div style="width: 40px;"></div>
+            </header>
+
+            <div class="page-body">
+                
+                <h1 style="margin-bottom: 30px;">Practice Gym 🏋️‍♂️</h1>
+
+                <div class="grid-2">
+                    
+                    <div class="card">
+                        <h3 style="margin-top: 0;">Your Skill Radar</h3>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Calculated based on your Arena performance.</p>
+                        
+                        <div style="margin-top: 20px;">
+                            <div style="margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span style="font-size: 13px; color: var(--text-muted);">HTML5 Semantics</span>
+                                    <span style="font-size: 13px; color: var(--accent-primary);" id="stat-html-txt">0%</span>
+                                </div>
+                                <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                                    <div id="stat-html-bar" style="width: 0%; height: 100%; background: var(--accent-primary); border-radius: 10px; transition: width 1s;"></div>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span style="font-size: 13px; color: var(--text-muted);">CSS Flexbox/Grid</span>
+                                    <span style="font-size: 13px; color: var(--accent-blue);" id="stat-css-txt">0%</span>
+                                </div>
+                                <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                                    <div id="stat-css-bar" style="width: 0%; height: 100%; background: var(--accent-blue); border-radius: 10px; transition: width 1s;"></div>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span style="font-size: 13px; color: var(--text-muted);">JavaScript Logic</span>
+                                    <span style="font-size: 13px; color: var(--danger);" id="stat-js-txt">0%</span>
+                                </div>
+                                <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                                    <div id="stat-js-bar" style="width: 0%; height: 100%; background: var(--danger); border-radius: 10px; transition: width 1s;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="border: 1px dashed var(--danger);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="xp-pill" style="color: var(--danger); border-color: var(--danger); background: rgba(239, 68, 68, 0.1);">Daily Bug Hunt</span>
+                            <span style="font-weight: bold; color: var(--accent-primary);">+50 XP</span>
+                        </div>
+                        
+                        <div id="bug-container" style="margin-top: 20px;">
+                            <h3 style="margin: 0 0 10px 0;" id="bug-title">Loading Challenge...</h3>
+                            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;" id="bug-desc">...</p>
+                            
+                            <div style="background: #111; padding: 15px; border-radius: 12px; font-family: monospace; font-size: 13px; color: #e0e0e0; margin-bottom: 20px; border: 1px solid #333;">
+                                <pre id="bug-code" style="margin: 0; white-space: pre-wrap;">// Code loads here...</pre>
+                            </div>
+                            
+                            <div id="bug-options" style="display: flex; gap: 10px; flex-direction: column;"></div>
+                        </div>
+
+                        <div id="bug-complete" style="display: none; text-align: center; padding: 20px;">
+                            <i class="fa-solid fa-check-circle" style="font-size: 50px; color: var(--accent-primary); margin-bottom: 15px;"></i>
+                            <h3>Challenge Solved!</h3>
+                            <p style="color: #aaa;">Come back tomorrow for a new bug.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 40px; margin-bottom: 20px;">Topic Drills</h3>
+                
+                <div class="grid-3">
+                    <div class="card card-glow" style="text-align: center;">
+                        <i class="fa-brands fa-html5" style="font-size: 40px; color: #e34c26; margin-bottom: 15px;"></i>
+                        <h4>HTML5 Deep Dive</h4>
+                        <button class="btn-primary" style="margin-top: 15px; width:100%;" onclick="startQuiz('html')">Start Quiz</button>
+                    </div>
+                    
+                    <div class="card card-glow" style="text-align: center;">
+                        <i class="fa-brands fa-css3-alt" style="font-size: 40px; color: #264de4; margin-bottom: 15px;"></i>
+                        <h4>CSS Mastery</h4>
+                        <button class="btn-primary" style="margin-top: 15px; width:100%;" onclick="startQuiz('css')">Start Quiz</button>
+                    </div>
+
+                    <div class="card card-glow" style="text-align: center;">
+                        <i class="fa-brands fa-js" style="font-size: 40px; color: #f0db4f; margin-bottom: 15px;"></i>
+                        <h4>JS Logic</h4>
+                        <button class="btn-primary" style="margin-top: 15px; width:100%;" onclick="startQuiz('js')">Start Quiz</button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('mobile-sidebar').classList.toggle('active');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

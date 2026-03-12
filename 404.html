@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - System Failure</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;800&family=Fira+Code:wght@500&display=swap');
+
+        :root {
+            --bg: #050505;
+            --primary: #8b5cf6;
+            --accent: #06b6d4;
+            --danger: #ef4444;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: white;
+            overflow: hidden; /* Prevents scrollbars */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Ensures it fills screen but allows scroll if needed */
+            position: relative;
+        }
+
+        /* Cyberpunk Grid Background */
+        .grid-bg {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                linear-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
+            animation: gridMove 20s linear infinite;
+            z-index: -1;
+            top: -50%;
+            left: -50%;
+        }
+
+        @keyframes gridMove {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0) translateZ(-200px); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(40px) translateZ(-200px); }
+        }
+
+        /* Content Wrapper */
+        .content {
+            text-align: center;
+            padding: 20px;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            border-radius: 20px;
+            max-width: 90%;
+        }
+
+        /* Glitch 404 Text */
+        .glitch {
+            font-size: clamp(80px, 15vw, 150px); /* Responsive Size */
+            font-weight: 800;
+            line-height: 1;
+            position: relative;
+            color: white;
+            text-shadow: 2px 2px 0px var(--primary), -2px -2px 0px var(--danger);
+            animation: glitch-anim 2s infinite linear alternate-reverse;
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Glitch Animation Keyframes */
+        @keyframes glitch-anim {
+            0% { text-shadow: 2px 2px 0px var(--primary), -2px -2px 0px var(--danger); transform: translate(0); }
+            20% { text-shadow: -2px 2px 0px var(--primary), 2px -2px 0px var(--danger); transform: translate(-2px, 2px); }
+            40% { text-shadow: 2px -2px 0px var(--primary), -2px 2px 0px var(--danger); transform: translate(2px, -2px); }
+            60% { text-shadow: -2px -2px 0px var(--primary), 2px 2px 0px var(--danger); transform: translate(-2px, -2px); }
+            80% { text-shadow: 2px 2px 0px var(--primary), -2px -2px 0px var(--danger); transform: translate(2px, 2px); }
+            100% { text-shadow: -2px -2px 0px var(--primary), 2px 2px 0px var(--danger); transform: translate(0); }
+        }
+
+        h2 {
+            margin: 10px 0 20px;
+            font-size: clamp(20px, 5vw, 32px);
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            color: var(--accent);
+        }
+
+        p {
+            color: #a1a1aa;
+            margin-bottom: 40px;
+            font-size: 16px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+
+        /* Button Styling */
+        .btn {
+            text-decoration: none;
+            background: white;
+            color: black;
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.3s;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 30px var(--primary);
+        }
+
+        /* Floating Icon Animation */
+        .floating-icon {
+            font-size: 60px;
+            color: #333;
+            margin-bottom: 10px;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-height: 600px) {
+            .glitch { font-size: 80px; }
+            .floating-icon { display: none; } /* Hide icon on very short screens */
+            p { margin-bottom: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-bg"></div>
+
+    <div class="content">
+        <i class="fa-solid fa-satellite-dish floating-icon"></i>
+
+        <div class="glitch">404</div>
+        
+        <h2>Signal Lost</h2>
+        <p>
+            The page you are looking for has drifted into deep space. 
+            It might have been removed, renamed, or is temporarily unavailable.
+        </p>
+
+        <a href="javascript:history.back()" class="btn">
+            <i class="fa-solid fa-house-signal"></i> Return to Base
+        </a>
+    </div>
+
+</body>
+</html>

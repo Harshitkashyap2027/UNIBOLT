@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>UniBolt – Students</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{
+  --bg:#000;
+  --surface:#09090b;
+  --card:#121217;
+  --primary:#38bdf8;
+  --border:#27272a;
+  --text:#f4f4f5;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* GRID */
+.main{padding:24px;padding-bottom:120px}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:18px;
+}
+.card{
+  background:linear-gradient(180deg,#121217,#0a0a0f);
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:18px;
+  text-align:center;
+  cursor:pointer;
+  transition:.25s;
+  position:relative;
+}
+.card:hover{
+  transform:translateY(-6px) scale(1.02);
+  border-color:var(--primary);
+}
+.avt{
+  width:70px;height:70px;
+  border-radius:50%;
+  background:#1f2933;
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;
+  margin:0 auto 10px;
+}
+.pill{
+  display:inline-block;
+  background:rgba(56,189,248,.12);
+  color:var(--primary);
+  font-size:11px;
+  padding:5px 10px;
+  border-radius:999px;
+  margin:4px;
+}
+
+/* MODAL */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.85);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+}
+.modal-box{
+  background:linear-gradient(180deg,#0f172a,#020617);
+  border-radius:28px;
+  width:90%;
+  max-width:360px;
+  padding:24px;
+  position:relative;
+  border:1px solid var(--border);
+  box-shadow:0 30px 80px rgba(0,0,0,.7);
+}
+.close{
+  position:absolute;
+  top:16px;
+  right:16px;
+  font-size:18px;
+  cursor:pointer;
+  color:#94a3b8;
+}
+.big-avt{
+  width:90px;height:90px;
+  border-radius:50%;
+  background:#1e293b;
+  display:flex;align-items:center;justify-content:center;
+  font-size:40px;
+  margin:0 auto 10px;
+}
+.btn{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:none;
+  font-weight:800;
+  margin-top:14px;
+  cursor:pointer;
+}
+.compose-btn{
+  background:linear-gradient(135deg,#38bdf8,#818cf8);
+  color:#020617;
+}
+
+/* BOTTOM NAV */
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:80px;
+  background:#09090b;
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  z-index:2000;
+}
+.bottom-nav a{
+  color:#94a3b8;
+  text-decoration:none;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  font-size:11px;
+  gap:6px;
+}
+.bottom-nav a i{font-size:20px}
+.bottom-nav a.active{color:var(--primary)}
+
+/* DESKTOP ADJUST */
+@media(min-width:900px){
+  .bottom-nav{
+    left:260px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="main">
+  <h1 style="margin-bottom:20px;">Students</h1>
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- POPUP -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <div class="close" onclick="closeModal()">✕</div>
+    <div class="big-avt" id="mAvatar"></div>
+    <h2 id="mName" style="text-align:center;"></h2>
+    <p id="mEmail" style="text-align:center;color:#94a3b8;font-size:13px;"></p>
+    <p id="mPhone" style="text-align:center;color:#64748b;font-size:12px;"></p>
+
+    <div style="display:flex;justify-content:center;margin-top:12px;">
+      <span class="pill" id="mStreak"></span>
+      <span class="pill" id="mXP"></span>
+    </div>
+
+    <button class="btn compose-btn" onclick="compose()">Compose Message</button>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <a href="dashboard.html"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></a>
+  <a class="active"><i class="fa-solid fa-users"></i><span>Students</span></a>
+  <a href="compose.html"><i class="fa-solid fa-pen"></i><span>Compose</span></a>
+  <a href="register.html"><i class="fa-solid fa-user-plus"></i><span>Register</span></a>
+  <a href="settings.html"><i class="fa-solid fa-gear"></i><span>Settings</span></a>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+  authDomain:"unibolt-f7005.firebaseapp.com",
+  projectId:"unibolt-f7005"
+});
+const db = getFirestore(app);
+
+let selected=null;
+
+async function load(){
+  const snap = await getDocs(collection(db,"users"));
+  const grid=document.getElementById("grid");
+
+  snap.forEach(d=>{
+    const s=d.data();
+    const card=document.createElement("div");
+    card.className="card";
+    card.innerHTML=`
+      <div class="avt">${s.avatarIcon||"👤"}</div>
+      <h3>${s.name||"Student"}</h3>
+      <div style="font-size:12px;color:#71717a;">${s.email}</div>
+      <div style="margin-top:10px;">
+        <span class="pill">🔥 ${s.streak||0}</span>
+        <span class="pill">⭐ ${s.xp||0}</span>
+      </div>
+    `;
+    card.onclick=()=>{
+      selected={uid:d.id,...s};
+      mAvatar.innerText=s.avatarIcon||"👤";
+      mName.innerText=s.name;
+      mEmail.innerText=s.email;
+      mPhone.innerText=s.phone||"Not provided";
+      mStreak.innerText="🔥 Streak: "+(s.streak||0);
+      mXP.innerText="⭐ XP: "+(s.xp||0);
+      modal.style.display="flex";
+    };
+    grid.appendChild(card);
+  });
+}
+
+window.closeModal=()=>modal.style.display="none";
+
+window.compose=()=>{
+  sessionStorage.setItem("compose_student",JSON.stringify(selected));
+  location.href="compose.html";
+}
+
+load();
+</script>
+
+</body>
+</html>

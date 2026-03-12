@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UniBolt - App Studio</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="dashboard.css">
+    
+    <link rel="manifest" href="manifest.json">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        async function initDashboard() {
+            try {
+                // Register Service Worker if needed
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('sw.js');
+                }
+
+                // 1. Maintenance Check
+                const docRef = doc(db, "platform_settings", "config");
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const settings = docSnap.data();
+                    if (settings.maintenanceMode === true) {
+                        const userRole = localStorage.getItem('user_role'); 
+                        if (userRole !== 'admin') window.location.href = "maintenance.html";
+                    }
+                }
+
+                // 2. USER DATA & LOCK LOGIC
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        const userRef = doc(db, "users", user.uid);
+                        const userSnap = await getDoc(userRef);
+                        
+                        if (userSnap.exists()) {
+                            const data = userSnap.data();
+                            
+                            // Display Name
+                            const nameDisplay = document.getElementById('dash-name');
+                            if(nameDisplay) nameDisplay.innerText = data.name || "Developer";
+
+                            // A. FETCH LATEST DAILY MISSION
+                            const course = data.enrolledProgram || data.course; // e.g. "App Development"
+                            if (course) {
+                                try {
+                                    const q = query(collection(db, "tasks"), where("module", "==", course), orderBy("day", "desc"), limit(1));
+                                    const taskSnap = await getDocs(q);
+                                    if (!taskSnap.empty) {
+                                        const latest = taskSnap.docs[0].data();
+                                        const dayLabel = document.getElementById("daily-task-number");
+                                        if(dayLabel) dayLabel.innerText = `Day ${latest.day}`;
+                                    }
+                                } catch (e) { console.log("Task load error", e); }
+                            }
+
+                            // B. LOCK SYSTEM (If Pending/Rejected)
+                            if (data.paymentStatus === 'Pending' || data.paymentStatus === 'Rejected') {
+                                
+                                // 1. Show Lock Modal
+                                document.getElementById('locked-modal').classList.remove('hidden');
+                                if(data.transactionId) document.getElementById('lock-utr-display').innerText = data.transactionId;
+
+                                // --- GENERATE WHATSAPP MESSAGE ---
+                                const studentName = data.name || user.displayName || "Student";
+                                const userCourse = data.enrolledProgram || data.course || "App Development";
+                                const utrNum = data.transactionId || "Pending";
+
+                                const message = `*Course Access Request* 🔐\n\nHello Admin,\nI have paid via QR.\n\n👤 *Name:* ${studentName}\n📱 *Track:* ${userCourse}\n💳 *UTR:* ${utrNum}\n\nPlease unlock my dashboard.`;
+                                
+                                // Using the number from your second file
+                                const whatsappUrl = `https://wa.me/919258837596?text=${encodeURIComponent(message)}`;
+                                const waBtn = document.getElementById('whatsapp-lock-btn');
+                                if(waBtn) waBtn.onclick = () => window.open(whatsappUrl, '_blank');
+
+
+                                // 2. LOCK "Start Task" Button
+                                const startBtn = document.getElementById('start-task-btn');
+                                if(startBtn) {
+                                    startBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Locked';
+                                    startBtn.classList.add('locked-btn-style');
+                                    startBtn.onclick = (e) => { e.preventDefault(); document.getElementById('locked-modal').classList.remove('hidden'); };
+                                    startBtn.removeAttribute("href");
+                                }
+
+                                // 3. LOCK MISSION CARD VISUALS
+                                const missionCard = document.getElementById('daily-mission-card');
+                                const lockIcon = document.getElementById('mission-icon');
+                                const dayText = document.getElementById('daily-task-number');
+
+                                if (missionCard) missionCard.classList.add('locked-card-style');
+                                if(lockIcon) {
+                                    lockIcon.classList.remove('fa-calendar-day');
+                                    lockIcon.classList.add('fa-lock');
+                                    lockIcon.style.color = "#ef4444";
+                                }
+                                if(dayText) dayText.style.color = "#ef4444";
+
+                                // 4. LOCK SIDEBAR ITEMS
+                                const navItems = document.querySelectorAll('.nav-item');
+                                navItems.forEach(item => {
+                                    if(item.classList.contains('logout-btn')) return;
+
+                                    const originalText = item.innerText.trim();
+                                    item.innerHTML = `<i class="fa-solid fa-lock"></i> ${originalText}`;
+                                    item.style.color = "#ef4444";
+                                    item.style.opacity = "0.8";
+                                    item.style.cursor = "not-allowed";
+                                    
+                                    item.removeAttribute("href");
+                                    item.onclick = (e) => {
+                                        e.preventDefault();
+                                        document.getElementById('locked-modal').classList.remove('hidden');
+                                    };
+                                });
+                            }
+                        }
+                    }
+                });
+
+            } catch (error) { console.log("System error:", error); }
+        }
+
+        initDashboard();
+
+    </script>
+
+    <style>
+        /* --- NOTIFICATION DROPDOWN --- */
+        .notif-dropdown {
+            position: absolute; top: 45px; right: -10px; width: 320px;
+            background: #111; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 100;
+            overflow: hidden; transform-origin: top right; transition: 0.2s ease;
+        }
+        .notif-dropdown.hidden { transform: scale(0.95); opacity: 0; pointer-events: none; }
+        .notif-header { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; background: #18181b; }
+        .notif-list { max-height: 300px; overflow-y: auto; }
+        .notif-item { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; gap: 12px; align-items: flex-start; }
+        .notif-item:hover { background: rgba(255,255,255,0.03); }
+        
+        /* --- LOCKED MODAL STYLE --- */
+        .locked-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: center; z-index: 9999;
+        }
+        .hidden { display: none !important; }
+        .locked-card-style { border: 1px solid #ef4444 !important; background: rgba(239, 68, 68, 0.05) !important; }
+        .locked-btn-style { background: rgba(239, 68, 68, 0.1) !important; color: #ef4444 !important; border: 1px solid #ef4444 !important; cursor: not-allowed; }
+
+        /* --- CENTER INSTALL OVERLAY --- */
+        #install-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #install-overlay.active { opacity: 1; pointer-events: all; }
+
+        .big-spinner {
+            width: 60px; height: 60px;
+            border: 5px solid rgba(255,255,255,0.1);
+            border-top-color: #0ea5e9; /* Flutter Blue */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .success-circle {
+            width: 80px; height: 80px;
+            background: rgba(14, 165, 233, 0.2);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            margin-bottom: 20px;
+            border: 2px solid #0ea5e9;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        .install-text { font-size: 18px; color: white; text-align: center; }
+        .install-sub { font-size: 14px; color: #888; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="install-overlay"></div>
+
+    <div id="verified-modal" class="modal-overlay hidden" style="z-index: 1000; position: fixed; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.8);">
+        <div class="modal-content" style="text-align: center; width: 400px; padding: 40px; background: #09090b; border: 1px solid #0ea5e9; box-shadow: 0 0 50px rgba(14, 165, 233, 0.2); border-radius:16px;">
+            <div style="font-size: 60px; margin-bottom: 20px;">📱</div>
+            <h1 style="color: white; font-size: 28px; margin: 0 0 10px;">You're Verified!</h1>
+            <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 30px;">
+                Your entry to the <strong style="color: #0ea5e9;">App Development</strong> program is confirmed.<br>
+                Let's build cross-platform apps.
+            </p>
+            <div style="background: rgba(14, 165, 233, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 30px; border: 1px dashed #0ea5e9;">
+                <i class="fa-brands fa-android"></i> &nbsp; Emulator Access Unlocked
+            </div>
+            <button onclick="closeVerifiedModal()" class="btn-primary" style="width: 100%; justify-content: center; background: #0ea5e9; border:none; padding:12px; color:white; border-radius:8px; cursor:pointer;">
+                Launch Studio 🚀
+            </button>
+        </div>
+    </div>
+
+    <div id="locked-modal" class="locked-overlay hidden">
+        <div class="modal-content" style="text-align: center; width: 400px; border: 1px solid #ef4444; background: #09090b; padding: 30px; border-radius: 15px;">
+            <div style="width: 60px; height: 60px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <i class="fa-solid fa-mobile-screen-button" style="color: #ef4444; font-size: 24px;"></i>
+            </div>
+            
+            <h2 style="color: white; margin: 0;">Device Lab Locked</h2>
+            <p style="color: #a1a1aa; font-size: 13px; margin: 10px 0 20px; line-height: 1.5;">
+                Your internship seat is <strong>Pending Verification</strong>.<br>
+                Send your UTR to Admin via WhatsApp to unlock the course.
+            </p>
+
+            <div style="background: #111; padding: 15px; border-radius: 8px; font-size: 12px; color: #666; margin-bottom: 20px; text-align: left; border: 1px dashed #333;">
+                <span style="color: #aaa;">Your UTR:</span> 
+                <strong style="color: white; font-family: monospace; letter-spacing: 1px; display:block; margin-top:5px;" id="lock-utr-display">LOADING...</strong>
+            </div>
+
+            <button id="whatsapp-lock-btn" class="btn-primary" style="width: 100%; justify-content: center; background: #25D366; color: white; border: none; padding:12px; border-radius:8px; cursor:pointer;">
+                <i class="fa-brands fa-whatsapp" style="font-size: 18px;"></i> &nbsp; Verify on WhatsApp
+            </button>
+            
+            <button onclick="closeLockModal()" class="btn btn-outline" style="width: 100%; margin-top: 10px; border: none; background:none; color: #666; padding:10px; cursor:pointer;">
+                Close & Wait
+            </button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        
+        <aside class="sidebar" id="mobile-sidebar">
+            <div class="brand"><i class="fa-solid fa-layer-group" style="color: #0ea5e9;"></i> UniBolt.</div>
+    
+            <ul class="nav-menu" style="flex: 1; overflow-y: auto;">
+                <a href="app-dashboard.html" class="nav-item active"><i class="fa-solid fa-mobile-screen"></i> Dashboard</a>
+                <a href="APP-studio.html" class="nav-item"><i class="fa-solid fa-laptop-code"></i> App Studio</a>
+                <a href="APP-components.html" class="nav-item"><i class="fa-solid fa-cubes"></i> Components</a>
+                <a href="leaderboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+                <a href="APP-play.html" class="nav-item"><i class="fa-brands fa-google-play"></i> App Store</a>
+                <a href="research.html" class="nav-item"><i class="fa-solid fa-book-open"></i> Docs</a>
+                <a href="contact.html" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
+                <a href="profile.html" class="nav-item"><i class="fa-solid fa-sliders"></i> Settings</a>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button id="install-pwa-btn" class="install-btn" style="display:none; width:100%; padding:10px; margin-bottom:10px; background:#333; color:white; border:none; border-radius:6px; cursor:pointer;">
+                    <i class="fa-solid fa-download"></i> Install App
+                </button>
+        
+                <a href="login.html" class="nav-item logout-btn">
+                    <i class="fa-solid fa-power-off"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <header class="top-header">
+                <div class="page-title">Mobile App Development</div>
+                <div class="user-area">
+                    
+                    <div style="position: relative;">
+                        <div class="notification-btn" onclick="toggleNotifications()" style="cursor:pointer; padding:8px;">
+                            <i class="fa-solid fa-bell" style="font-size: 20px; color: #a1a1aa;"></i>
+                            <div class="notification-dot" id="notif-dot" style="display: none; position:absolute; top:5px; right:5px; width:8px; height:8px; background:red; border-radius:50%;"></div>
+                        </div>
+
+                        <div id="notif-dropdown" class="notif-dropdown hidden">
+                            <div class="notif-header">
+                                <span>Notifications</span>
+                                <small onclick="clearNotifications()" style="cursor: pointer; color: #0ea5e9;">Clear All</small>
+                            </div>
+                            <div id="notif-list" class="notif-list">
+                                <p style="padding: 20px; text-align: center; color: #666; font-size: 13px;">No new alerts</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="xp-pill">
+                        <i class="fa-solid fa-bolt"></i> <span id="header-xp">...</span> XP
+                    </div>
+                    <div class="xp-pill" style="border-color: #f59e0b; color: #f59e0b; background: rgba(245, 158, 11, 0.1);">
+                        <i class="fa-solid fa-fire"></i> <span id="header-streak">...</span> Streak
+                    </div>
+                    <div class="avatar" id="header-avatar">?</div>
+                </div>
+            </header>
+
+            <div class="page-body">
+                <h1 style="font-size: 28px; margin-bottom: 20px;">Welcome, <span id="dash-name">Developer</span>! 👋</h1>
+
+                <div class="bento-grid">
+                    
+                    <div class="card card-large" style="background: linear-gradient(135deg, #0369a1, #0ea5e9); border: none; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="z-index: 2;">
+                            <span style="background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                                🚀 <span id="dash-level">Level 1</span>
+                            </span>
+                            <h2 style="font-size: 32px; margin: 15px 0 10px; color: white;">Build your App?</h2>
+                            <p style="color: #bae6fd; margin-bottom: 20px;">Code once, deploy to iOS & Android.</p>
+                            <a href="studio.html" class="btn-primary" style="background: white; color: #0369a1; text-decoration: none; padding:10px 20px; border-radius:8px; display:inline-block;">
+                                <i class="fa-solid fa-play"></i> Open IDE
+                            </a>
+                        </div>
+                        <i class="fa-solid fa-mobile-screen" style="font-size: 120px; opacity: 0.15; transform: rotate(-15deg); margin-right: 20px; color:white;"></i>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; color: #a1a1aa;">
+                            <span>Deployments</span> <i class="fa-brands fa-google-play"></i>
+                        </div>
+                        <h2 id="dash-certs" style="font-size: 36px; color: #0ea5e9; margin: 10px 0;">0</h2>
+                        <small style="color: #a1a1aa;">Apps Published</small>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; color: #a1a1aa;">
+                            <span>Global Rank</span> <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <h2 style="font-size: 36px; color: #6366f1; margin: 10px 0;">#<span id="dash-rank">--</span></h2>
+                        <small style="color: #10b981;"><i class="fa-solid fa-arrow-up"></i> Top <span id="dash-top-pct">--</span>%</small>
+                    </div>
+
+                    <div id="daily-mission-card" class="card">
+                        <div style="display: flex; justify-content: space-between; color: #a1a1aa; align-items: center;">
+                            <span>Daily Mission</span> 
+                            <i id="mission-icon" class="fa-solid fa-calendar-day"></i>
+                        </div>
+    
+                        <h2 id="daily-task-number" style="font-size: 36px; color: #3b82f6; margin: 10px 0;">Day 1</h2>
+    
+                        <small style="color: #a1a1aa; display: block; margin-bottom: 12px;">Next Assignment</small>
+    
+                        <a id="start-task-btn" href="app-practice.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6; text-decoration: none; padding: 8px 0; border-radius: 8px; font-size: 13px; font-weight: 600; transition: 0.3s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.2)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.1)'">
+                            Start Task <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="card card-large">
+                        <h3 style="margin-top: 0;">Flutter Track Progress</h3>
+                        <div style="display: flex; justify-content: space-between; margin-top: 20px; font-size: 14px;">
+                            <span style="color: #a1a1aa;">Modules Completed (<span id="dash-tasks-done">0</span>/100)</span>
+                            <span style="font-weight: bold;" id="dash-progress-txt">0%</span>
+                        </div>
+                        <div class="progress-bar" style="background:#333; height:8px; border-radius:4px; margin-top:5px; overflow:hidden;">
+                            <div class="fill" id="dash-progress-bar" style="width: 0%; height:100%; background:#0ea5e9;"></div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-top: 20px; font-size: 14px;">
+                            <span style="color: #a1a1aa;">Widget Mastery</span>
+                            <span style="font-weight: bold;" id="dash-mastery-txt">0%</span>
+                        </div>
+                        <div class="progress-bar" style="background:#333; height:8px; border-radius:4px; margin-top:5px; overflow:hidden;">
+                            <div class="fill" id="dash-mastery-bar" style="width: 0%; background: #f59e0b; height:100%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="card card-tall">
+                        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">
+                            <span style="width: 8px; height: 8px; background: #0ea5e9; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #0ea5e9;"></span> Community Feed
+                        </h3>
+                        <div id="live-feed-container" style="margin-top: 25px; overflow: hidden; height: 300px; display:flex; flex-direction:column; gap:15px;"></div>
+                    </div>
+
+                    <div class="card" style="background: rgba(14, 165, 233, 0.1); border-color: rgba(14, 165, 233, 0.3);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <h4 style="margin: 0; color: #0ea5e9; font-size: 14px; margin-bottom: 8px;">📢 Framework Update</h4>
+                                <p id="news-msg" style="font-size: 13px; color: #e0e0e0; margin: 0; line-height: 1.4;">New Flutter 3.19 widgets available...</p>
+                                <small id="news-date" style="color: #888; font-size: 11px; margin-top: 8px; display: block;">--</small>
+                            </div>
+                            <i class="fa-brands fa-flutter" style="color: #0ea5e9; font-size: 18px;"></i>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/app-dashboard.js"></script>
+    <script>
+        // UI Helpers
+        window.closeLockModal = () => { window.location.href = "login.html"; };
+        window.closeVerifiedModal = () => { document.getElementById('verified-modal').classList.add('hidden'); };
+        function toggleNotifications() { document.getElementById('notif-dropdown').classList.toggle('hidden'); }
+
+        // --- PWA INSTALLATION LOGIC (Customized for App Dev) ---
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-pwa-btn');
+        const overlay = document.getElementById('install-overlay');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'block';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                // Show Overlay
+                overlay.innerHTML = `
+                    <div class="big-spinner"></div>
+                    <div class="install-text">Please wait...</div>
+                    <div class="install-sub">Setting up App Studio...</div>
+                `;
+                overlay.classList.add('active');
+
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+            } else {
+                 // Simulation mode if browser doesn't support PWA
+                 overlay.innerHTML = `
+                    <div class="big-spinner"></div>
+                    <div class="install-text">Please wait...</div>
+                    <div class="install-sub">Setting up App Studio...</div>
+                `;
+                overlay.classList.add('active');
+                setTimeout(() => { showSuccessMessage(); }, 3000);
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            showSuccessMessage();
+        });
+
+        function showSuccessMessage() {
+            overlay.innerHTML = `
+                <div class="success-circle">
+                    <i class="fa-solid fa-mobile-screen" style="color: #0ea5e9; font-size: 32px;"></i>
+                </div>
+                <div class="install-text" style="font-size: 22px; font-weight:bold;">Studio Installed!</div>
+                <div class="install-sub">Ready to code</div>
+                <button onclick="document.getElementById('install-overlay').classList.remove('active')" 
+                        style="margin-top:20px; background:transparent; border:1px solid #555; color:#aaa; padding:8px 20px; border-radius:8px; cursor:pointer;">
+                    Close
+                </button>
+            `;
+            installBtn.style.display = 'none';
+            setTimeout(() => { overlay.classList.remove('active'); }, 5000);
+        }
+    </script>
+</body>
+</html>

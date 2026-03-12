@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <title>Project: Traffic Sign Classifier - UniBolt</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        /* --- VS CODE THEME STYLES --- */
+        :root {
+            --bg-dark: #0d1117;       /* Main Background */
+            --bg-panel: #161b22;      /* Sidebar/Header */
+            --border: #30363d;        /* Borders */
+            --text-main: #c9d1d9;     /* Main Text */
+            --text-muted: #8b949e;    /* Muted Text */
+            --accent: #58a6ff;        /* Blue Accent */
+            --file-active: #21262d;   /* Active File Background */
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background: var(--bg-dark); color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            height: 100vh; display: flex; flex-direction: column;
+            overflow: hidden; /* Prevent scrolling on body */
+        }
+
+        /* --- HEADER --- */
+        .project-header {
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            height: 50px; box-sizing: border-box;
+        }
+        
+        .breadcrumb { font-size: 14px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+        .breadcrumb span { color: var(--text-muted); }
+        .breadcrumb i { color: #fff; }
+
+        .header-actions { display: flex; gap: 10px; }
+
+        .btn-back {
+            background: transparent; color: var(--text-muted); border: 1px solid var(--border);
+            padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
+            text-decoration: none; display: flex; align-items: center; gap: 5px;
+        }
+        .btn-back:hover { border-color: var(--text-main); color: var(--text-main); }
+
+        /* --- WORKSPACE LAYOUT --- */
+        .workspace {
+            display: flex; flex: 1; height: calc(100vh - 50px);
+        }
+
+        /* --- SIDEBAR (FILE EXPLORER) --- */
+        .sidebar {
+            width: 250px; background: var(--bg-dark);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+        }
+        
+        .sidebar-header {
+            padding: 10px 20px; font-size: 11px; font-weight: bold; 
+            color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .file-list { flex: 1; overflow-y: auto; }
+
+        .file-item {
+            padding: 6px 20px; cursor: pointer; font-size: 13px; color: var(--text-muted);
+            display: flex; align-items: center; gap: 8px; border-left: 2px solid transparent;
+        }
+        .file-item:hover { color: var(--text-main); background: rgba(255,255,255,0.03); }
+        .file-item.active { background: var(--file-active); color: var(--text-main); border-left-color: #f78166; }
+        
+        .file-icon { width: 16px; text-align: center; font-size: 14px; }
+        .icon-py { color: #3572A5; }
+        .icon-md { color: #e34c26; }
+        .icon-folder { color: #54aeff; }
+        .icon-txt { color: #89e051; }
+
+        /* --- EDITOR AREA --- */
+        .editor {
+            flex: 1; display: flex; flex-direction: column; background: #0d1117; overflow: hidden;
+        }
+        
+        .tab-bar {
+            background: var(--bg-dark); border-bottom: 1px solid var(--border);
+            display: flex; height: 35px;
+        }
+        
+        .tab {
+            padding: 0 15px; font-size: 12px; background: var(--file-active);
+            border-right: 1px solid var(--border); border-top: 1px solid #f78166;
+            color: var(--text-main); display: flex; align-items: center; gap: 8px;
+            cursor: default;
+        }
+        .tab i { font-size: 12px; color: #f78166; cursor: pointer; margin-left: 5px; opacity: 0.6; }
+        .tab i:hover { opacity: 1; }
+
+        .code-container {
+            flex: 1; overflow: auto; position: relative;
+        }
+
+        /* Override Highlight.js background to match theme */
+        pre { margin: 0; min-height: 100%; }
+        code.hljs { 
+            font-family: 'JetBrains Mono', monospace !important; 
+            font-size: 13px; 
+            line-height: 1.5;
+            background: #0d1117 !important; 
+            padding: 20px !important;
+        }
+
+        /* --- README PREVIEW MODE --- */
+        .readme-view {
+            padding: 40px; max-width: 800px; margin: 0 auto; color: var(--text-main);
+        }
+        .readme-view h1 { border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; font-size: 28px; }
+        .readme-view h2 { margin-top: 30px; font-size: 20px; color: var(--text-main); }
+        .readme-view p, .readme-view li { line-height: 1.6; color: #8b949e; font-size: 14px; }
+        .readme-view code { 
+            background: rgba(110, 118, 129, 0.4); 
+            padding: 2px 5px; border-radius: 4px; 
+            font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #c9d1d9;
+        }
+        .readme-view pre { 
+            background: #161b22; padding: 15px; border-radius: 6px; 
+            margin: 15px 0; overflow-x: auto; 
+        }
+        .readme-view pre code { background: transparent; padding: 0; color: #c9d1d9; }
+
+        /* Utility */
+        .hidden { display: none !important; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #0d1117; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; border: 2px solid #0d1117; }
+        ::-webkit-scrollbar-thumb:hover { background: #8b949e; }
+
+    </style>
+</head>
+<body>
+
+    <header class="project-header">
+        <div class="breadcrumb">
+            <i class="fa-solid fa-bolt"></i> 
+            <span>unibolt</span> / <span>projects</span> / <strong>traffic-sign-classifier</strong>
+        </div>
+        <div class="header-actions">
+            <a href="research.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        </div>
+    </header>
+
+    <div class="workspace">
+        
+        <aside class="sidebar">
+            <div class="sidebar-header">Explorer</div>
+            <div class="file-list">
+                <div class="file-item" onclick="toggleFolder('dataset')">
+                    <i class="fa-solid fa-folder icon-folder file-icon"></i> dataset
+                </div>
+                <div class="file-item active" id="file-readme" onclick="openFile('readme')">
+                    <i class="fa-brands fa-markdown icon-md file-icon"></i> README.md
+                </div>
+                <div class="file-item" id="file-main" onclick="openFile('main')">
+                    <i class="fa-brands fa-python icon-py file-icon"></i> main.py
+                </div>
+                <div class="file-item" id="file-model" onclick="openFile('model')">
+                    <i class="fa-brands fa-python icon-py file-icon"></i> model.py
+                </div>
+                <div class="file-item" id="file-utils" onclick="openFile('utils')">
+                    <i class="fa-brands fa-python icon-py file-icon"></i> utils.py
+                </div>
+                <div class="file-item" id="file-req" onclick="openFile('req')">
+                    <i class="fa-solid fa-file-lines icon-txt file-icon"></i> requirements.txt
+                </div>
+            </div>
+        </aside>
+
+        <main class="editor">
+            <div class="tab-bar">
+                <div class="tab">
+                    <span id="tab-name">README.md</span> 
+                    <i class="fa-solid fa-xmark" onclick="alert('Cannot close main tab')"></i>
+                </div>
+            </div>
+
+            <div id="content-area" class="code-container">
+                
+                <div id="view-readme" class="readme-view">
+                    <h1>🚦 Traffic Sign Classifier (Capstone)</h1>
+                    <p>Welcome to your final AI project. Your goal is to build a Convolutional Neural Network (CNN) using TensorFlow/Keras that can classify 43 different traffic signs from the German Traffic Sign Benchmark (GTSRB).</p>
+                    
+                    <h2>📂 Project Structure</h2>
+                    <ul>
+                        <li><code>dataset/</code> - Contains train/test images (Download full dataset separately).</li>
+                        <li><code>model.py</code> - Define your CNN architecture here.</li>
+                        <li><code>main.py</code> - Training loop, data loading, and evaluation script.</li>
+                        <li><code>utils.py</code> - Helper functions for image preprocessing.</li>
+                    </ul>
+
+                    <h2>🎯 Success Criteria</h2>
+                    <p>You must achieve at least <strong>95% accuracy</strong> on the test set to pass this milestone.</p>
+                    
+                    <h2>🚀 Quick Start</h2>
+                    <pre><code>pip install -r requirements.txt
+python main.py</code></pre>
+                </div>
+
+                <div id="view-main" class="hidden">
+<pre><code class="language-python">import os
+import numpy as np
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+from model import create_traffic_model
+from utils import load_and_preprocess_data
+
+# --- CONFIGURATION ---
+EPOCHS = 15
+BATCH_SIZE = 64
+DATA_DIR = './dataset'
+
+def main():
+    # 1. Load Data
+    print(f"Loading images from {DATA_DIR}...")
+    images, labels = load_and_preprocess_data(DATA_DIR)
+    
+    # 2. Split Data
+    X_train, X_test, y_train, y_test = train_test_split(
+        images, labels, test_size=0.2, random_state=42
+    )
+    
+    # 3. Initialize Model
+    model = create_traffic_model(input_shape=X_train.shape[1:])
+    model.summary()
+    
+    # 4. Train
+    print("Starting training...")
+    history = model.fit(
+        X_train, y_train,
+        epochs=EPOCHS,
+        batch_size=BATCH_SIZE,
+        validation_data=(X_test, y_test)
+    )
+    
+    # 5. Evaluate & Save
+    loss, acc = model.evaluate(X_test, y_test)
+    print(f"Final Test Accuracy: {acc*100:.2f}%")
+    
+    if acc > 0.95:
+        model.save('traffic_classifier.h5')
+        print("Model saved successfully!")
+    else:
+        print("Accuracy too low. Tune hyperparameters and retrain.")
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+                </div>
+
+                <div id="view-model" class="hidden">
+<pre><code class="language-python">from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPool2D, Dense, Flatten, Dropout, BatchNormalization
+
+def create_traffic_model(input_shape):
+    """
+    Constructs a CNN architecture optimized for traffic sign recognition.
+    Input Shape: (30, 30, 3)
+    Output: 43 classes (Softmax)
+    """
+    model = Sequential([
+        # Convolutional Block 1
+        Conv2D(32, (5,5), activation='relu', input_shape=input_shape),
+        Conv2D(32, (5,5), activation='relu'),
+        MaxPool2D(pool_size=(2, 2)),
+        Dropout(0.25),
+
+        # Convolutional Block 2
+        Conv2D(64, (3,3), activation='relu'),
+        Conv2D(64, (3,3), activation='relu'),
+        MaxPool2D(pool_size=(2, 2)),
+        Dropout(0.25),
+
+        # Fully Connected Layers
+        Flatten(),
+        Dense(256, activation='relu'),
+        Dropout(0.5),
+        
+        # Output Layer
+        Dense(43, activation='softmax')
+    ])
+
+    model.compile(
+        loss='categorical_crossentropy', 
+        optimizer='adam', 
+        metrics=['accuracy']
+    )
+    
+    return model
+</code></pre>
+                </div>
+
+                <div id="view-utils" class="hidden">
+<pre><code class="language-python">import cv2
+import os
+import numpy as np
+from tensorflow.keras.utils import to_categorical
+
+def load_and_preprocess_data(data_dir):
+    """
+    Loads images from 43 subdirectories, resizes them to 30x30,
+    and normalizes pixel values.
+    """
+    images = []
+    labels = []
+    
+    classes = 43
+    
+    for i in range(classes):
+        path = os.path.join(data_dir, str(i))
+        images_list = os.listdir(path)
+        
+        for img_name in images_list:
+            try:
+                img_path = os.path.join(path, img_name)
+                image = cv2.imread(img_path)
+                image = cv2.resize(image, (30,30))
+                images.append(image)
+                labels.append(i)
+            except Exception as e:
+                print(f"Error loading image: {e}")
+                
+    images = np.array(images)
+    labels = np.array(labels)
+    
+    # Normalize pixel values (0-255 -> 0-1)
+    images = images.astype('float32') / 255.0
+    
+    # One-hot encode labels
+    labels = to_categorical(labels, classes)
+    
+    return images, labels
+</code></pre>
+                </div>
+
+                <div id="view-req" class="hidden">
+<pre><code class="language-text">numpy==1.24.3
+pandas==2.0.3
+matplotlib==3.7.1
+tensorflow==2.13.0
+scikit-learn==1.3.0
+opencv-python==4.8.0
+jupyter==1.0.0
+</code></pre>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Highlight.js
+        hljs.highlightAll();
+
+        function openFile(fileId) {
+            // 1. Update Sidebar Active State
+            document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('file-' + fileId).classList.add('active');
+
+            // 2. Hide all file contents
+            const views = document.getElementById('content-area').children;
+            for (let view of views) {
+                view.classList.add('hidden');
+            }
+
+            // 3. Show selected file content
+            const selectedView = document.getElementById('view-' + fileId);
+            if(selectedView) selectedView.classList.remove('hidden');
+
+            // 4. Update Tab Name
+            const fileNameMap = {
+                'readme': 'README.md',
+                'main': 'main.py',
+                'model': 'model.py',
+                'utils': 'utils.py',
+                'req': 'requirements.txt'
+            };
+            document.getElementById('tab-name').innerText = fileNameMap[fileId];
+        }
+
+        function toggleFolder(name) {
+            alert(`Folder '${name}' contains 43 subdirectories of training data. It is too large to preview here.`);
+        }
+    </script>
+
+</body>
+</html>

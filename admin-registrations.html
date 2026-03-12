@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBolt Admin - Registrations</title>
+    
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { 
+            --primary: #ef4444; 
+            --bg: #000000; 
+            --surface: #1c1c1e; 
+            --surface-highlight: #2c2c2e;
+            --text: #ffffff; 
+            --text-dim: #8e8e93;
+            --border: rgba(255, 255, 255, 0.1); 
+            --bento-shadow: 0 20px 40px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            --radius: 24px;
+        }
+
+        body { 
+            background: var(--bg); 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            color: var(--text); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar { width: 280px; background: #000; border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 1100; height: 100vh; }
+        .sidebar-header { padding: 30px 24px 10px; flex-shrink: 0; }
+        .sidebar-scroll { flex: 1; overflow-y: auto; padding: 0 14px; }
+        .sidebar-footer { padding: 20px 24px; border-top: 1px solid var(--border); background: #000; flex-shrink: 0; }
+        .brand { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; }
+        .brand i { color: var(--primary); }
+        .nav-item { padding: 14px 16px; color: var(--text-dim); cursor: pointer; border-radius: 14px; margin-bottom: 4px; display: flex; align-items: center; gap: 14px; text-decoration: none; font-size: 15px; font-weight: 500; transition: 0.2s; }
+        .nav-item:hover { background: var(--surface); color: white; }
+        .nav-item.active { background: rgba(239, 68, 68, 0.1); color: var(--primary); font-weight: 600; }
+        .nav-item i { width: 20px; text-align: center; }
+
+        /* --- MAIN CONTENT --- */
+        .main { flex: 1; padding: 30px; overflow-y: auto; background: var(--bg); position: relative; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px; }
+        .header h2 { font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
+        .header p { color: var(--text-dim); margin: 6px 0 0 0; font-size: 15px; }
+
+        /* --- CONTROLS --- */
+        .btn { padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; color: white; background: var(--surface); transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn:hover { background: var(--surface-highlight); transform: scale(1.02); }
+        .btn-primary { background: var(--primary); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); }
+        .btn-whatsapp { background: #25D366; color: white; width: 100%; justify-content: center; margin-top: 15px; }
+        .btn-whatsapp:hover { background: #1ebe57; }
+
+        select { background: var(--surface); border: 1px solid var(--border); color: white; padding: 12px; border-radius: 12px; outline: none; font-size: 14px; }
+
+        /* --- APPLICATION CARDS --- */
+        .sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        
+        .sub-card { 
+            background: var(--surface); 
+            border-radius: var(--radius); 
+            padding: 24px; 
+            box-shadow: var(--bento-shadow); 
+            transition: transform 0.2s;
+            position: relative;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .sub-card:hover { transform: translateY(-4px); border-color: var(--primary); }
+
+        .sub-header { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-dim); }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; }
+        .status-New { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .status-Approved { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .status-Rejected { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+        .sub-name { font-size: 20px; font-weight: 700; color: white; margin-bottom: 4px; }
+        .sub-course { font-size: 14px; color: var(--text-dim); margin-bottom: 20px; display: flex; align-items: center; gap: 6px; }
+        
+        .detail-row { font-size: 13px; color: #ccc; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .detail-row i { color: var(--text-dim); width: 16px; text-align: center; }
+
+        .action-row { display: flex; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .btn-action { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid; background: transparent; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
+        
+        .btn-approve { border-color: rgba(16, 185, 129, 0.3); color: #10b981; }
+        .btn-approve:hover { background: rgba(16, 185, 129, 0.15); }
+        
+        .btn-reject { border-color: rgba(239, 68, 68, 0.3); color: #ef4444; }
+        .btn-reject:hover { background: rgba(239, 68, 68, 0.15); }
+
+        /* --- MODAL --- */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(20px); display: flex; justify-content: center; align-items: center; z-index: 2000; visibility: hidden; opacity: 0; transition: 0.3s; padding: 20px; }
+        .modal.active { visibility: visible; opacity: 1; }
+        .modal-content { 
+            background: #1c1c1e; width: 100%; max-width: 550px; 
+            max-height: 85vh; overflow-y: auto; padding: 30px; 
+            border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); 
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6); transform: scale(0.95); transition: 0.3s; 
+        }
+        .modal.active .modal-content { transform: scale(1); }
+
+        .info-group { margin-bottom: 20px; }
+        .info-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+        .info-value { font-size: 15px; color: white; font-weight: 500; }
+        .info-value.big { font-size: 24px; font-weight: 800; color: white; }
+
+        /* --- CONFIRM POPUP --- */
+        .confirm-box { text-align: center; max-width: 350px; }
+        .confirm-icon { font-size: 48px; margin-bottom: 20px; display: block; }
+        
+        /* --- TOAST --- */
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(20px); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981; padding: 12px 24px; border-radius: 50px; font-weight: 600; transition: 0.4s; z-index: 3000; opacity: 0; display: flex; gap: 10px; align-items: center; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* --- MOBILE --- */
+        .menu-toggle { display: none; position: fixed; top: 20px; right: 20px; z-index: 1200; background: var(--surface); border: 1px solid var(--border); color: white; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; align-items: center; justify-content: center; font-size: 20px; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 1050; }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-105%); height: 100vh; visibility: hidden; }
+            .sidebar.active { transform: translateX(0); visibility: visible; }
+            .sidebar-overlay.active { display: block; }
+            .menu-toggle { display: flex; }
+            .main { padding: 90px 20px 40px; }
+            .sub-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand"><i class="fa-solid fa-shield-cat" style="color:var(--primary);"></i> UniBolt Admin</div>
+        </div>
+        <div class="sidebar-scroll">
+            <a href="/admin" class="nav-item"><i class="fa-solid fa-grid-2"></i> Overview</a>
+            <a href="/admin-tickets" class="nav-item"><i class="fa-solid fa-ticket"></i> Tickets</a>
+            <a href="/admin-analytics" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="/admin-reports" class="nav-item"><i class="fa-solid fa-file-contract"></i> Reports</a>
+            <a href="/admin-content" class="nav-item"><i class="fa-solid fa-book-open"></i> Content</a>
+            <a href="/admin-activity" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Activity</a>
+            <a href="/admin-registrations" class="nav-item active"><i class="fa-solid fa-address-card"></i> Registrations</a>
+            <a href="/admin-settings" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="/admin-notifications" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications</a>
+            <a href="/admin-team" class="nav-item"><i class="fa-solid fa-user-shield"></i> Team</a>
+            <a href="/admin-faq" class="nav-item"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+        </div>
+        <div class="sidebar-footer">
+            <div class="nav-item" onclick="logout()" style="color: #ff453a;"><i class="fa-solid fa-power-off"></i> Sign Out</div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <div>
+                <h2>New Applications</h2>
+                <p>Review and onboard new students.</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <select id="filter-status" onchange="loadRegistrations()">
+                    <option value="All">All Status</option>
+                    <option value="New" selected>New</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadRegistrations()"><i class="fa-solid fa-rotate"></i></button>
+            </div>
+        </div>
+
+        <div id="reg-grid" class="sub-grid">
+            <div style="text-align:center; color:#8e8e93; padding:40px;">Loading applications...</div>
+        </div>
+    </div>
+
+    <div class="modal" id="details-modal">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; margin-bottom:30px;">
+                <h2 style="margin:0;">Application Details</h2>
+                <div onclick="closeModal('details-modal')" style="cursor:pointer; background:#2c2c2e; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-xmark"></i></div>
+            </div>
+            
+            <div class="info-group"><span class="info-label">Full Name</span><span class="info-value big" id="m-name">--</span></div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="info-group"><span class="info-label">Email</span><span class="info-value" id="m-email">--</span></div>
+                <div class="info-group"><span class="info-label">WhatsApp</span><span class="info-value" id="m-phone">--</span></div>
+            </div>
+            
+            <div class="info-group"><span class="info-label">College / University</span><span class="info-value" id="m-college">--</span></div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="info-group"><span class="info-label">Status</span><span class="info-value" id="m-status">--</span></div>
+                <div class="info-group"><span class="info-label">Grad Year</span><span class="info-value" id="m-gradYear">--</span></div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="info-group"><span class="info-label">City</span><span class="info-value" id="m-city">--</span></div>
+                <div class="info-group"><span class="info-label">State</span><span class="info-value" id="m-state">--</span></div>
+            </div>
+            
+            <div class="info-group"><span class="info-label">Interested Domain</span><span class="info-value" id="m-domain" style="color:var(--primary); font-weight:700;">--</span></div>
+            
+            <div class="info-group">
+                <span class="info-label">Reason for Joining</span>
+                <p class="info-value" id="m-reason" style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-top:8px; line-height:1.6;">--</p>
+            </div>
+            
+            <button class="btn" onclick="closeModal('details-modal')" style="width:100%; justify-content:center; background:#2c2c2e;">Close</button>
+        </div>
+    </div>
+
+    <div class="modal" id="confirm-modal">
+        <div class="modal-content confirm-box">
+            <i class="fa-solid fa-circle-question confirm-icon" style="color:#ff9f0a;"></i>
+            <h3 style="margin:0; font-size:22px;">Change Status?</h3>
+            <p style="color:var(--text-dim); margin-bottom:30px;" id="confirm-text">Confirm action.</p>
+            <div style="display:flex; gap:12px;">
+                <button id="btn-confirm-yes" class="btn btn-primary" style="flex:1; justify-content:center;">Yes</button>
+                <button onclick="closeModal('confirm-modal')" class="btn" style="flex:1; justify-content:center; background:#2c2c2e;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i> <span>Success</span></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        // ADDED SECURITY IMPORTS (addDoc, serverTimestamp, getDoc)
+        import { getFirestore, collection, getDocs, doc, updateDoc, orderBy, query, addDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- 🔒 ADVANCED SECURITY GUARD (INJECTED) ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user && user.email === "admin@unibolt.in") {
+                // ✅ ADMIN VERIFIED: LOAD REGISTRATIONS
+                loadRegistrations();
+            } else {
+                // ⛔ INTRUDER DETECTED
+                
+                // 1. Fetch Data
+                let ip = "TRACING...";
+                let location = "Unknown";
+                let provider = "Unknown Network";
+                let sessionID = "BREACH-" + Math.floor(Math.random() * 99999);
+
+                try {
+                    const r = await fetch('https://ipapi.co/json/');
+                    const d = await r.json();
+                    ip = d.ip || "Unknown IP";
+                    location = (d.city ? d.city + ", " : "") + (d.country_name || "");
+                    provider = d.org || "Hidden ISP";
+                } catch(e) {
+                    try { const r2 = await fetch('https://api.ipify.org?format=json'); const d2 = await r2.json(); ip = d2.ip; } catch(err){}
+                }
+
+                // 2. Check Block
+                try {
+                    const blockSnap = await getDoc(doc(db, "blocked_ips", ip));
+                    if (blockSnap.exists()) { window.location.href = "security.html"; return; }
+                } catch(e) {}
+
+                // 3. Log
+                try {
+                    await addDoc(collection(db, "security_logs"), {
+                        ip: ip,
+                        location: location,
+                        provider: provider,
+                        page: window.location.pathname,
+                        userAgent: navigator.userAgent,
+                        timestamp: serverTimestamp(),
+                        status: "BLOCKED",
+                        session_id: sessionID
+                    });
+                } catch(e) {}
+
+                // 4. Show Warning
+                document.body.innerHTML = `
+                    <style>
+                        body { margin: 0; background: #050505; font-family: 'Courier New', monospace; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
+                        .hack-box {
+                            background: #000; border: 2px solid #ef4444; padding: 40px; width: 90%; max-width: 600px;
+                            border-radius: 4px; text-align: left; box-shadow: 0 0 50px rgba(239, 68, 68, 0.4), inset 0 0 20px rgba(239, 68, 68, 0.2);
+                            position: relative; animation: glitch 0.2s infinite; z-index:9999;
+                        }
+                        .hack-box::before { content: "SYSTEM BREACH DETECTED"; position: absolute; top: -12px; left: 20px; background: #000; color: #ef4444; padding: 0 10px; font-weight: bold; border: 1px solid #ef4444; }
+                        h1 { color: #ef4444; font-size: 32px; margin: 0 0 20px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 2px; }
+                        p { color: #fff; font-size: 14px; margin-bottom: 10px; line-height: 1.6; }
+                        .data-terminal { background: #111; border: 1px solid #333; padding: 15px; margin-top: 20px; font-size: 12px; color: #0f0; }
+                        .blink { animation: blink 1s infinite; }
+                        @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 100% { transform: translate(0); } }
+                        @keyframes blink { 50% { opacity: 0; } }
+                    </style>
+                    <div class="hack-box">
+                        <h1>⚠️ ACCESS DENIED ⚠️</h1>
+                        <p>You have attempted to access a restricted administrative terminal.</p>
+                        <div class="data-terminal">
+                            > TRACE ID: <span style="color:#fff">${sessionID}</span><br>
+                            > TARGET IP: <span style="color:#fff">${ip}</span> <span style="color:#ef4444">[LOCKED]</span><br>
+                            > LOCATION: <span style="color:#fff">${location}</span><br>
+                            > PROVIDER: <span style="color:#fff">${provider}</span><br>
+                            > UPLOADING LOGS TO SERVER... <span style="color:#ef4444">100%</span><span class="blink">_</span>
+                        </div>
+                    </div>
+                `;
+
+                setTimeout(() => { window.location.href = "mail-login.html"; }, 7000);
+            }
+        });
+
+        let registrationsData = {};
+        let pendingAction = null; 
+
+        // --- GLOBAL UTILS ---
+        window.logout = function() { if(confirm("Log out?")) signOut(auth).then(() => window.location.href = "index.html"); }
+        window.toggleSidebar = function() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+        window.closeModal = (id) => document.getElementById(id).classList.remove("active");
+        
+        window.showToast = () => {
+            const t = document.getElementById('toast');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        // --- LOAD DATA (Wrapped in function) ---
+        window.loadRegistrations = async () => {
+            const grid = document.getElementById("reg-grid");
+            const filter = document.getElementById("filter-status").value;
+            grid.innerHTML = "<p style='color:#8e8e93; text-align:center; width:100%;'>Fetching applications...</p>";
+
+            try {
+                const q = query(collection(db, "registrations"), orderBy("timestamp", "desc"));
+                const snap = await getDocs(q);
+                grid.innerHTML = "";
+                let count = 0;
+
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const id = docSnap.id;
+                    const status = data.applicationStatus || 'New';
+                    registrationsData[id] = data;
+
+                    if (filter !== "All" && status !== filter) return;
+                    count++;
+                    
+                    let dateStr = "Recent";
+                    if(data.timestamp) dateStr = data.timestamp.toDate().toLocaleDateString();
+                    const rawPhone = data.phone ? data.phone.replace(/[^0-9]/g, '') : '';
+
+                    const card = document.createElement("div");
+                    card.className = "sub-card";
+                    card.onclick = (e) => { if(!e.target.closest('button')) window.openDetails(id); };
+
+                    card.innerHTML = `
+                        <div class="sub-header">
+                            <span>${dateStr}</span>
+                            <span class="status-badge status-${status}">${status}</span>
+                        </div>
+                        <div class="sub-name">${data.name}</div>
+                        <div class="sub-course"><i class="fa-solid fa-graduation-cap"></i> ${data.college || 'Unknown'}</div>
+                        
+                        <div class="detail-row"><i class="fa-solid fa-envelope"></i> ${data.email}</div>
+                        <div class="detail-row"><i class="fa-brands fa-whatsapp"></i> ${data.phone}</div>
+                        <div class="detail-row"><i class="fa-solid fa-layer-group"></i> ${data.domain}</div>
+                        
+                        <button onclick="window.inviteToCommunity('${rawPhone}', '${data.name}')" class="btn btn-whatsapp">
+                            <i class="fa-solid fa-user-plus"></i> Add to WhatsApp
+                        </button>
+
+                        <div class="action-row">
+                            <button onclick="window.openConfirmStatus('${id}', 'Approved')" class="btn-action btn-approve">
+                                <i class="fa-solid fa-check"></i> Approve
+                            </button>
+                            <button onclick="window.openConfirmStatus('${id}', 'Rejected')" class="btn-action btn-reject">
+                                <i class="fa-solid fa-xmark"></i> Reject
+                            </button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+                if (count === 0) grid.innerHTML = "<p style='color:#8e8e93; text-align:center; width:100%;'>No applications found.</p>";
+            } catch (error) { console.error(error); }
+        };
+
+        // --- OPEN DETAILS ---
+        window.openDetails = (id) => {
+            const data = registrationsData[id];
+            if(!data) return;
+            document.getElementById('m-name').innerText = data.name;
+            document.getElementById('m-email').innerText = data.email;
+            document.getElementById('m-phone').innerText = data.phone;
+            document.getElementById('m-college').innerText = data.college;
+            document.getElementById('m-status').innerText = data.applicationStatus || 'New';
+            document.getElementById('m-gradYear').innerText = data.gradYear || 'N/A';
+            document.getElementById('m-city').innerText = data.city || 'N/A';
+            document.getElementById('m-state').innerText = data.state || 'N/A';
+            document.getElementById('m-domain').innerText = data.domain || 'N/A';
+            document.getElementById('m-reason').innerText = data.reason || 'No reason provided.';
+            document.getElementById('details-modal').classList.add('active');
+        };
+
+        window.inviteToCommunity = (phone, name) => {
+            const link = "https://chat.whatsapp.com/E7Lot6xWb7412li4Tah0qZ";
+            const msg = `Hello ${name}! 👋\n\nWelcome to UniBolt! Join here:\n\n${link}`;
+            let p = phone; if(!p.startsWith("91") && p.length === 10) p = "91" + p;
+            window.open(`https://wa.me/${p}?text=${encodeURIComponent(msg)}`, '_blank');
+        };
+
+        // --- ACTIONS ---
+        window.openConfirmStatus = (id, status) => {
+            pendingAction = { id, status };
+            const modal = document.getElementById('confirm-modal');
+            const icon = modal.querySelector('.confirm-icon');
+            const btn = document.getElementById('btn-confirm-yes');
+            
+            document.getElementById('confirm-text').innerText = `Mark student as ${status}?`;
+            
+            if(status === 'Approved') {
+                icon.className = 'fa-solid fa-circle-check confirm-icon';
+                icon.style.color = '#10b981';
+                btn.style.background = '#10b981';
+            } else {
+                icon.className = 'fa-solid fa-circle-xmark confirm-icon';
+                icon.style.color = '#ef4444';
+                btn.style.background = '#ef4444';
+            }
+            modal.classList.add('active');
+        };
+
+        document.getElementById('btn-confirm-yes').onclick = async () => {
+            if(!pendingAction) return;
+            const btn = document.getElementById('btn-confirm-yes');
+            btn.innerText = "Updating...";
+            
+            try {
+                await updateDoc(doc(db, "registrations", pendingAction.id), { applicationStatus: pendingAction.status });
+                window.closeModal('confirm-modal');
+                window.loadRegistrations();
+                window.showToast();
+            } catch(e) { alert("Error updating"); }
+            finally { btn.innerText = "Yes"; }
+        };
+    </script>
+</body>
+</html>

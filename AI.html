@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>UniBolt - AI Nexus</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="manifest" href="manifest-ai.json">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        async function initDashboard() {
+            try {
+                // Register Service Worker
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('sw-ai.js');
+                }
+
+                // 1. Maintenance Check
+                const docRef = doc(db, "platform_settings", "config");
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const settings = docSnap.data();
+                    if (settings.maintenanceMode === true) {
+                        const userRole = localStorage.getItem('user_role'); 
+                        if (userRole !== 'admin') window.location.href = "maintenance.html";
+                    }
+                }
+
+                // 2. AUTH & SECURITY GUARD
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        const userRef = doc(db, "users", user.uid);
+                        const userSnap = await getDoc(userRef);
+                        
+                        if (userSnap.exists()) {
+                            const data = userSnap.data();
+                            
+                            // ---------------------------------------------------------
+                            // 🔒 SECURITY CHECK: IS THIS AN AI STUDENT?
+                            // ---------------------------------------------------------
+                            const enrolled = (data.enrolledProgram || data.course || "").toLowerCase();
+                            
+                            // Rule: If viewing AI Dashboard, user MUST have "ai" or "data" in their course
+                            const isAuthorized = enrolled.includes("ai") || enrolled.includes("data");
+
+                            if (!isAuthorized) {
+                                // STOP! User is NOT authorized (e.g., Web Dev Student)
+                                
+                                // Update Warning Text
+                                document.getElementById('security-course-name').innerText = data.enrolledProgram || "Another Course";
+                                
+                                // Show Block Screen
+                                document.getElementById('security-modal').classList.remove('hidden');
+                                
+                                // Blur Background & Disable Clicks
+                                document.querySelector('.app-container').style.filter = "blur(20px)";
+                                document.querySelector('.app-container').style.pointerEvents = "none";
+                                
+                                return; // Stop execution
+                            }
+                            // ---------------------------------------------------------
+
+                            // IF AUTHORIZED: Load Dashboard Data
+                            if(document.getElementById("dash-name")) document.getElementById("dash-name").innerText = data.name || "Student";
+                            if(document.getElementById("header-xp")) document.getElementById("header-xp").innerText = data.xp || 0;
+                            if(document.getElementById("header-streak")) document.getElementById("header-streak").innerText = data.streak || 0;
+                            if(document.getElementById("dash-certs")) document.getElementById("dash-certs").innerText = data.certificates || 0;
+                            if(document.getElementById("header-avatar")) document.getElementById("header-avatar").innerText = data.avatarIcon || "🤖";
+
+                            // A. FETCH LATEST DAILY MISSION
+                            if (enrolled) {
+                                try {
+                                    const q = query(collection(db, "tasks"), where("module", "==", data.enrolledProgram), orderBy("day", "desc"), limit(1));
+                                    const taskSnap = await getDocs(q);
+                                    if (!taskSnap.empty) {
+                                        const latest = taskSnap.docs[0].data();
+                                        const dayLabel = document.getElementById("daily-task-number");
+                                        if(dayLabel) dayLabel.innerText = `Day ${latest.day}`;
+                                    }
+                                } catch (e) { console.log("Task load error", e); }
+                            }
+
+                            // B. LOCK SYSTEM (If Pending/Rejected)
+                            if (data.paymentStatus === 'Pending' || data.paymentStatus === 'Rejected') {
+                                
+                                document.getElementById('locked-modal').classList.remove('hidden');
+                                if(data.transactionId) document.getElementById('lock-utr-display').innerText = data.transactionId;
+
+                                const msg = `*Verification Request*\nStudent: ${data.name}\nUTR: ${data.transactionId}`;
+                                document.getElementById('whatsapp-lock-btn').onclick = () => window.open(`https://wa.me/919258837596?text=${encodeURIComponent(msg)}`, '_blank');
+
+                                // Lock UI
+                                const startBtn = document.getElementById('start-task-btn');
+                                if(startBtn) {
+                                    startBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Locked';
+                                    startBtn.classList.add('locked-btn-style');
+                                    startBtn.onclick = (e) => { e.preventDefault(); document.getElementById('locked-modal').classList.remove('hidden'); };
+                                    startBtn.removeAttribute("href");
+                                }
+
+                                const navItems = document.querySelectorAll('.nav-item');
+                                navItems.forEach(item => {
+                                    if(item.classList.contains('logout-btn')) return;
+                                    item.classList.add('locked-nav-item');
+                                    item.removeAttribute("href");
+                                    item.onclick = (e) => {
+                                        e.preventDefault();
+                                        document.getElementById('locked-modal').classList.remove('hidden');
+                                    };
+                                });
+                            }
+                        }
+                    } else {
+                        // Not logged in -> Redirect
+                        window.location.href = "login.html";
+                    }
+                });
+
+            } catch (error) { console.log("System error:", error); }
+        }
+
+        initDashboard();
+    </script>
+
+    <style>
+        /* --- CORE VARS --- */
+        :root {
+            --bg-deep: #0f0e13;
+            --sidebar-bg: #050507; /* Darker Sidebar */
+            --card-surface: #1a1920;
+            --accent-primary: #8b5cf6; /* Violet */
+            --accent-secondary: #ec4899; /* Pink */
+            --accent-blue: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --sidebar-width: 260px; /* MATCHED TO PROFILE PAGE */
+            --shadow-3d: 0 10px 40px -10px rgba(0,0,0,0.5), 
+                         0 0 0 1px rgba(255,255,255,0.08) inset,
+                         0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            color: var(--text-main);
+            overflow-x: hidden;
+            background-image: radial-gradient(#2d2b3b 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        /* --- LAYOUT STRUCTURE --- */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* --- SIDEBAR (FIXED TO LEFT) --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0; top: 0;
+            background: var(--sidebar-bg); /* Darker BG */
+            border-right: 1px solid rgba(255,255,255,0.05);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1001; /* High Z-Index */
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto; 
+            scrollbar-width: none;
+        }
+        .sidebar::-webkit-scrollbar { display: none; }
+
+        .brand {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 40px;
+            padding-left: 5px;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 15px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        /* ACTIVE STATE (Purple Gradient) */
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.2), transparent);
+            color: var(--accent-primary);
+            border-left: 3px solid var(--accent-primary);
+            padding-left: 13px; 
+        }
+
+        /* Locked State */
+        .locked-nav-item { color: #ef4444 !important; opacity: 0.7; cursor: not-allowed; }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* --- MAIN CONTENT AREA --- */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width); /* Pushed by Sidebar */
+            padding: 30px;
+            max-width: 1400px;
+            padding-bottom: 120px; /* Space for scroll */
+        }
+
+        .page-body { margin-top: 10px; }
+
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .page-title { display: none; }
+
+        /* User Info in Header */
+        .user-area { display: flex; align-items: center; gap: 15px; margin-left: auto; }
+        
+        .xp-pill {
+            background: #18181b;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .avatar {
+            width: 38px; height: 38px;
+            background: linear-gradient(135deg, #4338ca, #6366f1);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 18px;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        /* --- BENTO GRID SYSTEM --- */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            grid-auto-rows: minmax(160px, auto);
+            perspective: 1000px;
+        }
+
+        /* --- CARD STYLING --- */
+        .card {
+            background: var(--card-surface);
+            border-radius: 24px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+            border-color: rgba(255,255,255,0.15);
+            z-index: 10;
+        }
+
+        /* Card Sizes */
+        .card-large { grid-column: span 2; grid-row: span 2; }
+        .card-tall { grid-column: span 1; grid-row: span 2; }
+        #daily-mission-card { grid-column: span 2; grid-row: span 1; }
+
+        /* Elements */
+        h1 { font-size: 28px; margin-bottom: 25px; }
+        h2 { margin: 0; font-weight: 700; letter-spacing: -0.02em; }
+        h3, h4 { margin: 0; font-weight: 700; }
+        small, p { color: var(--text-muted); font-size: 14px; }
+
+        .btn-primary {
+            background: white; color: #000;
+            padding: 10px 20px; border-radius: 12px;
+            font-weight: 600; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 14px; margin-top: auto;
+            width: fit-content; transition: 0.2s;
+            border: none; cursor: pointer;
+        }
+        .btn-primary:hover { transform: scale(1.05); }
+
+        .progress-bar {
+            background: #000 !important;
+            border-radius: 10px; height: 6px !important;
+            margin-top: 8px; overflow: hidden;
+        }
+        .fill { border-radius: 10px; height: 100%; }
+
+        /* --- NOTIFICATIONS --- */
+        .notif-dropdown {
+            position: absolute; top: 50px; right: 0; width: 320px;
+            background: #1a1920; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 100;
+            overflow: hidden; transform-origin: top right; transition: 0.2s ease;
+        }
+        .notif-dropdown.hidden { transform: scale(0.95); opacity: 0; pointer-events: none; }
+        .notif-header { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; background: #202026; }
+        .notif-list { max-height: 300px; overflow-y: auto; }
+        .notif-item { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; gap: 12px; align-items: flex-start; }
+
+        /* --- MODALS --- */
+        .locked-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: center; z-index: 2000;
+        }
+        .hidden { display: none !important; }
+        .modal-content { z-index: 2001; position: relative; }
+        
+        .locked-btn-style { background: rgba(239, 68, 68, 0.1) !important; color: #ef4444 !important; border: 1px solid #ef4444 !important; cursor: not-allowed; box-shadow: none !important; }
+
+        /* --- SECURITY WARNING (RED THEME) --- */
+        #security-modal .modal-content {
+            background: #1a0505; /* Deep Red BG */
+            border: 2px solid #ef4444; 
+            box-shadow: 0 0 60px rgba(239, 68, 68, 0.5);
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        /* --- INSTALL OVERLAY --- */
+        #install-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 99999; flex-direction: column;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        #install-overlay.active { opacity: 1; pointer-events: all; }
+
+        .big-spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        .success-circle { width: 80px; height: 80px; background: rgba(139, 92, 246, 0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; border: 2px solid var(--accent-primary); animation: popIn 0.5s ease; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .install-text { font-size: 18px; color: white; font-weight: 600; text-align: center; }
+        .install-sub { font-size: 14px; color: #a1a1aa; margin-top: 10px; }
+
+        /* =========================================
+           MOBILE RESPONSIVENESS
+           ========================================= */
+        .mobile-menu-toggle { display: none; }
+        .sidebar-overlay { display: none; }
+
+        @media (max-width: 900px) {
+            .bento-grid { grid-template-columns: repeat(2, 1fr); }
+            .card-large, #daily-mission-card, .card-tall { grid-column: span 2; }
+        }
+
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column; }
+            .main-content { margin-left: 0; padding: 15px; padding-bottom: 80px; }
+            
+            .sidebar {
+                transform: translateX(-100%);
+                width: 260px;
+                box-shadow: 50px 0 100px rgba(0,0,0,0.8);
+            }
+            .sidebar.active { transform: translateX(0); }
+
+            .sidebar-overlay {
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+                z-index: 1000; display: none;
+            }
+            .sidebar-overlay.active { display: block; }
+
+            .top-header {
+                position: sticky; top: 0; z-index: 50;
+                background: rgba(15, 14, 19, 0.85);
+                backdrop-filter: blur(12px);
+                margin: -15px -15px 15px -15px;
+                padding: 12px 15px;
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+            }
+            .page-title { display: block; font-size: 16px; font-weight: 700; color: var(--accent-primary); }
+            
+            .mobile-menu-toggle {
+                display: flex; align-items: center; justify-content: center;
+                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+                color: white; font-size: 18px; width: 36px; height: 36px;
+                border-radius: 8px; margin-right: 12px; cursor: pointer;
+            }
+
+            .bento-grid {
+                grid-template-columns: 1fr 1fr; /* Side-by-Side */
+                grid-auto-rows: auto;
+                gap: 10px;
+            }
+            
+            /* Large cards span 2 columns */
+            .card-large, #daily-mission-card, .card-tall { 
+                grid-column: span 2; 
+            }
+            
+            .card { padding: 16px; min-height: 120px; }
+            .card-large { min-height: 240px; }
+
+            /* Fix Notification Dropdown on Mobile */
+            .notif-dropdown {
+                position: fixed; top: 70px; right: 10px; 
+                width: calc(100% - 20px); max-width: 350px; z-index: 1000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="security-modal" class="locked-overlay hidden" style="z-index: 99999;">
+        <div class="modal-content" style="text-align: center; width: 420px; padding: 40px; border-radius: 20px;">
+            <div style="font-size: 60px; margin-bottom: 20px;">⚠️</div>
+            <h1 style="color: #ef4444; font-size: 28px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 1px;">Security Alert</h1>
+            <p style="color: #fca5a5; font-size: 15px; margin-bottom: 25px; line-height: 1.6;">
+                You are enrolled in <strong style="color:white;" id="security-course-name">...</strong>.<br>
+                You are not authorized to view the <strong style="color:white;">AI Dashboard</strong>.
+            </p>
+            <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px dashed #ef4444; color: #ef4444; font-size: 13px; font-weight: bold;">
+                <i class="fa-solid fa-triangle-exclamation"></i> IF YOU DO THAT AGAIN WE WILL BAN YOUR ACCOUNT.
+            </div>
+            <button onclick="window.location.href='login.html'" class="btn-primary" style="width: 100%; justify-content: center; background: #ef4444; color: white; border: none;">
+                I Understand, Go Back
+            </button>
+        </div>
+    </div>
+
+    <div id="locked-modal" class="locked-overlay hidden">
+        <div class="modal-content" style="text-align: center; width: 400px; border: 1px solid #ef4444; background: #1a1920; padding: 30px; border-radius: 20px;">
+            <div style="width: 60px; height: 60px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <i class="fa-solid fa-server" style="color: #ef4444; font-size: 24px;"></i>
+            </div>
+            <h2 style="color: white; margin: 0;">Access Pending</h2>
+            <p style="color: #a1a1aa; font-size: 13px; margin: 10px 0 20px;">Your payment is under verification.</p>
+            <div style="background: #111; padding: 15px; border-radius: 8px; font-size: 12px; color: #666; margin-bottom: 20px; text-align: left; border: 1px dashed #333;">
+                <span style="color: #aaa;">UTR:</span> <strong style="color: white;" id="lock-utr-display">...</strong>
+            </div>
+            <button id="whatsapp-lock-btn" class="btn-primary" style="width: 100%; justify-content: center; background: #25D366 !important; color:white !important;">Verify on WhatsApp</button>
+        </div>
+    </div>
+
+    <div id="install-overlay"></div>
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
+
+    <div class="app-container">
+        
+        <aside class="sidebar" id="mobile-sidebar">
+            <div class="brand"><i class="fa-solid fa-dna" style="color: #8b5cf6;"></i> UniBolt.</div>
+            <div class="nav-menu">
+                <a href="/AI" class="nav-item active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+                <a href="/notebooks" class="nav-item"><i class="fa-solid fa-code-branch"></i> Neural Lab</a>
+                <a href="/datasets" class="nav-item"><i class="fa-solid fa-database"></i> Datasets</a>
+                <a href="/aileaderboard" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+                <a href="/aigallery" class="nav-item"><i class="fa-solid fa-trophy"></i> Hall of Fame</a>
+                <a href="/airesearch" class="nav-item"><i class="fa-solid fa-flask"></i> Research Hub</a>
+                <a href="/aicontact" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
+                <a href="/aiprofile" class="nav-item"><i class="fa-solid fa-sliders"></i> Settings</a>
+            </div>
+            <div class="sidebar-footer">
+                <a href="/login" class="nav-item logout-btn" style="color:#ef4444;"><i class="fa-solid fa-power-off"></i> Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <header class="top-header">
+                <button class="mobile-menu-toggle" onclick="toggleMobileSidebar()"><i class="fa-solid fa-bars"></i></button>
+                <div class="page-title" style="display:none;">AI & Data Science Lab</div>
+                <div class="user-area">
+                    <div class="xp-pill"><i class="fa-solid fa-bolt" style="color:#fbbf24;"></i> <span id="header-xp">0</span> XP</div>
+                    <div class="xp-pill" style="border-color: #f59e0b; color: #f59e0b; background: rgba(245, 158, 11, 0.1);"><i class="fa-solid fa-fire-flame-curved"></i> <span id="header-streak">0</span></div>
+                    <div class="avatar" id="header-avatar">?</div>
+                </div>
+            </header>
+
+            <div class="page-body">
+                <h1 style="font-size: 28px; margin-bottom: 24px;">Welcome, <span id="dash-name">Student</span>! 👋</h1>
+
+                <div class="bento-grid">
+                    
+                    <div class="card card-large" style="background: linear-gradient(135deg, #1e1b4b, #4338ca) !important; border: none; align-items: flex-start;">
+                        <div style="z-index: 2; width: 100%;">
+                            <span style="background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">🧠 Level 1</span>
+                            <h2 style="font-size: 32px; margin: 20px 0 10px; color: white;">Train your Model?</h2>
+                            <p style="color: #c7d2fe; margin-bottom: 25px;">Optimize your neural network today.</p>
+                            <a href="notebooks.html" class="btn-primary"><i class="fa-solid fa-play"></i> Launch Notebook</a>
+                        </div>
+                        <i class="fa-solid fa-brain" style="position: absolute; right: -20px; bottom: -20px; font-size: 180px; opacity: 0.1; color: white; transform: rotate(-15deg);"></i>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; color: #a1a1aa;"><span>Certificates</span> <i class="fa-solid fa-award"></i></div>
+                        <h2 id="dash-certs" style="font-size: 36px; color: var(--accent-secondary); margin: 10px 0;">0</h2>
+                        <small>Verified Earned</small>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; color: #a1a1aa;"><span>Rank</span> <i class="fa-solid fa-trophy"></i></div>
+                        <h2 style="font-size: 36px; color: var(--accent-blue); margin: 10px 0;">--</h2>
+                        <small style="color: #10b981;">Top 10%</small>
+                    </div>
+
+                    <div class="card card-large">
+                        <h3 style="margin-top: 0;">Pipeline Progress</h3>
+                        <div style="display: flex; justify-content: space-between; margin-top: 20px; font-size: 14px;"><span style="color: #a1a1aa;">Data Science Track</span><span style="font-weight: bold;" id="dash-progress-txt">0%</span></div>
+                        <div class="progress-bar"><div class="fill" id="dash-progress-bar" style="width: 0%; background: #8b5cf6;"></div></div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 20px; font-size: 14px;"><span style="color: #a1a1aa;">Model Accuracy (XP)</span><span style="font-weight: bold;" id="dash-mastery-txt">0%</span></div>
+                        <div class="progress-bar"><div class="fill" id="dash-mastery-bar" style="width: 0%; background: #ec4899;"></div></div>
+                    </div>
+
+                    <div id="daily-mission-card" class="card">
+                        <div style="display: flex; justify-content: space-between; color: #a1a1aa; align-items: center;"><span>Daily Mission</span> <i class="fa-solid fa-calendar-day"></i></div>
+                        <h2 id="daily-task-number" style="font-size: 36px; color: #3b82f6; margin: 15px 0;">Day 1</h2>
+                        <small style="display: block; margin-bottom: 20px;">Next Assignment Pending</small>
+                        <a id="start-task-btn" href="admin-practice.html" class="btn-primary" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6; width: 100%; justify-content: center;">Start Task <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+
+                    <div class="card card-tall">
+                        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;"><span style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #22c55e;"></span> Community Feed</h3>
+                        <div id="live-feed-container" style="margin-top: 25px; overflow: hidden; height: 300px;"></div>
+                    </div>
+
+                    <div class="card" style="background: rgba(59, 130, 246, 0.1) !important; border-color: rgba(59, 130, 246, 0.3) !important;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <h4 style="margin: 0; color: #3b82f6; font-size: 14px; margin-bottom: 8px;">📢 System Update</h4>
+                                <p id="news-msg" style="font-size: 13px; color: #e0e0e0; margin: 0; line-height: 1.4;">New PyTorch modules available...</p>
+                                <small id="news-date" style="color: #888; font-size: 11px; margin-top: 8px; display: block;">--</small>
+                            </div>
+                            <i class="fa-solid fa-satellite-dish" style="color: #3b82f6; font-size: 18px;"></i>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleMobileSidebar() {
+            document.getElementById('mobile-sidebar').classList.toggle('active');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+
+        window.closeLockModal = () => { window.location.href = "login.html"; };
+
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-pwa-btn');
+        const overlay = document.getElementById('install-overlay');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Create Install Button dynamically if it doesn't exist
+            if(!document.getElementById('install-pwa-btn')) {
+                const btn = document.createElement('button');
+                btn.id = 'install-pwa-btn';
+                btn.className = 'install-btn';
+                btn.style.cssText = "width:100%; padding:10px; margin-bottom:10px; background:#1f1e26; color:white; border:1px solid #333; border-radius:8px; cursor:pointer; display: flex; align-items: center; justify-content: center; gap: 8px;";
+                btn.innerHTML = '<i class="fa-solid fa-robot"></i> Install App';
+                document.querySelector('.sidebar-footer').prepend(btn);
+                
+                btn.addEventListener('click', async () => {
+                    overlay.innerHTML = `
+                        <div class="big-spinner"></div>
+                        <div class="install-text">Please wait...</div>
+                        <div class="install-sub">Installing AI Nexus...</div>
+                    `;
+                    overlay.classList.add('active');
+
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        deferredPrompt = null;
+                    } else {
+                        setTimeout(() => { showSuccessMessage(); }, 3000);
+                    }
+                });
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            showSuccessMessage();
+        });
+
+        function showSuccessMessage() {
+            overlay.innerHTML = `
+                <div class="success-circle"><i class="fa-solid fa-check" style="color: #8b5cf6; font-size: 32px;"></i></div>
+                <div class="install-text" style="font-size: 22px; font-weight:bold;">App Install Successful!</div>
+                <div class="install-sub">Open your App</div>
+                <button onclick="document.getElementById('install-overlay').classList.remove('active')" 
+                        style="margin-top:20px; background:transparent; border:1px solid #555; color:#aaa; padding:8px 20px; border-radius:8px; cursor:pointer;">
+                    Close
+                </button>
+            `;
+            if(document.getElementById('install-pwa-btn')) document.getElementById('install-pwa-btn').style.display = 'none';
+            setTimeout(() => { overlay.classList.remove('active'); }, 5000);
+        }
+    </script>
+</body>
+</html>

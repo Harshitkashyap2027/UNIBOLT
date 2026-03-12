@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* --- VS CODE THEME VARIABLES --- */
+:root {
+    --bg-dark: #0d1117;
+    --bg-panel: #161b22;
+    --border: #30363d;
+    --text-main: #c9d1d9;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --file-active: #21262d;
+}
+
+body {
+    margin: 0; padding: 0;
+    background: var(--bg-dark); color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    height: 100vh; display: flex; flex-direction: column;
+    overflow: hidden;
+}
+
+/* --- HEADER --- */
+.project-header {
+    background: var(--bg-panel); border-bottom: 1px solid var(--border);
+    padding: 0 20px; height: 50px; display: flex; justify-content: space-between; align-items: center;
+}
+.brand-area { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; }
+.brand-area i { color: #f78166; }
+
+.btn-download {
+    background: #238636; color: white; border: none; padding: 6px 12px;
+    border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+}
+.btn-download:hover { background: #2ea043; }
+
+/* --- WORKSPACE --- */
+.workspace { display: flex; flex: 1; overflow: hidden; position: relative; }
+
+/* Sidebar */
+.sidebar {
+    width: 240px; background: var(--bg-dark); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+}
+.sidebar-title { 
+    padding: 10px 20px; font-size: 11px; font-weight: bold; 
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+}
+.file-list { flex: 1; }
+.file-item {
+    padding: 6px 20px; cursor: pointer; font-size: 13px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 8px; border-left: 2px solid transparent;
+}
+.file-item:hover { background: rgba(255,255,255,0.04); color: var(--text-main); }
+.file-item.active { background: var(--file-active); color: var(--text-main); border-left-color: #f78166; }
+
+/* Editor */
+.editor { flex: 1; display: flex; flex-direction: column; background: #0d1117; }
+.tab-bar { background: var(--bg-dark); height: 35px; border-bottom: 1px solid var(--border); display: flex; }
+.tab {
+    padding: 0 15px; background: var(--file-active); border-right: 1px solid var(--border);
+    border-top: 1px solid #f78166; color: var(--text-main); font-size: 12px;
+    display: flex; align-items: center; gap: 8px;
+}
+.code-view { flex: 1; overflow: auto; padding: 0; margin: 0; }
+
+/* --- UTILS & OVERRIDES --- */
+pre { margin: 0; min-height: 100%; }
+code.hljs { 
+    font-family: 'JetBrains Mono', monospace !important; 
+    font-size: 13px; line-height: 1.5; 
+    background: transparent !important; padding: 20px !important; 
+}
+.hidden { display: none !important; }
+
+/* --- SECURITY ELEMENTS (Dark Theme Overrides) --- */
+.watermark {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 80px; font-weight: 900;
+    color: rgba(255, 255, 255, 0.03) !important;
+    white-space: nowrap; pointer-events: none; z-index: 999;
+}
+
+.security-footer {
+    position: fixed; bottom: 0; left: 0; width: 100%;
+    background: var(--bg-panel) !important;
+    border-top: 1px solid var(--border) !important;
+    padding: 5px 20px; font-size: 10px; font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted) !important;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 1000; box-sizing: border-box; height: 30px;
+}
+
+/* QR Modal */
+.qr-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); z-index: 2000;
+    display: flex; justify-content: center; align-items: center;
+}
+.qr-content {
+    background: white; padding: 20px; border-radius: 12px; text-align: center; color: #000;
+}

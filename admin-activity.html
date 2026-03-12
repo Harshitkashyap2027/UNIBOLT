@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UniBolt - Advanced Security Vault</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600&display=swap');
+        
+        :root { 
+            --primary: #ef4444; 
+            --accent: #10b981;
+            --bg: #020617; 
+            --surface: #0f172a; 
+            --border: #1e293b; 
+            --text: #f8fafc; 
+        }
+
+        body { 
+            background: var(--bg); 
+            font-family: 'Outfit', sans-serif; 
+            color: var(--text); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* Stealth Protection Overlay */
+        #auth-lock {
+            position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .lock-box { background: var(--surface); padding: 30px; border-radius: 16px; border: 1px solid var(--border); text-align: center; width: 320px; }
+        .lock-box input { width: 100%; background: #000; border: 1px solid var(--border); color: var(--accent); padding: 12px; border-radius: 8px; text-align: center; font-family: 'JetBrains Mono'; letter-spacing: 4px; margin: 15px 0; outline: none; }
+
+        /* Sidebar */
+        .sidebar { width: 280px; background: #000; border-right: 1px solid var(--border); padding: 25px; display: flex; flex-direction: column; }
+        .nav-item { padding: 14px; color: #64748b; cursor: pointer; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; transition: 0.3s; text-decoration: none; font-weight: 500; }
+        .nav-item:hover, .nav-item.active { background: var(--surface); color: white; }
+        .nav-item.active { border-right: 4px solid var(--primary); background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.1)); }
+
+        /* Main Content Area */
+        .main { flex: 1; padding: 30px; overflow-y: auto; position: relative; }
+        
+        /* Advanced Filter Panel */
+        .advanced-filters { 
+            background: var(--surface); padding: 20px; border-radius: 16px; border: 1px solid var(--border);
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 25px;
+        }
+        .filter-cell label { display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase; }
+        .filter-cell select, .filter-cell input { width: 100%; background: #020617; border: 1px solid var(--border); color: white; padding: 10px; border-radius: 8px; }
+
+        /* Log Table */
+        .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #0f172a; padding: 15px; text-align: left; color: #64748b; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+        
+        /* Badges */
+        .role-badge { padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: bold; }
+        .admin-tag { background: rgba(239, 68, 68, 0.1); color: var(--primary); border: 1px solid var(--primary); }
+        .student-tag { background: rgba(16, 185, 129, 0.1); color: var(--accent); border: 1px solid var(--accent); }
+        
+        /* Action Code colors */
+        .type-login { color: #10b981; }
+        .type-logout { color: #f59e0b; }
+        .type-delete { color: #ef4444; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-lock">
+        <div class="lock-box">
+            <i class="fa-solid fa-shield-halved" style="font-size: 40px; color: var(--primary);"></i>
+            <h3>Security Clearance</h3>
+            <p style="color: #64748b; font-size: 12px;">Enter Master Admin Key</p>
+            <input type="password" id="master-key" placeholder="••••••" maxlength="6">
+            <button onclick="unlockVault()" style="width: 100%; padding: 12px; background: var(--primary); border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer;">Verify Identity</button>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <h2 style="font-size: 22px; margin-bottom: 40px;"><i class="fa-solid fa-bolt" style="color: var(--primary);"></i> Vault_OS</h2>
+        <a href="admin-activity.html" class="nav-item active"><i class="fa-solid fa-satellite-dish"></i> Real-time Feed</a>
+        <a href="admin-watch.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Admin Watch</a>
+        <a href="student-watch.html" class="nav-item"><i class="fa-solid fa-user-graduate"></i> Student Watch</a>
+        <a href="system-health.html" class="nav-item"><i class="fa-solid fa-microchip"></i> System Health</a>
+        
+        <div style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 20px;">
+            <button onclick="terminateSession()" class="nav-item" style="width: 100%; background: none; border: none; color: #ef4444;">
+                <i class="fa-solid fa-power-off"></i> Terminate Session
+            </button>
+        </div>
+    </div>
+
+    <div class="main">
+        <header style="margin-bottom: 30px;">
+            <h1 style="margin: 0; font-size: 24px;">Activity Audit Console</h1>
+            <p style="color: #64748b; margin-top: 5px;">End-to-end monitoring of all system mutations and access logs.</p>
+        </header>
+
+        <div class="advanced-filters">
+            <div class="filter-cell">
+                <label>Keyword Search</label>
+                <input type="text" id="f-search" placeholder="Search logs..." onkeyup="filterVault()">
+            </div>
+            <div class="filter-cell">
+                <label>Category</label>
+                <select id="f-type" onchange="filterVault()">
+                    <option value="all">All Events</option>
+                    <option value="LOGIN">Logins</option>
+                    <option value="LOGOUT">Logouts</option>
+                    <option value="UPDATE">Updates</option>
+                    <option value="DELETE">Deletions</option>
+                </select>
+            </div>
+            <div class="filter-cell">
+                <label>Source Role</label>
+                <select id="f-role" onchange="filterVault()">
+                    <option value="all">All Roles</option>
+                    <option value="Admin">Master Admins</option>
+                    <option value="Student">Enrolled Students</option>
+                </select>
+            </div>
+            <div class="filter-cell">
+                <label>Specific Date</label>
+                <input type="date" id="f-date" onchange="filterVault()">
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time (Server)</th>
+                        <th>User Identity</th>
+                        <th>Action Log</th>
+                        <th>Device Fingerprint</th>
+                        <th>Geo-Location</th>
+                    </tr>
+                </thead>
+                <tbody id="vault-feed">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        // ADDED: Extra imports needed for security check (getAuth, doc, getDoc, signOut, onAuthStateChanged)
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.firebasestorage.app",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3",
+            measurementId: "G-21W55ET9E6"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        let currentLogs = [];
+
+        // --- 🔒 LAYER 1: ADVANCED SECURITY GUARD ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user && user.email === "admin@unibolt.in") {
+                // ✅ AUTH VERIFIED: 
+                // Now allow them to see the Secondary Lock Screen (#auth-lock)
+                // No extra action needed, the HTML handles the lock screen.
+            } else {
+                // ⛔ INTRUDER DETECTED (Not logged in or wrong email)
+                
+                // 1. Fetch IP Data (Silent)
+                let ip = "TRACING...";
+                let location = "Unknown";
+                let provider = "Unknown Network";
+                let sessionID = "BREACH-" + Math.floor(Math.random() * 99999);
+
+                try {
+                    const r = await fetch('https://ipapi.co/json/');
+                    const d = await r.json();
+                    ip = d.ip || "Unknown IP";
+                    location = (d.city ? d.city + ", " : "") + (d.country_name || "");
+                    provider = d.org || "Hidden ISP";
+                } catch(e) {
+                    try { const r2 = await fetch('https://api.ipify.org?format=json'); const d2 = await r2.json(); ip = d2.ip; } catch(err){}
+                }
+
+                // 2. Check if Permanently Blocked
+                try {
+                    const blockSnap = await getDoc(doc(db, "blocked_ips", ip));
+                    if (blockSnap.exists()) { window.location.href = "security.html"; return; }
+                } catch(e) {}
+
+                // 3. Log Incident
+                try {
+                    await addDoc(collection(db, "security_logs"), {
+                        ip: ip,
+                        location: location,
+                        provider: provider,
+                        page: window.location.pathname,
+                        userAgent: navigator.userAgent,
+                        timestamp: serverTimestamp(),
+                        status: "BLOCKED",
+                        session_id: sessionID
+                    });
+                } catch(e) {}
+
+                // 4. Show Warning Popup & Overwrite Screen
+                document.body.innerHTML = `
+                    <style>
+                        body { margin: 0; background: #050505; font-family: 'Courier New', monospace; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
+                        .hack-box {
+                            background: #000; border: 2px solid #ef4444; padding: 40px; width: 90%; max-width: 600px;
+                            border-radius: 4px; text-align: left; box-shadow: 0 0 50px rgba(239, 68, 68, 0.4), inset 0 0 20px rgba(239, 68, 68, 0.2);
+                            position: relative; animation: glitch 0.2s infinite; z-index:9999;
+                        }
+                        .hack-box::before { content: "SYSTEM BREACH DETECTED"; position: absolute; top: -12px; left: 20px; background: #000; color: #ef4444; padding: 0 10px; font-weight: bold; border: 1px solid #ef4444; }
+                        h1 { color: #ef4444; font-size: 32px; margin: 0 0 20px 0; text-transform: uppercase; font-weight: 900; letter-spacing: 2px; }
+                        p { color: #fff; font-size: 14px; margin-bottom: 10px; line-height: 1.6; }
+                        .data-terminal { background: #111; border: 1px solid #333; padding: 15px; margin-top: 20px; font-size: 12px; color: #0f0; }
+                        .blink { animation: blink 1s infinite; }
+                        @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 100% { transform: translate(0); } }
+                        @keyframes blink { 50% { opacity: 0; } }
+                    </style>
+                    <div class="hack-box">
+                        <h1>⚠️ ACCESS DENIED ⚠️</h1>
+                        <p>You have attempted to access a restricted administrative terminal.</p>
+                        <div class="data-terminal">
+                            > TRACE ID: <span style="color:#fff">${sessionID}</span><br>
+                            > TARGET IP: <span style="color:#fff">${ip}</span> <span style="color:#ef4444">[LOCKED]</span><br>
+                            > LOCATION: <span style="color:#fff">${location}</span><br>
+                            > PROVIDER: <span style="color:#fff">${provider}</span><br>
+                            > UPLOADING LOGS TO SERVER... <span style="color:#ef4444">100%</span><span class="blink">_</span>
+                        </div>
+                    </div>
+                `;
+
+                setTimeout(() => { window.location.href = "mail-login.html"; }, 7000);
+            }
+        });
+
+        // --- 🔒 LAYER 2: VAULT UNLOCK SYSTEM (Existing) ---
+        window.unlockVault = function() {
+            const key = document.getElementById('master-key').value;
+            if(key === "778899") { // SET YOUR SECRET KEY HERE
+                document.getElementById('auth-lock').style.display = 'none';
+                initRealtimeMonitoring();
+                logSecurityEvent("LOGIN", "Admin", "MasterAdmin", "Vault Console accessed successfully");
+            } else {
+                alert("ACCESS DENIED: Unauthorized Identity Detected.");
+            }
+        };
+
+        // 2. REAL-TIME DATA STREAM
+        function initRealtimeMonitoring() {
+            const q = query(collection(db, "audit_logs"), orderBy("timestamp", "desc"));
+            onSnapshot(q, (snap) => {
+                currentLogs = snap.docs.map(doc => doc.data());
+                renderVault(currentLogs);
+            });
+        }
+
+        // 3. RENDER LOGS
+        function renderVault(data) {
+            const feed = document.getElementById('vault-feed');
+            feed.innerHTML = data.map(log => `
+                <tr>
+                    <td style="font-family: 'JetBrains Mono'; color: #64748b;">${log.timestamp?.toDate().toLocaleTimeString()}</td>
+                    <td>
+                        <strong>${log.userName}</strong><br>
+                        <span class="role-badge ${log.role === 'Admin' ? 'admin-tag' : 'student-tag'}">${log.role}</span>
+                    </td>
+                    <td>
+                        <span class="type-${log.type.toLowerCase()}">${log.type}</span><br>
+                        <small style="color: #94a3b8;">${log.message}</small>
+                    </td>
+                    <td>
+                        <span style="color: #10b981;">${log.ip}</span><br>
+                        <small style="color: #64748b;">${log.userAgent || 'Unknown Browser'}</small>
+                    </td>
+                    <td><i class="fa-solid fa-map-location-dot"></i> ${log.location}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 4. SECURITY LOGGING ENGINE (Use this across your whole site)
+        async function logSecurityEvent(type, role, user, msg) {
+            const geo = await fetch('https://ipapi.co/json/').then(r => r.json());
+            await addDoc(collection(db, "audit_logs"), {
+                type, role, userName: user, message: msg,
+                ip: geo.ip, location: `${geo.city}, ${geo.region}`,
+                userAgent: navigator.userAgent.split(') ')[0] + ')', // Captured browser info
+                timestamp: serverTimestamp()
+            });
+        }
+
+        // 5. TERMINATE SESSION
+        window.terminateSession = async function() {
+            await logSecurityEvent("LOGOUT", "Admin", "MasterAdmin", "Vault session closed manually");
+            location.reload();
+        };
+
+        // 6. FILTER LOGIC
+        window.filterVault = function() {
+            const search = document.getElementById('f-search').value.toLowerCase();
+            const type = document.getElementById('f-type').value;
+            const role = document.getElementById('f-role').value;
+            const date = document.getElementById('f-date').value;
+
+            const filtered = currentLogs.filter(l => {
+                const matchesSearch = l.userName.toLowerCase().includes(search) || l.message.toLowerCase().includes(search);
+                const matchesType = type === 'all' || l.type === type;
+                const matchesRole = role === 'all' || l.role === role;
+                let matchesDate = true;
+                if(date) matchesDate = l.timestamp?.toDate().toISOString().split('T')[0] === date;
+
+                return matchesSearch && matchesType && matchesRole && matchesDate;
+            });
+            renderVault(filtered);
+        }
+    </script>
+</body>
+</html>

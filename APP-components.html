@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UniBolt - Component Hub</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- HUB STYLES --- */
+        .search-bar {
+            background: #18181b; border: 1px solid #333; padding: 15px 20px;
+            border-radius: 12px; display: flex; align-items: center; gap: 15px;
+            margin-bottom: 30px;
+        }
+        .search-input {
+            background: transparent; border: none; color: white;
+            font-size: 16px; flex: 1; outline: none;
+        }
+        
+        .component-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .comp-card {
+            background: #111; border: 1px solid #333; border-radius: 16px;
+            padding: 0; transition: transform 0.2s, border-color 0.2s;
+            position: relative; overflow: hidden; display: flex; flex-direction: column;
+        }
+        .comp-card:hover { transform: translateY(-5px); border-color: #0ea5e9; }
+
+        /* Preview Area */
+        .preview-box {
+            height: 140px; background: #1a1a1a; display: flex; align-items: center; justify-content: center;
+            border-bottom: 1px solid #222; position: relative;
+        }
+        
+        .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+
+        .tag {
+            padding: 4px 10px; border-radius: 20px; font-size: 10px;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block;
+        }
+        .tag-ui { background: rgba(14, 165, 233, 0.15); color: #0ea5e9; } 
+        .tag-anim { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+        .tag-logic { background: rgba(34, 197, 94, 0.15); color: #22c55e; } 
+
+        .meta-row {
+            display: flex; justify-content: space-between; align-items: center;
+            color: #666; font-size: 12px; margin-top: auto; padding-top: 15px; border-top: 1px solid #222;
+        }
+
+        .btn-get {
+            background: #222; border: 1px solid #444; color: white;
+            padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: 0.2s;
+        }
+        .btn-get:hover { background: #0ea5e9; border-color: #0ea5e9; }
+
+        .tech-icon { position: absolute; top: 10px; right: 10px; font-size: 18px; color: #444; }
+
+        /* --- CODE VIEWER MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+            z-index: 1000; display: none; justify-content: center; align-items: center;
+        }
+        .modal-active { display: flex; animation: fadeIn 0.2s ease-out; }
+
+        .code-modal {
+            background: #1e1e1e; width: 600px; max-width: 90%; border-radius: 12px;
+            border: 1px solid #333; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal-header {
+            padding: 15px 20px; background: #252526; border-bottom: 1px solid #333;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-body { padding: 0; max-height: 400px; overflow-y: auto; background: #1e1e1e; }
+        
+        .code-block {
+            margin: 0; padding: 20px; color: #d4d4d4; font-family: 'Fira Code', monospace; font-size: 13px;
+            line-height: 1.5; white-space: pre-wrap;
+        }
+
+        .modal-footer {
+            padding: 15px 20px; border-top: 1px solid #333; background: #252526;
+            display: flex; justify-content: flex-end; gap: 10px;
+        }
+
+        /* Toast Popup */
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #0ea5e9; color: white; padding: 10px 25px; border-radius: 30px;
+            font-size: 14px; font-weight: 600; box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+            opacity: 0; pointer-events: none; transition: 0.3s; z-index: 2000;
+        }
+        .toast.show { opacity: 1; bottom: 50px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div id="code-modal-overlay" class="modal-overlay">
+        <div class="code-modal">
+            <div class="modal-header">
+                <strong style="color: white; font-size: 16px;" id="modal-title">Source Code</strong>
+                <i class="fa-solid fa-xmark" onclick="closeModal()" style="color: #888; cursor: pointer; font-size: 18px;"></i>
+            </div>
+            <div class="modal-body">
+                <pre class="code-block" id="modal-code">// Loading...</pre>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal()" style="background: transparent; border: 1px solid #555; color: #aaa; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+                <button onclick="copyToClipboard()" style="background: #0ea5e9; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-copy"></i> Copy Code
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-toast" class="toast">Code Copied! 🚀</div>
+
+    <div class="app-container">
+        <aside class="sidebar" id="mobile-sidebar">
+            <div class="brand"><i class="fa-solid fa-layer-group" style="color: #0ea5e9;"></i> UniBolt.</div>
+            <ul class="nav-menu" style="flex: 1; overflow-y: auto;">
+                <a href="app-dashboard.html" class="nav-item"><i class="fa-solid fa-mobile-screen"></i> Dashboard</a>
+                <a href="studio.html" class="nav-item"><i class="fa-solid fa-laptop-code"></i> App Studio</a>
+                <a href="components.html" class="nav-item active"><i class="fa-solid fa-cubes"></i> Components</a>
+                <a href="leaderboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+                <a href="gallery.html" class="nav-item"><i class="fa-brands fa-google-play"></i> App Store</a>
+                <a href="contact.html" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-body">
+                
+                <header style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+                    <div>
+                        <h1 style="font-size: 28px; margin: 0;">Component Hub</h1>
+                        <p style="color: #a1a1aa; margin-top: 5px;">Pre-built widgets to speed up your development.</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 32px; font-weight: bold; color: white;" id="total-count">0</span>
+                        <div style="font-size: 12px; color: #666; text-transform: uppercase;">Ready Widgets</div>
+                    </div>
+                </header>
+
+                <div class="search-bar">
+                    <i class="fa-solid fa-search" style="color: #666;"></i>
+                    <input type="text" id="search-input" class="search-input" placeholder="Search components (e.g., 'Navbar', 'Auth', 'Animation')...">
+                    
+                    <select id="filter-select" style="background: #222; color: #ccc; border: none; padding: 8px 12px; border-radius: 6px; outline: none; cursor: pointer;">
+                        <option value="all">All Categories</option>
+                        <option value="UI">UI Elements</option>
+                        <option value="Animation">Animations</option>
+                        <option value="Logic">Logic & State</option>
+                    </select>
+                </div>
+
+                <div id="component-grid" class="component-grid">
+                    </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/components.js"></script>
+</body>
+</html>

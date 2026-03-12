@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <title>Workshop: React Native Performance - UniBolt</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        body {
+            background: #0f0f0f; 
+            color: #e0e0e0; 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden;
+        }
+
+        /* --- LEFT: VIDEO STAGE --- */
+        .main-stage {
+            flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative;
+        }
+
+        /* NEW: Header with Back Button */
+        .video-header {
+            padding: 15px 25px;
+            border-bottom: 1px solid #222;
+            display: flex; justify-content: space-between; align-items: center;
+            background: #0f0f0f;
+            z-index: 50;
+        }
+
+        .btn-back {
+            color: #888; text-decoration: none; font-size: 13px; font-weight: 600;
+            display: flex; align-items: center; gap: 8px; transition: 0.2s;
+        }
+        .btn-back:hover { color: white; }
+        
+        .video-meta { 
+            font-family: 'JetBrains Mono'; font-size: 11px; color: #444; 
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .video-container {
+            width: 100%; aspect-ratio: 16/9; background: black;
+            position: relative; border-bottom: 1px solid #333;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+        }
+
+        /* Local Video Player */
+        video {
+            width: 100%; height: 100%; object-fit: contain;
+        }
+
+        /* --- BRANDING OVERLAYS --- */
+        .branding-tag {
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            padding: 8px 16px; border-radius: 6px;
+            border-left: 3px solid #0ea5e9;
+            display: flex; align-items: center; gap: 10px;
+            pointer-events: none; z-index: 20;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .branding-tag i { color: #0ea5e9; font-size: 16px; }
+        .branding-tag span { 
+            font-size: 13px; font-weight: 700; color: white; letter-spacing: 0.5px; 
+        }
+
+        /* Intro Overlay */
+        .video-intro {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex; flex-direction: column; 
+            align-items: center; justify-content: center;
+            z-index: 15; transition: opacity 0.5s;
+        }
+        .intro-logo { font-size: 60px; color: #0ea5e9; margin-bottom: 20px; }
+        .intro-text { font-size: 28px; font-weight: bold; letter-spacing: -1px; }
+        .intro-sub { color: #aaa; margin-top: 10px; font-size: 14px; font-family: 'JetBrains Mono'; }
+        
+        .play-btn-large {
+            margin-top: 40px; width: 90px; height: 90px;
+            background: #0ea5e9; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 0 40px rgba(14, 165, 233, 0.3);
+            transition: transform 0.2s, background 0.2s;
+        }
+        .play-btn-large:hover { transform: scale(1.05); background: #38bdf8; }
+        .play-btn-large i { color: white; font-size: 36px; margin-left: 6px; }
+
+        /* Content Info */
+        .content-info { padding: 40px; max-width: 900px; margin: 0 auto; }
+        .tag { background: #22c55e; color: black; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        h1 { margin: 10px 0; font-size: 24px; }
+        p { color: #aaa; line-height: 1.6; font-size: 14px; }
+
+        .download-box {
+            margin-top: 30px; padding: 20px;
+            background: #18181b; border: 1px solid #333; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* --- RIGHT: SIDEBAR --- */
+        .sidebar {
+            width: 350px; background: #18181b; border-left: 1px solid #333;
+            display: flex; flex-direction: column;
+        }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid #333; font-weight: bold; font-size: 14px; color: #fff; }
+        .chapter-list { flex: 1; overflow-y: auto; }
+        
+        .chapter {
+            padding: 15px 20px; border-bottom: 1px solid #27272a; cursor: pointer;
+            display: flex; gap: 15px; align-items: start; transition: 0.2s;
+        }
+        .chapter:hover { background: #222; }
+        .chapter.active { background: #1e293b; border-left: 3px solid #0ea5e9; }
+        
+        .timestamp { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #0ea5e9; margin-top: 2px; width: 45px; }
+        .chapter-title { font-size: 13px; font-weight: 600; color: #e0e0e0; margin-bottom: 4px; }
+        .chapter-desc { font-size: 11px; color: #71717a; }
+
+        /* Security Overrides */
+        .watermark { opacity: 0.02; color: white !important; font-size: 60px !important; }
+        .security-footer { background: #0f0f0f !important; border-top: 1px solid #333 !important; color: #555 !important; }
+    </style>
+</head>
+<body>
+
+    <div class="main-stage">
+        
+        <div class="video-header">
+            
+            <div class="video-meta">
+                <span>SECURE ID: 9942-XJ</span>
+            </div>
+        </div>
+        
+        <div class="video-container">
+            
+            <div class="branding-tag">
+                <i class="fa-solid fa-bolt"></i>
+                <span>Hosted by UniBolt</span>
+            </div>
+
+            <div class="video-intro" id="videoIntro">
+                <i class="fa-solid fa-bolt intro-logo"></i>
+                <div class="intro-text">React Native Performance</div>
+                <div class="intro-sub">Internal Workshop • 1h 03m 15s</div>
+                <div class="play-btn-large" onclick="startVideo()">
+                    <i class="fa-solid fa-play"></i>
+                </div>
+            </div>
+
+            <video id="local-player" controls controlsList="nodownload">
+                <source src="resources/videos/rn-workshop.mp4" type="video/mp4">
+                Your browser does not support HTML5 video.
+            </video>
+        </div>
+
+        <div class="content-info">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span class="tag">Internal Workshop</span>
+                <span style="font-size:12px; color:#666;">Recorded: Dec 2025</span>
+            </div>
+            
+            <h1>React Native Performance Optimization</h1>
+            <p>
+                In this deep-dive workshop, we explore the critical rendering cycles of React Native. 
+                Learn how to identify performance bottlenecks, optimize list rendering with FlashList, and leverage the Hermes Engine for faster startup times.
+            </p>
+
+            <div class="download-box">
+                <div>
+                    <div style="font-weight:bold; color:white;">Workshop Assets</div>
+                    <div style="font-size:12px; color:#888;">Slides (PDF) + Source Code</div>
+                </div>
+                <button onclick="downloadAssets()" style="background:#333; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:600;">
+                    <i class="fa-solid fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">Course Content (1h 03m)</div>
+        <div class="chapter-list">
+            
+            <div class="chapter active" onclick="seekLocalVideo(0)">
+                <div class="timestamp">00:00</div>
+                <div>
+                    <div class="chapter-title">Introduction</div>
+                    <div class="chapter-desc">Why performance matters in 2025.</div>
+                </div>
+            </div>
+
+            <div class="chapter" onclick="seekLocalVideo(165)">
+                <div class="timestamp">02:45</div>
+                <div>
+                    <div class="chapter-title">The New Architecture</div>
+                    <div class="chapter-desc">Understanding Fabric & TurboModules.</div>
+                </div>
+            </div>
+
+            <div class="chapter" onclick="seekLocalVideo(295)">
+                <div class="timestamp">04:55</div>
+                <div>
+                    <div class="chapter-title">5 Key Performance Metrics</div>
+                    <div class="chapter-desc">What you should actually measure.</div>
+                </div>
+            </div>
+
+            <div class="chapter" onclick="seekLocalVideo(617)">
+                <div class="timestamp">10:17</div>
+                <div>
+                    <div class="chapter-title">Real-world Case Study</div>
+                    <div class="chapter-desc">Optimizing a production app.</div>
+                </div>
+            </div>
+
+            <div class="chapter" onclick="seekLocalVideo(860)">
+                <div class="timestamp">14:20</div>
+                <div>
+                    <div class="chapter-title">Enabling Hermes Engine</div>
+                    <div class="chapter-desc">Bytecode pre-compilation setup.</div>
+                </div>
+            </div>
+
+            <div class="chapter" onclick="seekLocalVideo(1365)">
+                <div class="timestamp">22:45</div>
+                <div>
+                    <div class="chapter-title">FlashList vs FlatList</div>
+                    <div class="chapter-desc">Rendering 10k items without lag.</div>
+                </div>
+            </div>
+
+            <div class="chapter" onclick="seekLocalVideo(1475)">
+                <div class="timestamp">24:35</div>
+                <div>
+                    <div class="chapter-title">Performance Audit</div>
+                    <div class="chapter-desc">Using Flipper and Profiler tools.</div>
+                </div>
+            </div>
+
+             <div class="chapter" onclick="seekLocalVideo(1954)">
+                <div class="timestamp">32:34</div>
+                <div>
+                    <div class="chapter-title">Q&A Session</div>
+                    <div class="chapter-desc">Answering developer questions.</div>
+                </div>
+            </div>
+
+             <div class="chapter" onclick="seekLocalVideo(2110)">
+                <div class="timestamp">35:10</div>
+                <div>
+                    <div class="chapter-title">Reanimated 3 Basics</div>
+                    <div class="chapter-desc">Running animations on the UI thread.</div>
+                </div>
+            </div>
+
+            <div class="chapter" onclick="seekLocalVideo(2520)">
+                <div class="timestamp">42:00</div>
+                <div>
+                    <div class="chapter-title">Closing Remarks</div>
+                    <div class="chapter-desc">Next steps and resources.</div>
+                </div>
+            </div>
+
+        </div>
+    </aside>
+
+    <script src="js/resources-video.js"></script>
+
+    <script>
+        const video = document.getElementById('local-player');
+        const intro = document.getElementById('videoIntro');
+
+        function startVideo() {
+            // Fade out intro
+            intro.style.opacity = '0';
+            setTimeout(() => {
+                intro.style.display = 'none';
+            }, 500);
+            
+            // Start Video
+            video.play();
+        }
+
+        function seekLocalVideo(seconds) {
+            // Remove Intro if visible
+            if(intro.style.display !== 'none') {
+                startVideo();
+            }
+
+            // Update Active Class
+            document.querySelectorAll('.chapter').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            // Seek
+            video.currentTime = seconds;
+            video.play();
+        }
+    </script>
+
+</body>
+</html>

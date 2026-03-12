@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple QR Generator</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; }
+        input { padding: 10px; width: 250px; margin-bottom: 20px; }
+        #qrcode-container { margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <h2>Website to QR Code</h2>
+    <input type="text" id="urlInput" placeholder="https://unibolt.in/register">
+    <br>
+    <button onclick="generateQR()">Generate QR Code</button>
+
+    <div id="qrcode-container">
+        <img id="qrImage" src="" style="display:none;">
+    </div>
+
+    <script>
+        function generateQR() {
+            const url = document.getElementById('urlInput').value;
+            const qrImage = document.getElementById('qrImage');
+            
+            if (url) {
+                // Encodes the URL and attaches it to the API link
+                qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+                qrImage.style.display = 'inline-block';
+            } else {
+                alert("Please enter a URL first!");
+            }
+        }
+    </script>
+
+</body>
+</html>

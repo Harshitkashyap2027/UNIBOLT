@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Roadmap - UniBolt</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="home.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <style>
+        .hero {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 50vh;
+        }
+
+        .mechanics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+            text-align: center;
+        }
+        .mech-card {
+            background: #111;
+            padding: 30px;
+            border-radius: 15px;
+            border-top: 3px solid #333;
+            transition: 0.3s;
+        }
+        .mech-card:hover { border-top: 3px solid #8b5cf6; transform: translateY(-5px); }
+        .mech-card i { font-size: 2rem; color: #8b5cf6; margin-bottom: 15px; }
+        
+        .protip-box {
+            background: rgba(0, 255, 136, 0.05);
+            border-left: 4px solid #00ff88;
+            padding: 20px;
+            margin: 40px auto;
+            max-width: 800px;
+            color: #ddd;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">UniBolt<span class="dot">.</span></div>
+        <ul class="nav-links">
+            <li><a href="how-it-works.html">How It Works</a></li>
+            <li><a href="why-unibolt.html">Why UniBolt</a></li>
+            <li><a href="about.html">About Us</a></li>
+            <li><a href="verify-certificate.html">Verify Certificate</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+        </ul>
+        <div class="nav-buttons">
+            <a href="/login" class="btn-glow">Student Login</a>
+            <a href="program.html" class="btn-glow">Register Now</a>
+        </div>
+        <div class="menu-btn"><i class="fa-solid fa-bars"></i></div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content" data-aos="fade-up">
+            <h1>The <span class="gradient-text">Algorithm</span> for Success</h1>
+            <p>I designed a 4-step protocol to take you from absolute beginner to job-ready developer.</p>
+        </div>
+    </header>
+
+    <section class="section">
+        <div class="timeline">
+            <div class="step" data-aos="fade-right">
+                <div class="step-icon"><i class="fa-solid fa-id-card"></i></div>
+                <div class="step-content">
+                    <h3>1. Enlistment & Calibration</h3>
+                    <p>Register on the portal and select your specialization (Web Stack or AI). Your dashboard initializes a personal roadmap. We assess your current skill level to tailor the difficulty of initial tasks.</p>
+                </div>
+            </div>
+
+            <div class="step" data-aos="fade-left">
+                <div class="step-icon"><i class="fa-solid fa-fire"></i></div>
+                <div class="step-content">
+                    <h3>2. The Daily Grind</h3>
+                    <p>A new task unlocks daily at 09:00 AM. 
+                    <br>• <strong>Brief:</strong> Read the documentation.
+                    <br>• <strong>Build:</strong> Write code in our online IDE.
+                    <br>• <strong>Submit:</strong> Push to GitHub.
+                    <br>Consistency builds your "Streak Multiplier" which boosts your XP.</p>
+                </div>
+            </div>
+
+            <div class="step" data-aos="fade-right">
+                <div class="step-icon"><i class="fa-solid fa-trophy"></i></div>
+                <div class="step-content">
+                    <h3>3. Leaderboard Dominance</h3>
+                    <p>Earn XP for clean code and fast submissions. Compete on the leaderboard against students from other universities like IITs and NITs. Top 10 rankers of the week get premium badges.</p>
+                </div>
+            </div>
+
+            <div class="step" data-aos="fade-left">
+                <div class="step-icon"><i class="fa-solid fa-certificate"></i></div>
+                <div class="step-content">
+                    <h3>4. Graduation & Verification</h3>
+                    <p>Complete 80% of tasks to mint your verifiable certificate. This certificate contains a QR code that employers can scan to see your exact project history and code quality scores.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="protip-box" data-aos="zoom-in">
+            <i class="fa-solid fa-lightbulb" style="font-size: 1.5rem; color: #00ff88;"></i>
+            <div>
+                <strong>Pro Tip:</strong> Don't just copy code. The system has an AI plagiarism detector. If you copy code from ChatGPT without understanding, you will get 0 XP for that day.
+            </div>
+        </div>
+
+        <h2 style="text-align: center; margin-top: 80px; color: white;">Gamification Mechanics</h2>
+        <div class="mechanics-grid" data-aos="fade-up">
+            <div class="mech-card">
+                <i class="fa-solid fa-bolt"></i>
+                <h4>XP System</h4>
+                <p>Earn 100 XP per task. Bonus XP for "Bug-Free" first attempts.</p>
+            </div>
+            <div class="mech-card">
+                <i class="fa-solid fa-fire-flame-curved"></i>
+                <h4>Streak Freeze</h4>
+                <p>Miss a day? Use a "Streak Freeze" item so you don't lose your progress.</p>
+            </div>
+            <div class="mech-card">
+                <i class="fa-solid fa-crown"></i>
+                <h4>Leagues</h4>
+                <p>Promote from Bronze to Diamond League based on weekly performance.</p>
+            </div>
+             <div class="mech-card">
+                <i class="fa-solid fa-gem"></i>
+                <h4>Gems Store</h4>
+                <p>Earn gems to unlock dark mode themes and profile avatars.</p>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 60px;">
+            <a href="program.html" class="btn-primary">Initiate Protocol <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-grid">
+            <div class="brand">
+                <h2>UniBolt.</h2>
+                <p>Building the next generation of tech leaders.</p>
+            </div>
+            <div class="links">
+                <h4>Platform</h4>
+                <a href="program.html">Programs</a>
+                <a href="/login">Student Login</a>
+                <a href="verify-certificate.html">Verify Certificate</a>
+            </div>
+            <div class="links">
+                <h4>Legal</h4>
+                <a href="faq.html">FAQ</a>
+                <a href="about.html">About Us</a>
+                <a href="privacy-policy.html">Privacy Policy</a>
+                <a href="term-of-use.html">Terms of Use</a>
+            </div>
+        </div>
+        <div class="copy">&copy; 2026 UniBolt Inc. Made with ❤️ in India.</div>
+    </footer>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script type="module" src="home.js"></script>
+</body>
+</html>

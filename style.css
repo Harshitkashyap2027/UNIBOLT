@@ -1,0 +1,297 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap');
+
+/* --- 1. RESET & BASICS --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Outfit', sans-serif;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #09090b; /* Deep professional dark theme */
+    overflow: hidden;
+    position: relative;
+}
+
+/* --- 2. BACKGROUND ANIMATIONS --- */
+.circle {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.5;
+    z-index: 0;
+    animation: float 10s infinite ease-in-out alternate;
+}
+
+.circle-1 {
+    width: 500px; height: 500px;
+    background: #6d28d9; /* Deep Purple */
+    top: -10%; left: -10%;
+}
+
+.circle-2 {
+    width: 400px; height: 400px;
+    background: #0ea5e9; /* Sky Blue */
+    bottom: -10%; right: -5%;
+    animation-delay: -2s;
+}
+
+.circle-3 {
+    width: 300px; height: 300px;
+    background: #ec4899; /* Pink */
+    bottom: 40%; left: 30%;
+    opacity: 0.2;
+    animation-duration: 15s;
+}
+
+@keyframes float {
+    from { transform: translate(0, 0); }
+    to { transform: translate(40px, -40px); }
+}
+
+/* --- 3. GLASS CARD (The Login Box) --- */
+.container {
+    position: relative;
+    z-index: 10;
+    perspective: 1000px;
+}
+
+.login-card {
+    width: 400px;
+    background: rgba(20, 20, 20, 0.6); /* Darker glass */
+    padding: 40px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    transform-style: preserve-3d;
+    transition: transform 0.2s ease;
+}
+
+/* --- 4. TYPOGRAPHY & LOGO --- */
+.logo-area {
+    margin-bottom: 10px;
+}
+
+.logo-icon {
+    font-size: 32px;
+    color: #fff;
+    background: linear-gradient(135deg, #0ea5e9, #6d28d9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 5px;
+}
+
+h1 {
+    color: white;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.dot { color: #0ea5e9; }
+
+.subtitle {
+    color: #a1a1aa;
+    font-size: 13px;
+    margin-bottom: 35px;
+    font-weight: 300;
+}
+
+.subtitle b { color: #e4e4e7; font-weight: 500; }
+
+/* --- 5. INPUT GROUPS (Floating Labels) --- */
+.input-group {
+    position: relative;
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.input-group input, 
+.input-group select {
+    width: 100%;
+    padding: 14px 10px 14px 45px; /* Space for icon */
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    outline: none;
+    color: white;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+/* Hover & Focus States */
+.input-group input:hover,
+.input-group select:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.input-group input:focus,
+.input-group select:focus {
+    border-color: #0ea5e9;
+    background: rgba(14, 165, 233, 0.05);
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+}
+
+/* Icons inside inputs */
+.input-group .icon {
+    position: absolute;
+    left: 15px;
+    top: 15px;
+    color: #71717a;
+    transition: 0.3s;
+    pointer-events: none;
+}
+
+.input-group input:focus ~ .icon,
+.input-group select:focus ~ .icon {
+    color: #0ea5e9;
+}
+
+/* Floating Label Logic */
+.input-group label {
+    position: absolute;
+    left: 45px;
+    top: 14px;
+    color: #71717a;
+    font-size: 14px;
+    pointer-events: none;
+    transition: 0.3s ease;
+}
+
+/* Move label up when focused or valid */
+.input-group input:focus ~ label,
+.input-group input:valid ~ label {
+    top: -22px;
+    left: 0px;
+    font-size: 11px;
+    color: #0ea5e9;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Password Toggle Icon */
+.toggle-password {
+    left: auto !important;
+    right: 15px;
+    cursor: pointer;
+    pointer-events: auto !important;
+}
+.toggle-password:hover { color: white; }
+
+/* Custom Select Styling */
+select {
+    cursor: pointer;
+    appearance: none; /* Hide default arrow */
+    color: #a1a1aa;
+}
+select:valid { color: white; }
+select option { background: #18181b; color: white; }
+
+/* Custom dropdown arrow */
+.input-group:has(select)::after {
+    content: '\f0d7'; /* FontAwesome Chevron */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    position: absolute;
+    right: 15px;
+    top: 16px;
+    color: #71717a;
+    pointer-events: none;
+    font-size: 12px;
+}
+
+/* --- 6. BUTTONS --- */
+.btn-login {
+    position: relative;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #0ea5e9, #6d28d9);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-top: 10px;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
+}
+
+.btn-login:active {
+    transform: scale(0.98);
+}
+
+/* --- 7. FOOTER BOX --- */
+.restricted-box {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: #71717a;
+    font-size: 13px;
+}
+
+.restricted-box i { color: #f59e0b; margin-right: 6px; }
+
+.restricted-box a {
+    color: #e4e4e7;
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px dashed #555;
+    transition: 0.2s;
+}
+
+.restricted-box a:hover {
+    color: #0ea5e9;
+    border-bottom-color: #0ea5e9;
+}
+
+.restricted-box small {
+    display: block;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #52525b;
+}
+
+/* --- 8. TOAST NOTIFICATION --- */
+.toast {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    background: #18181b;
+    border-left: 4px solid #ef4444;
+    padding: 16px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    z-index: 100;
+    transform: translateX(200%); /* Hidden by default */
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.toast:not(.hidden) {
+    transform: translateX(0);
+}
+
+.toast.success { border-color: #10b981; }
+.toast-icon { font-size: 20px; }
+.toast.success .toast-icon { color: #10b981; }
+.toast:not(.success) .toast-icon { color: #ef4444; }
+
+.toast-content span { display: block; }
+#toast-title { color: white; font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+#toast-msg { color: #a1a1aa; font-size: 12px; }

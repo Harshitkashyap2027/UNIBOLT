@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <title>UniBolt - Help Center</title>
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Chat Widget Styling */
+        .chat-window {
+            background: #111; border: 1px solid var(--border); border-radius: 12px;
+            height: 300px; display: flex; flex-direction: column; overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .chat-body {
+            flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+        }
+        .chat-bubble {
+            max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.4;
+        }
+        .bot { background: #222; align-self: flex-start; color: #ddd; border-bottom-left-radius: 2px; }
+        .user { background: var(--primary); align-self: flex-end; color: white; border-bottom-right-radius: 2px; }
+        
+        /* FAQ Accordion */
+        .faq-item { background: #18181b; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; transition: 0.3s; }
+        .faq-question { padding: 15px; cursor: pointer; display: flex; justify-content: space-between; font-weight: 500; font-size: 14px; }
+        .faq-question:hover { background: rgba(255,255,255,0.05); }
+        .faq-answer { padding: 0 15px; max-height: 0; overflow: hidden; color: var(--text-muted); font-size: 13px; transition: 0.3s ease; }
+        .faq-item.active .faq-answer { padding: 15px; max-height: 200px; border-top: 1px solid var(--border); }
+        .faq-item.active i { transform: rotate(180deg); }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="brand"><i class="fa-solid fa-code cursor-default-hover" style="color: #10b981;"></i> UniBolt.</div>
+            <ul class="nav-menu">
+                <a href="/dashboard" class="nav-item"><i class="fa-solid fa-bolt cursor-on-hover"></i> Dashboard</a>
+                <a href="/arena" class="nav-item"><i class="fa-solid fa-code"></i> Code Arena</a>
+                <a href="/practice" class="nav-item"><i class="fa-solid fa-dumbbell"></i> Practice Zone</a>
+                <a href="/leaderboard" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+                <a href="/gallery" class="nav-item"><i class="fa-solid fa-trophy"></i> Hall of Fame</a>
+                <a href="/research" class="nav-item"><i class="fa-solid fa-flask"></i> Research Hub</a>
+                <a href="/contact" class="nav-item active"><i class="fa-solid fa-headset"></i> Support</a>
+                <a href="/profile" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            
+            <header class="top-header">
+                <div class="page-title">Help & Support</div>
+                <div class="user-area">
+                    <div class="avatar">🤖</div>
+                </div>
+            </header>
+
+            <div class="page-body">
+                
+                <h1 style="font-size: 28px; margin-bottom: 10px;">How can we help?</h1>
+                <p style="color: var(--text-muted); margin-bottom: 30px;">Our team is usually available 10 AM - 6 PM.</p>
+
+                <div class="grid-2">
+                    
+                    <div>
+                        <div class="card" style="margin-bottom: 20px;">
+                            <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-robot" style="color: var(--accent);"></i> UniBot Assistant
+                            </h3>
+                            <div class="chat-window">
+                                <div class="chat-body" id="chat-box">
+                                    <div class="chat-bubble bot">Hello! I am UniBot. How can I assist you today?</div>
+                                </div>
+                                <div style="padding: 10px; border-top: 1px solid #333; display: flex; gap: 10px;">
+                                    <input type="text" id="chat-input" placeholder="Type a message..." style="flex: 1; background: transparent; border: none; color: white; outline: none;">
+                                    <button onclick="sendChat()" style="background: none; border: none; color: var(--accent); cursor: pointer;"><i class="fa-solid fa-paper-plane"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3 style="margin-top: 0;">📩 Raise a Ticket</h3>
+                            <form id="ticket-form">
+                                <div style="margin-bottom: 15px;">
+                                    <label style="display: block; font-size: 12px; color: #aaa; margin-bottom: 5px;">Category</label>
+                                    <select id="ticket-type" style="width: 100%; padding: 10px; background: #000; color: white; border: 1px solid var(--border); border-radius: 6px;">
+                                        <option>Technical Bug</option>
+                                        <option>Payment Issue</option>
+                                        <option>Certificate Error</option>
+                                        <option>Course Content</option>
+                                    </select>
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label style="display: block; font-size: 12px; color: #aaa; margin-bottom: 5px;">Description</label>
+                                    <textarea id="ticket-msg" rows="3" style="width: 100%; padding: 10px; background: #000; color: white; border: 1px solid var(--border); border-radius: 6px; resize: none;" placeholder="Describe your issue..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Submit Ticket</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div>
+                        
+                        <div class="card" style="margin-bottom: 20px;">
+                            <h3 style="margin-top: 0;">Your Recent Tickets</h3>
+                            <div id="ticket-list" style="max-height: 200px; overflow-y: auto;">
+                                <p style="color: #666; font-size: 13px; text-align: center;">Loading tickets...</p>
+                            </div>
+                        </div>
+
+                        <h3 style="margin-bottom: 15px;">Common Questions</h3>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="toggleFaq(this)">
+                                Where is my Certificate? <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                Certificates are unlocked automatically once you reach Day 20 or Rank #10. Check the "Hall of Fame" page to download it.
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="toggleFaq(this)">
+                                The code editor is stuck. <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                Try refreshing the page. If the issue persists, ensure you are not using an ad-blocker that might block the compiler.
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="toggleFaq(this)">
+                                How do I change my avatar? <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                Go to Settings > Personal Details. You can choose from 5 different 3D avatars.
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/support-backend.js"></script>
+
+    <script>
+        function toggleFaq(element) {
+            element.parentElement.classList.toggle('active');
+        }
+        
+        // Simple Chat Logic (Visual Only)
+        function sendChat() {
+            const input = document.getElementById('chat-input');
+            const box = document.getElementById('chat-box');
+            if(!input.value) return;
+
+            // User Message
+            box.innerHTML += `<div class="chat-bubble user">${input.value}</div>`;
+            input.value = "";
+            
+            // Auto Scroll
+            box.scrollTop = box.scrollHeight;
+
+            // Fake Bot Reply
+            setTimeout(() => {
+                box.innerHTML += `<div class="chat-bubble bot">Thanks for reaching out! A human agent will check this shortly. Please fill out the ticket form for faster response.</div>`;
+                box.scrollTop = box.scrollHeight;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
