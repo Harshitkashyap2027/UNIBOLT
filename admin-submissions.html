@@ -247,10 +247,15 @@
                             ${sub.link ? `<div class="sub-row"><span class="lbl">Project Link:</span><span class="val"><a href="${escHtml(sub.link)}" target="_blank" class="design-link"><i class="fa-solid fa-external-link-alt"></i> Open Submission</a></span></div>` : ''}
                         </div>
                         <div style="display:flex; gap:8px; margin-top:15px;">
-                            <button class="btn btn-success" onclick="gradeTask('${escHtml(sub.uid)}', '${escHtml(String(sub.day))}', 'Approved')"><i class="fa-solid fa-check"></i> Approve (+50 XP)</button>
-                            <button class="btn btn-danger" onclick="gradeTask('${escHtml(sub.uid)}', '${escHtml(String(sub.day))}', 'Rejected')"><i class="fa-solid fa-xmark"></i> Reject</button>
+                            <button class="btn btn-success task-approve-btn" data-uid="${escHtml(sub.uid)}" data-day="${escHtml(String(sub.day || ''))}"><i class="fa-solid fa-check"></i> Approve (+50 XP)</button>
+                            <button class="btn btn-danger task-reject-btn" data-uid="${escHtml(sub.uid)}" data-day="${escHtml(String(sub.day || ''))}"><i class="fa-solid fa-xmark"></i> Reject</button>
                         </div>
                     `;
+                    // Use event delegation - attach handlers to buttons directly  
+                    const approveBtn = div.querySelector('.task-approve-btn');
+                    const rejectBtn = div.querySelector('.task-reject-btn');
+                    if (approveBtn) approveBtn.addEventListener('click', () => gradeTask(sub.uid, String(sub.day || ''), 'Approved'));
+                    if (rejectBtn) rejectBtn.addEventListener('click', () => gradeTask(sub.uid, String(sub.day || ''), 'Rejected'));
                     container.appendChild(div);
                 });
 
@@ -338,11 +343,17 @@
                         </div>
                         ${sub.status === 'pending' ? `
                         <div style="display:flex; gap:8px; margin-top:15px;">
-                            <button class="btn btn-success" onclick="reviewApp('${sub.id}', '${escHtml(sub.uid)}', 'approved')"><i class="fa-solid fa-check"></i> Approve Access</button>
-                            <button class="btn btn-danger" onclick="reviewApp('${sub.id}', '${escHtml(sub.uid)}', 'rejected')"><i class="fa-solid fa-xmark"></i> Reject</button>
+                            <button class="btn btn-success app-approve-btn" data-id="${escHtml(sub.id)}" data-uid="${escHtml(sub.uid || '')}"><i class="fa-solid fa-check"></i> Approve Access</button>
+                            <button class="btn btn-danger app-reject-btn" data-id="${escHtml(sub.id)}" data-uid="${escHtml(sub.uid || '')}"><i class="fa-solid fa-xmark"></i> Reject</button>
                         </div>
                         ` : ''}
                     `;
+                    if (sub.status === 'pending') {
+                        const appApprove = div.querySelector('.app-approve-btn');
+                        const appReject = div.querySelector('.app-reject-btn');
+                        if (appApprove) appApprove.addEventListener('click', () => reviewApp(sub.id, sub.uid || '', 'approved'));
+                        if (appReject) appReject.addEventListener('click', () => reviewApp(sub.id, sub.uid || '', 'rejected'));
+                    }
                     container.appendChild(div);
                 });
 

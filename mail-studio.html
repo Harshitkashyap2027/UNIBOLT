@@ -588,7 +588,7 @@
             const bulkList = localStorage.getItem('email_bulk_list');
             const recipients = bulkList ? JSON.parse(bulkList) : [to];
             const isBulk = recipients.length > 1;
-            const DELAY_MS = 90000; // 1.5 minutes between bulk emails
+            const DELAY_SECONDS = 90; // 1.5 minutes between bulk emails
 
             try {
                 if (isBulk) {
@@ -628,7 +628,7 @@
                     // Wait 1.5 min between emails for bulk (except after last email)
                     if (isBulk && i < recipients.length - 1 && !cancelSend) {
                         document.getElementById('prog-timer').style.display = 'block';
-                        let remaining = 90;
+                        let remaining = DELAY_SECONDS;
                         const timerEl = document.getElementById('timer-count');
                         await new Promise(resolve => {
                             const countdown = setInterval(() => {
