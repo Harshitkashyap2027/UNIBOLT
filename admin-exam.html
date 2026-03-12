@@ -2,857 +2,1614 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniBolt Command Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBolt Admin - Exam Manager</title>
     
     <link rel="manifest" href="exam-manifest.json">
-    <meta name="theme-color" content="#000000">
-    <link rel="apple-touch-icon" href="UniBolt.png">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        /* =========================================
-           1. CORE VARIABLES & RESET
-           ========================================= */
         :root {
+            --primary: #ff3b30;
+            --primary-hover: #ff4f44;
             --bg: #000000;
-            --card-bg: #1c1c1e;
-            --primary: #0A84FF; /* iOS Blue */
-            --primary-dim: rgba(10, 132, 255, 0.15);
-            --danger: #FF453A;   /* iOS Red */
-            --danger-dim: rgba(255, 69, 58, 0.15);
-            --success: #30D158;  /* iOS Green */
-            --success-dim: rgba(48, 209, 88, 0.15);
-            --warning: #FFD60A;  /* iOS Yellow */
-            --purple: #BF5AF2;   /* iOS Purple */
+            --surface: #1c1c1e;
+            --surface-highlight: #2c2c2e;
             --text: #ffffff;
-            --text-muted: #8e8e93;
-            --border: rgba(255,255,255,0.12);
-            --modal-bg: #151517;
-            --nav-bg: rgba(28, 28, 30, 0.95);
+            --text-dim: #8e8e93;
+            --border: rgba(255,255,255,0.1);
+            --radius: 20px;
+            --bento-shadow: 0 20px 40px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            --success: #30d158;
+            --danger: #ff453a;
+            --warning: #ffd60a;
+            --blue: #0a84ff;
+            --purple: #bf5af2;
+            --orange: #ff9f0a;
+            --sidebar-width: 280px;
         }
 
-        * { 
-            box-sizing: border-box; 
-            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; 
-            -webkit-tap-highlight-color: transparent; 
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
-        body { 
-            margin: 0; 
-            background-color: var(--bg); 
-            color: var(--text); 
-            height: 100vh; 
-            width: 100vw; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
         }
 
-        /* =========================================
-           2. LOADING & ALERTS
-           ========================================= */
-        #loading-screen {
-            position: fixed; inset: 0; background: #000; z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: #000;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 1100;
+            height: 100vh;
+            flex-shrink: 0;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
         }
-        
-        .spinner {
-            width: 40px; height: 40px; 
-            border: 4px solid #333; 
-            border-top-color: var(--primary);
-            border-radius: 50%; 
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .sidebar-header { padding: 28px 24px 10px; flex-shrink: 0; }
+        .sidebar-scroll { flex: 1; overflow-y: auto; padding: 0 14px; }
+        .sidebar-scroll::-webkit-scrollbar { width: 0; }
+        .sidebar-footer { padding: 20px 24px; border-top: 1px solid var(--border); background: #000; flex-shrink: 0; }
 
-        #toast {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-            background: rgba(30, 30, 30, 0.9); backdrop-filter: blur(10px);
-            padding: 12px 24px; border-radius: 50px; 
-            border: 1px solid rgba(255,255,255,0.1);
-            display: flex; align-items: center; gap: 10px; z-index: 9999;
-            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            white-space: nowrap;
-        }
-        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .brand { font-size: 21px; font-weight: 700; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; }
+        .brand i { color: var(--primary); }
+        .brand-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
 
-        /* =========================================
-           3. LAYOUT STRUCTURE
-           ========================================= */
-        .page { 
-            display: none; 
-            flex-direction: column; 
-            height: 100%; 
-            width: 100%; 
-            opacity: 0; 
-            transition: opacity 0.2s; 
+        .nav-section-label {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-dim); padding: 16px 16px 6px; font-weight: 700;
         }
-        .page.active { display: flex; opacity: 1; }
+        .nav-item {
+            padding: 12px 16px;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 14px;
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            transition: 0.2s;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .nav-item:hover { background: var(--surface); color: white; }
+        .nav-item.active { background: var(--surface-highlight); color: white; font-weight: 600; }
+        .nav-item i { width: 18px; text-align: center; font-size: 15px; }
+        .nav-badge {
+            margin-left: auto;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 20px;
+            min-width: 20px;
+            text-align: center;
+        }
+        .nav-badge.blue { background: var(--blue); }
+        .nav-badge.green { background: var(--success); }
 
-        .header {
-            padding: 20px; 
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); 
-            z-index: 10; border-bottom: 1px solid var(--border);
+        /* ===== MAIN CONTENT ===== */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg);
+        }
+        .topbar {
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(20px);
+            flex-shrink: 0;
+            gap: 20px;
+        }
+        .topbar-left h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+        .topbar-left p { color: var(--text-dim); font-size: 13px; margin-top: 3px; }
+        .topbar-right { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px 30px;
+            scroll-behavior: smooth;
+        }
+        .content-area::-webkit-scrollbar { width: 6px; }
+        .content-area::-webkit-scrollbar-track { background: transparent; }
+        .content-area::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+        /* ===== PAGE SECTIONS ===== */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 10px 18px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            color: white;
+            background: var(--surface);
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .btn:hover { background: var(--surface-highlight); transform: scale(1.02); }
+        .btn-primary { background: var(--primary); box-shadow: 0 4px 12px rgba(255,59,48,0.3); }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-blue { background: rgba(10,132,255,0.15); color: var(--blue); }
+        .btn-blue:hover { background: rgba(10,132,255,0.25); }
+        .btn-green { background: rgba(48,209,88,0.15); color: var(--success); }
+        .btn-green:hover { background: rgba(48,209,88,0.25); }
+        .btn-red { background: rgba(255,69,58,0.15); color: var(--danger); }
+        .btn-red:hover { background: rgba(255,69,58,0.25); }
+        .btn-orange { background: rgba(255,159,10,0.15); color: var(--orange); }
+        .btn-orange:hover { background: rgba(255,159,10,0.25); }
+        .btn-icon {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            border: none;
+            background: var(--surface);
+            color: var(--text-dim);
+            cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: 0.2s; font-size: 15px;
+        }
+        .btn-icon:hover { transform: scale(1.1); filter: brightness(1.3); color: white; }
+
+        /* ===== STATS GRID ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 22px;
+            position: relative;
+            box-shadow: var(--bento-shadow);
+            transition: 0.2s;
+            overflow: hidden;
+        }
+        .stat-card:hover { transform: translateY(-2px); background: var(--surface-highlight); }
+        .stat-card .val { font-size: 36px; font-weight: 700; letter-spacing: -1.5px; margin: 8px 0 4px; }
+        .stat-card .label { font-size: 12px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card .icon { position: absolute; top: 20px; right: 20px; font-size: 26px; opacity: 0.15; }
+        .stat-card .trend { font-size: 12px; color: var(--success); margin-top: 4px; }
+        .stat-card.blue-grad { background: linear-gradient(135deg, #0a84ff, #5e5ce6); }
+        .stat-card.blue-grad .label { color: rgba(255,255,255,0.8); }
+        .stat-card.blue-grad .icon { opacity: 0.3; color: white; }
+
+        /* ===== DATA TABLE ===== */
+        .table-wrap {
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--bento-shadow);
+        }
+        .table-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .table-toolbar h3 { font-size: 17px; font-weight: 700; }
+        .search-bar {
+            background: var(--surface-highlight);
+            border: none;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 12px;
+            width: 240px;
+            outline: none;
+            font-size: 14px;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+        .search-bar:focus { background: #3a3a3c; box-shadow: 0 0 0 2px var(--blue); }
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            text-align: left;
+            padding: 14px 20px;
+            color: var(--text-dim);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,0.02);
+        }
+        tbody td {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 14px;
+            vertical-align: middle;
+        }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background: rgba(255,255,255,0.03); }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+        .empty-state i { font-size: 40px; margin-bottom: 15px; opacity: 0.4; }
+
+        /* ===== AVATARS & STATUS ===== */
+        .avatar {
+            width: 40px; height: 40px; border-radius: 12px;
+            background: var(--surface-highlight);
+            display: inline-flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px; color: white;
             flex-shrink: 0;
         }
-        .header h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
-        
-        /* PWA Install Button */
-        #pwa-install-btn {
-            display: none; /* Hidden by default */
-            background: rgba(255,255,255,0.1); 
-            padding: 8px 14px; 
-            border-radius: 20px;
-            font-size: 12px; font-weight: 600; 
-            color: var(--primary); 
-            cursor: pointer; 
-            border: 1px solid var(--border);
-            transition: 0.2s;
+        .status-pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 20px;
+            font-size: 11px; font-weight: 700;
         }
-        #pwa-install-btn:active { background: rgba(255,255,255,0.2); transform: scale(0.95); }
+        .pill-green { background: rgba(48,209,88,0.15); color: var(--success); }
+        .pill-red { background: rgba(255,69,58,0.15); color: var(--danger); }
+        .pill-yellow { background: rgba(255,214,10,0.15); color: var(--warning); }
+        .pill-blue { background: rgba(10,132,255,0.15); color: var(--blue); }
+        .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 
-        .scroll-area {
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 20px; 
-            padding-bottom: 120px; 
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-        }
-        .scroll-area::-webkit-scrollbar { display: none; }
-
-        /* =========================================
-           4. BENTO GRID UI
-           ========================================= */
-        .bento-grid { 
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; 
-        }
-        .bento-card {
-            background: var(--card-bg); border-radius: 22px; padding: 20px;
-            display: flex; flex-direction: column; justify-content: space-between;
-            position: relative; overflow: hidden; 
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: 0.2s;
-        }
-        .bento-card:active { transform: scale(0.98); background: #2c2c2e; }
-        .bento-wide { grid-column: span 2; }
-        
-        .stat-val { font-size: 32px; font-weight: 700; margin: 10px 0 5px 0; letter-spacing: -1px; }
-        .stat-label { 
-            color: var(--text-muted); font-size: 13px; font-weight: 600; 
-            text-transform: uppercase; letter-spacing: 0.5px; 
-        }
-        .card-icon { position: absolute; top: 20px; right: 20px; font-size: 24px; opacity: 0.2; }
-
-        /* =========================================
-           5. LIST ITEMS & CARDS
-           ========================================= */
-        .list-group-title { 
-            font-size: 18px; font-weight: 700; margin: 25px 0 15px 5px; color: var(--text); 
+        /* ===== SCORE BADGE ===== */
+        .score-badge {
+            font-weight: 700; font-size: 15px;
+            background: rgba(255,255,255,0.08);
+            padding: 5px 12px; border-radius: 10px;
+            display: inline-block;
         }
 
-        /* Generic Card Base */
-        .generic-card {
-            background: var(--card-bg); padding: 16px; border-radius: 18px; margin-bottom: 12px;
-            display: flex; align-items: center; justify-content: space-between;
-            border: 1px solid rgba(255,255,255,0.05); transition: 0.2s;
+        /* ===== SECTION HEADERS ===== */
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+            gap: 14px;
         }
-        
-        /* Student Specific */
-        .student-card { cursor: pointer; }
-        .student-card:active { background: #333; transform: scale(0.98); }
-        .s-avatar {
-            width: 48px; height: 48px; border-radius: 14px; 
-            background: #2c2c2e; color: #fff;
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: 700; font-size: 18px; margin-right: 15px; flex-shrink: 0;
-        }
-        .s-info { flex: 1; }
-        .s-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; color: #fff; }
-        .s-sub { font-size: 13px; color: var(--text-muted); }
-        .s-score { 
-            font-weight: 700; font-size: 16px; 
-            background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 10px; 
-        }
+        .section-head h3 { font-size: 20px; font-weight: 700; }
+        .section-head p { font-size: 13px; color: var(--text-dim); margin-top: 3px; }
 
-        /* Question Specific */
-        .question-card {
-            flex-direction: column; align-items: flex-start; gap: 10px; position: relative;
-            cursor: pointer;
+        /* ===== CARDS ===== */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 22px;
+            box-shadow: var(--bento-shadow);
+            margin-bottom: 16px;
         }
-        .question-card:active { background: #2c2c2e; }
-        .q-header { display: flex; justify-content: space-between; width: 100%; align-items: center; }
-        .q-badge { 
-            font-size: 10px; background: rgba(255,255,255,0.1); 
-            padding: 4px 8px; border-radius: 6px; 
-            text-transform: uppercase; color: var(--text-muted); font-weight: 700; 
+        .card-title {
+            font-size: 13px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 14px;
         }
-        .q-edit-icon { color: var(--primary); font-size: 14px; opacity: 0.8; }
-        .q-text { 
-            font-size: 16px; font-weight: 600; line-height: 1.4; 
-            margin-top: 5px; color: #fff; 
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        .info-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
+            font-size: 14px;
         }
-        .q-options { font-size: 13px; color: var(--text-muted); margin-top: 5px; line-height: 1.6; }
-        .correct-opt { color: var(--success); font-weight: 600; }
+        .info-row:last-of-type { border-bottom: none; }
+        .info-label { color: var(--text-dim); }
+        .info-val { font-weight: 500; max-width: 60%; text-align: right; word-break: break-word; }
 
-        /* =========================================
-           6. FORM ELEMENTS
-           ========================================= */
-        input[type="text"], input[type="number"], select {
-            width: 100%; padding: 16px; background: #2c2c2e; border: none; border-radius: 14px;
-            color: white; font-size: 16px; margin-bottom: 12px; outline: none; appearance: none;
+        /* ===== TOGGLE SWITCH ===== */
+        .switch-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
         }
-        /* Highlight correct answer field in edit mode */
-        .correct-field { border: 1px solid var(--success) !important; background: var(--success-dim) !important; }
-
-        button.action-btn {
-            width: 100%; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 700;
-            border: none; cursor: pointer; margin-top: 10px; transition: 0.2s;
-        }
-        button.action-btn:active { transform: scale(0.97); }
-        .btn-blue { background: var(--primary); color: white; }
-        .btn-red { background: var(--danger-dim); color: var(--danger); }
-        .btn-green { background: var(--success); color: white; }
-        .btn-orange { background: rgba(255, 149, 0, 0.15); color: #FF9500; }
-
-        /* Toggles */
-        .switch-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .switch-label { font-size: 15px; font-weight: 500; }
-        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .switch-row:last-of-type { border-bottom: none; }
+        .switch-label { font-size: 14px; font-weight: 500; }
+        .switch-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a3a3c; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #3a3a3c; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(22px); }
 
-        /* =========================================
-           7. MODALS & SHEETS
-           ========================================= */
-        .sheet-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 200; opacity: 0; 
-            pointer-events: none; transition: 0.3s; backdrop-filter: blur(5px);
+        /* ===== FORM INPUTS ===== */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        label.field-label { font-size: 11px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        input[type="text"], input[type="number"], input[type="email"], select, textarea {
+            width: 100%; padding: 12px 14px;
+            background: var(--surface-highlight);
+            border: 1px solid transparent;
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: 0.2s;
+            appearance: none;
         }
-        .sheet-overlay.active { opacity: 1; pointer-events: all; }
+        input:focus, select:focus, textarea:focus {
+            background: #3a3a3c;
+            border-color: var(--blue);
+        }
+        .correct-field { border-color: var(--success) !important; background: rgba(48,209,88,0.08) !important; }
 
-        .sheet-modal {
-            position: fixed; bottom: 0; left: 0; width: 100%; max-height: 90%;
-            background: var(--modal-bg); border-radius: 30px 30px 0 0; z-index: 201;
-            transform: translateY(100%); transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-            padding: 0 25px 40px 25px; overflow-y: auto; 
+        /* ===== QUESTION CARDS ===== */
+        .q-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.2s;
+        }
+        .q-card:hover { background: var(--surface-highlight); border-color: rgba(255,255,255,0.1); }
+        .q-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .q-course-badge { font-size: 10px; background: rgba(255,255,255,0.08); padding: 3px 9px; border-radius: 6px; text-transform: uppercase; color: var(--text-dim); font-weight: 700; }
+        .q-text { font-size: 15px; font-weight: 600; line-height: 1.4; color: white; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .q-opts { font-size: 12px; color: var(--text-dim); margin-top: 6px; line-height: 1.7; }
+        .correct-opt { color: var(--success); font-weight: 700; }
+
+        /* ===== ANALYTICS ===== */
+        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+        .chart-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 22px;
+            box-shadow: var(--bento-shadow);
+        }
+        .chart-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 18px; }
+        .bar-wrap { display: flex; flex-direction: column; gap: 10px; }
+        .bar-row { display: flex; flex-direction: column; gap: 5px; }
+        .bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); font-weight: 600; }
+        .bar-track { background: rgba(255,255,255,0.07); border-radius: 10px; height: 8px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 10px; transition: width 0.8s ease; }
+        .donut-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .donut-row:last-child { border-bottom: none; }
+        .donut-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .donut-label { font-size: 13px; flex: 1; }
+        .donut-val { font-size: 13px; font-weight: 700; }
+        .score-dist { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .dist-col { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .dist-bar-wrap { height: 80px; display: flex; align-items: flex-end; width: 100%; }
+        .dist-bar { width: 100%; background: var(--blue); border-radius: 6px 6px 0 0; transition: height 0.8s ease; min-height: 4px; }
+        .dist-label { font-size: 11px; color: var(--text-dim); }
+        .dist-count { font-size: 13px; font-weight: 700; }
+
+        /* ===== REPORTS ===== */
+        .report-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 22px;
+            box-shadow: var(--bento-shadow);
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .report-card:hover { background: var(--surface-highlight); transform: translateX(4px); }
+        .report-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+        .report-info { flex: 1; }
+        .report-info h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+        .report-info p { font-size: 13px; color: var(--text-dim); }
+
+        /* ===== MODALS ===== */
+        .modal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(20px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 2000; visibility: hidden; opacity: 0; transition: 0.3s;
+            padding: 20px;
+        }
+        .modal.active { visibility: visible; opacity: 1; }
+        .modal-box {
+            background: #1c1c1e;
+            width: 100%; max-width: 480px;
+            max-height: 85vh; overflow-y: auto;
+            padding: 28px;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+            transform: scale(0.95); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal.active .modal-box { transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+        .modal-header h3 { font-size: 20px; font-weight: 700; }
+        .close-btn { background: var(--surface-highlight); border: none; color: var(--text-dim); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .close-btn:hover { color: white; }
+
+        /* Sheet / Drawer (slide from bottom) */
+        .drawer-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6); z-index: 1500;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .drawer-overlay.active { opacity: 1; pointer-events: all; }
+        .drawer {
+            position: fixed; bottom: 0; left: 50%; width: 100%; max-width: 640px;
+            max-height: 90vh;
+            background: #1c1c1e; border-radius: 30px 30px 0 0;
+            z-index: 1501; transform: translateX(-50%) translateY(100%);
+            transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            padding: 0 26px 40px; overflow-y: auto;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
-        .sheet-modal.active { transform: translateY(0); }
-        .sheet-handle { width: 40px; height: 5px; background: #3a3a3c; border-radius: 10px; margin: 15px auto 25px auto; }
+        .drawer.active { transform: translateX(-50%) translateY(0); }
+        .drawer-handle { width: 40px; height: 5px; background: #3a3a3c; border-radius: 10px; margin: 14px auto 22px; }
+        .big-avatar { width: 80px; height: 80px; background: var(--surface-highlight); border-radius: 50%; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 700; }
+
+        /* ===== TOAST ===== */
+        #toast {
+            position: fixed; bottom: 30px; left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            background: rgba(40,40,40,0.95); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 12px 22px; border-radius: 50px;
+            font-weight: 600; font-size: 14px;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 9999; display: flex; align-items: center; gap: 9px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4); opacity: 0;
+            font-family: inherit;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* ===== LOADING ===== */
+        #loading-screen {
+            position: fixed; inset: 0; background: #000;
+            z-index: 9999; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 16px;
+        }
+        .spinner { width: 36px; height: 36px; border: 3px solid #333; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* ===== MOBILE ===== */
+        .menu-toggle { display: none; position: fixed; top: 16px; left: 16px; z-index: 1200; background: var(--surface); border: 1px solid var(--border); color: white; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; align-items: center; justify-content: center; font-size: 18px; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 1050; }
         
-        /* Student Detail Styling */
-        .big-avatar { width: 80px; height: 80px; background: #2c2c2e; border-radius: 50%; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; }
-        .info-row { display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 15px; }
-        .info-label { color: var(--text-muted); }
-        .info-val { font-weight: 500; text-align: right; max-width: 60%; word-break: break-word; }
-
-        /* Confirm Popup */
-        .confirm-box {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
-            background: #1c1c1e; width: 85%; max-width: 320px; border-radius: 24px; padding: 30px;
-            text-align: center; border: 1px solid var(--border); transition: 0.3s; z-index: 3001;
-            opacity: 0; pointer-events: none;
+        @media (max-width: 900px) {
+            .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-105%); height: 100vh; visibility: hidden; }
+            .sidebar.active { transform: translateX(0); visibility: visible; }
+            .sidebar-overlay.active { display: block; }
+            .menu-toggle { display: flex; }
+            .topbar { padding: 16px 20px 16px 72px; }
+            .topbar-left h2 { font-size: 20px; }
+            .content-area { padding: 20px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+            .table-toolbar { flex-direction: column; align-items: flex-start; }
+            .search-bar { width: 100%; }
         }
-        .sheet-overlay.active .confirm-box { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: all; }
-        .confirm-icon { font-size: 40px; margin-bottom: 15px; color: var(--warning); }
-        .confirm-title { font-size: 20px; font-weight: 700; margin-bottom: 10px; color: white; }
-        .confirm-msg { font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 25px; }
-        .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        /* =========================================
-           8. NAVIGATION
-           ========================================= */
-        .tab-bar {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 85px;
-            background: var(--nav-bg); backdrop-filter: blur(25px);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            display: flex; justify-content: space-around; padding-top: 12px; z-index: 100;
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .analytics-grid { grid-template-columns: 1fr; }
         }
-        .tab-item {
-            color: #636366; text-align: center; font-size: 10px; font-weight: 500;
-            cursor: pointer; width: 60px; transition: 0.2s;
-        }
-        .tab-item i { font-size: 22px; margin-bottom: 5px; display: block; }
-        .tab-item.active { color: var(--primary); }
 
-        /* Utils */
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .dot-green { background: var(--success); box-shadow: 0 0 10px rgba(48, 209, 88, 0.4); }
-        .dot-red { background: var(--danger); box-shadow: 0 0 10px rgba(255, 69, 58, 0.4); }
-        .dot-yellow { background: var(--warning); }
-
+        /* ===== MISC ===== */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+        .divider { height: 1px; background: rgba(255,255,255,0.07); margin: 20px 0; }
+        .text-green { color: var(--success); }
+        .text-red { color: var(--danger); }
+        .text-yellow { color: var(--warning); }
+        .text-blue { color: var(--blue); }
+        .text-dim { color: var(--text-dim); }
+        .mt-4 { margin-top: 4px; }
+        .mt-8 { margin-top: 8px; }
+        .mt-16 { margin-top: 16px; }
+        .mt-24 { margin-top: 24px; }
+        .fw-7 { font-weight: 700; }
     </style>
 </head>
 <body>
 
-    <div id="loading-screen">
-        <div class="spinner"></div>
-        <p style="margin-top: 15px; color: #666; font-size: 12px; letter-spacing: 2px;">SECURE CONNECTION</p>
+<div id="loading-screen">
+    <div class="spinner"></div>
+    <p style="color:#555; font-size:12px; letter-spacing:2px;">SECURE CONNECTION</p>
+</div>
+
+<div id="toast"><i class="fa-solid fa-check" id="toast-icon"></i><span id="toast-msg">Done</span></div>
+
+<button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+<div class="sidebar-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
+
+<!-- ============================= SIDEBAR ============================= -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="brand"><i class="fa-solid fa-bolt"></i> UniBolt</div>
+        <div class="brand-sub">Exam Command Center</div>
     </div>
 
-    <div id="toast">
-        <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
-        <span style="font-size: 14px; font-weight: 600;" id="toast-msg">Success</span>
+    <div class="sidebar-scroll">
+        <div class="nav-section-label">Navigation</div>
+        <a href="admin.html" class="nav-item"><i class="fa-solid fa-grid-2"></i> Main Dashboard</a>
+
+        <div class="nav-section-label">Exam Panel</div>
+        <a class="nav-item active" onclick="showSection('overview', this)"><i class="fa-solid fa-chart-pie"></i> Overview</a>
+        <a class="nav-item" onclick="showSection('students', this)"><i class="fa-solid fa-users"></i> All Students <span class="nav-badge blue" id="nb-total">0</span></a>
+        <a class="nav-item" onclick="showSection('redflag', this)"><i class="fa-solid fa-triangle-exclamation"></i> Red Flags <span class="nav-badge" id="nb-flags">0</span></a>
+        <a class="nav-item" onclick="showSection('questions', this)"><i class="fa-solid fa-book-open"></i> Question Bank</a>
+
+        <div class="nav-section-label">Insights</div>
+        <a class="nav-item" onclick="showSection('analytics', this)"><i class="fa-solid fa-chart-bar"></i> Analytics</a>
+        <a class="nav-item" onclick="showSection('reports', this)"><i class="fa-solid fa-file-export"></i> Reports & Export</a>
+
+        <div class="nav-section-label">Administration</div>
+        <a class="nav-item" onclick="showSection('settings', this)"><i class="fa-solid fa-sliders"></i> Exam Settings</a>
     </div>
 
-    <div id="confirm-modal" class="sheet-overlay">
-        <div class="confirm-box">
-            <i id="c-icon" class="fa-solid fa-triangle-exclamation confirm-icon"></i>
-            <h3 id="c-title" class="confirm-title">Confirm</h3>
-            <p id="c-msg" class="confirm-msg">Proceed?</p>
-            <div class="confirm-actions">
-                <button class="action-btn" style="background: #333; margin:0;" onclick="closeConfirm()">Cancel</button>
-                <button class="action-btn btn-red" id="c-yes-btn" style="margin:0;">Yes</button>
-            </div>
+    <div class="sidebar-footer">
+        <div class="nav-item" onclick="logout()" style="color: var(--danger);"><i class="fa-solid fa-power-off"></i> Sign Out</div>
+    </div>
+</div>
+
+<!-- ============================= MAIN ============================= -->
+<div class="main">
+    <div class="topbar">
+        <div class="topbar-left">
+            <h2 id="page-title">Exam Overview</h2>
+            <p id="page-sub">Real-time exam monitoring and management</p>
+        </div>
+        <div class="topbar-right">
+            <button class="btn-icon" onclick="location.reload()" title="Refresh"><i class="fa-solid fa-rotate"></i></button>
+            <button class="btn btn-primary" onclick="showSection('questions', null); openEditModal(null)"><i class="fa-solid fa-plus"></i> Add Question</button>
         </div>
     </div>
 
-    <div id="page-dashboard" class="page active">
-        <div class="header">
-            <h1>UniBolt</h1>
-            <div id="pwa-install-btn" onclick="installPWA()"><i class="fa-solid fa-download"></i> Install App</div>
-        </div>
+    <div class="content-area">
 
-        <div class="scroll-area">
-            <div class="bento-grid">
-                <div class="bento-card bento-wide" style="background: linear-gradient(135deg, #0A84FF, #5E5CE6);">
-                    <div class="stat-label" style="color: rgba(255,255,255,0.8);">Total Enrolled</div>
-                    <div class="stat-val" id="d-total">0</div>
-                    <div style="font-size: 12px; opacity: 0.8;">Live Real-Time Data</div>
-                    <i class="fa-solid fa-users card-icon" style="color:white; opacity:0.3"></i>
+        <!-- ===== OVERVIEW ===== -->
+        <div class="section active" id="sec-overview">
+            <div class="stats-grid">
+                <div class="stat-card blue-grad" style="grid-column: span 2;">
+                    <div class="label">Total Enrolled</div>
+                    <div class="val" id="d-total">0</div>
+                    <div style="font-size:12px; opacity:0.8; margin-top:2px;">Live Real-Time Data</div>
+                    <i class="fa-solid fa-users icon" style="color:white;"></i>
                 </div>
-
-                <div class="bento-card">
-                    <div class="stat-label">Qualified</div>
-                    <div class="stat-val" style="color: var(--success);" id="d-pass">0</div>
-                    <i class="fa-solid fa-graduation-cap card-icon" style="color: var(--success);"></i>
+                <div class="stat-card">
+                    <div class="label">In Progress</div>
+                    <div class="val text-yellow" id="d-active">0</div>
+                    <div class="trend"><i class="fa-solid fa-circle-notch"></i> Taking exam now</div>
+                    <i class="fa-solid fa-clock icon" style="color:var(--warning);"></i>
                 </div>
-
-                <div class="bento-card" onclick="switchTab('redflag')" style="border: 1px solid var(--danger);">
-                    <div class="stat-label" style="color: var(--danger);">Red Flags</div>
-                    <div class="stat-val" style="color: var(--danger);" id="d-flag">0</div>
-                    <i class="fa-solid fa-triangle-exclamation card-icon" style="color: var(--danger);"></i>
+                <div class="stat-card">
+                    <div class="label">Completed</div>
+                    <div class="val text-green" id="d-done">0</div>
+                    <i class="fa-solid fa-circle-check icon" style="color:var(--success);"></i>
                 </div>
-            </div>
-
-            <div class="list-group-title">Recent Activity</div>
-            <div id="recent-list"></div>
-        </div>
-    </div>
-
-    <div id="page-students" class="page">
-        <div class="header">
-            <h1>Students</h1>
-            <div style="font-size: 12px; background: #333; padding: 5px 10px; border-radius: 20px;" id="s-count">0</div>
-        </div>
-        <div style="padding: 0 20px;">
-            <input type="text" id="search-box" placeholder="Search name, city, email..." onkeyup="filterStudents()" style="background: #1c1c1e; border: 1px solid #333;">
-        </div>
-        <div class="scroll-area" id="students-list"></div>
-    </div>
-
-    <div id="page-maker" class="page">
-        <div class="header">
-            <h1>Question Bank</h1>
-        </div>
-        <div class="scroll-area">
-            
-            <div class="bento-card bento-wide" style="margin-bottom: 20px;">
-                <h3 style="margin: 0 0 10px 0;">Select Course</h3>
-                <div style="display: flex; gap: 10px;">
-                    <select id="q-filter" style="margin: 0; flex: 1;" onchange="loadQuestionsForView()">
-                        <option value="web">💻 Full Stack Web</option>
-                        <option value="ai">🤖 AI & Data Science</option>
-                        <option value="app">📱 App Development</option>
-                    </select>
-                    <button class="action-btn btn-blue" style="margin: 0; width: auto; padding: 0 20px;" onclick="openEditModal(null)">+</button>
+                <div class="stat-card">
+                    <div class="label">Qualified (45+)</div>
+                    <div class="val text-blue" id="d-pass">0</div>
+                    <i class="fa-solid fa-graduation-cap icon" style="color:var(--blue);"></i>
                 </div>
-            </div>
-
-            <div class="list-group-title">Tap Question to Edit</div>
-            <div id="questions-list">
-                <div style="text-align: center; color: #666; padding: 20px;">Loading...</div>
-            </div>
-        </div>
-    </div>
-
-    <div id="page-redflag" class="page">
-        <div class="header">
-            <h1 style="color: var(--danger);">Red Flags</h1>
-        </div>
-        <div class="scroll-area" id="flag-list"></div>
-    </div>
-
-    <div id="page-settings" class="page">
-        <div class="header">
-            <h1>Settings</h1>
-        </div>
-        <div class="scroll-area">
-            
-            <div class="bento-card bento-wide" style="margin-bottom: 20px;">
-                <div style="color: var(--primary); font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 10px;">Exam Config</div>
-                <div class="info-row">
-                    <span class="info-label">Exam Duration (Mins)</span>
-                    <input type="number" id="setting-timer" value="30" style="width: 80px; margin:0; padding: 8px; text-align:center;">
+                <div class="stat-card" style="border:1px solid rgba(255,69,58,0.3);">
+                    <div class="label text-red">Red Flags</div>
+                    <div class="val text-red" id="d-flag">0</div>
+                    <i class="fa-solid fa-triangle-exclamation icon" style="color:var(--danger);"></i>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Pass Marks</span>
-                    <input type="number" id="setting-pass" value="45" style="width: 80px; margin:0; padding: 8px; text-align:center;">
+                <div class="stat-card">
+                    <div class="label">Avg. Score</div>
+                    <div class="val" id="d-avg">0</div>
+                    <i class="fa-solid fa-star icon"></i>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Top Score</div>
+                    <div class="val text-yellow" id="d-top">0</div>
+                    <i class="fa-solid fa-trophy icon" style="color:var(--warning);"></i>
                 </div>
             </div>
 
-            <div class="bento-card bento-wide">
-                <div style="color: var(--purple); font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">System Control</div>
-                
-                <div class="switch-row">
-                    <div class="switch-label">Registration Open</div>
-                    <label class="switch"><input type="checkbox" checked id="toggle-reg"><span class="slider"></span></label>
-                </div>
-                <div class="switch-row">
-                    <div class="switch-label">Allow Retakes (Global)</div>
-                    <label class="switch"><input type="checkbox" id="toggle-retake"><span class="slider"></span></label>
-                </div>
-                <div class="switch-row" style="border-bottom: none;">
-                    <div class="switch-label">Maintenance Mode</div>
-                    <label class="switch"><input type="checkbox" id="toggle-maint"><span class="slider"></span></label>
-                </div>
-                <button class="action-btn" style="background: #333; padding: 12px; font-size: 14px;" onclick="saveSettings()">Save & Apply</button>
-            </div>
-
-            <button class="action-btn" style="background: #333; color: white; margin-top: 30px;" onclick="logout()">
-                Log Out <i class="fa-solid fa-right-from-bracket"></i>
-            </button>
-        </div>
-    </div>
-
-    <div class="sheet-overlay" id="student-overlay" onclick="closeStudentSheet()"></div>
-    <div id="student-sheet" class="sheet-modal">
-        <div class="sheet-handle" onclick="closeStudentSheet()"></div>
-        <div class="detail-header">
-            <div id="m-avatar" class="big-avatar">AB</div>
-            <h2 id="m-name" style="margin: 0; font-size: 24px;">Student Name</h2>
-            <div id="m-status" style="margin-top: 5px; color: var(--text-muted);">Status</div>
-        </div>
-        
-        <div class="info-row"><span class="info-label">Email</span><span class="info-val" id="m-email">...</span></div>
-        <div class="info-row"><span class="info-label">Phone</span><span class="info-val" id="m-phone">...</span></div>
-        <div class="info-row"><span class="info-label">City</span><span class="info-val" id="m-city">...</span></div>
-        <div class="info-row"><span class="info-label">Course</span><span class="info-val" id="m-course">...</span></div>
-        <div class="info-row"><span class="info-label">Score</span><span class="info-val" id="m-score">...</span></div>
-        <div class="info-row"><span class="info-label">IP Address</span><span class="info-val" id="m-ip">...</span></div>
-        
-        <div id="violation-box" style="display: none; background: rgba(255, 69, 58, 0.1); padding: 15px; border-radius: 14px; margin-top: 15px; border: 1px solid var(--danger);">
-            <div style="color: var(--danger); font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">Violation Reason</div>
-            <div id="m-violation" style="font-size: 14px; color: white;">...</div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 30px;">
-            <button class="action-btn btn-orange" style="color: white;" onclick="resetStudent()">Allow Retake</button>
-            <button class="action-btn btn-red" onclick="deleteStudent()">Delete User</button>
-        </div>
-    </div>
-
-    <div class="sheet-overlay" id="edit-overlay" onclick="closeEditModal()"></div>
-    <div id="edit-modal" class="sheet-modal">
-        <div class="sheet-handle" onclick="closeEditModal()"></div>
-        <h2 style="margin: 0 0 20px 0;" id="edit-title">Edit Question</h2>
-        
-        <input type="hidden" id="edit-id">
-        
-        <label style="color:#888; font-size:12px; margin-bottom:5px; display:block;">QUESTION</label>
-        <input type="text" id="edit-q" placeholder="Enter Question Text">
-        
-        <label style="color:#888; font-size:12px; margin-bottom:5px; display:block;">OPTIONS</label>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <input type="text" id="edit-opt0" placeholder="Option A">
-            <input type="text" id="edit-opt1" placeholder="Option B">
-            <input type="text" id="edit-opt2" placeholder="Option C">
-            <input type="text" id="edit-opt3" placeholder="Option D">
-        </div>
-
-        <label style="color:#888; font-size:12px; margin-bottom:5px; display:block;">CORRECT ANSWER (0-3)</label>
-        <input type="number" id="edit-ans" placeholder="0=A, 1=B, 2=C, 3=D" class="correct-field">
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
-            <button class="action-btn btn-red" id="btn-delete-q" onclick="deleteQuestion()">Delete</button>
-            <button class="action-btn btn-green" onclick="saveQuestion()">Save</button>
-        </div>
-    </div>
-
-    <div class="tab-bar">
-        <div class="tab-item active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-pie"></i></div>
-        <div class="tab-item" onclick="switchTab('students', this)"><i class="fa-solid fa-users"></i></div>
-        <div class="tab-item" onclick="switchTab('redflag', this)"><i class="fa-solid fa-triangle-exclamation"></i></div>
-        <div class="tab-item" onclick="switchTab('maker', this)"><i class="fa-solid fa-book-open"></i></div>
-        <div class="tab-item" onclick="switchTab('settings', this)"><i class="fa-solid fa-sliders"></i></div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, query, orderBy, where, addDoc, doc, deleteDoc, updateDoc, setDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // CONFIGURATION
-        const firebaseConfig = {
-            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
-            authDomain: "unibolt-f7005.firebaseapp.com",
-            projectId: "unibolt-f7005",
-            storageBucket: "unibolt-f7005.appspot.com",
-            messagingSenderId: "121987854250",
-            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        let allStudents = [];
-        let currentStudentId = null;
-        let deferredPrompt; // For PWA
-
-        // AUTH GUARD
-        onAuthStateChanged(auth, (user) => {
-            if (user && user.email === "admin@unibolt.in") {
-                document.getElementById('loading-screen').style.display = 'none';
-                initData();
-            } else {
-                window.location.href = "login.html";
-            }
-        });
-
-        // INIT DATA
-        function initData() {
-            // Live Students
-            const q = query(collection(db, "students"), orderBy("startTime", "desc"));
-            onSnapshot(q, (snapshot) => {
-                allStudents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                updateUI();
-            });
-
-            // Settings
-            getDoc(doc(db, "settings", "config")).then(docSnap => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if(data.timer) document.getElementById('setting-timer').value = data.timer;
-                    if(data.passMarks) document.getElementById('setting-pass').value = data.passMarks;
-                    document.getElementById('toggle-reg').checked = data.registrationOpen !== false;
-                    document.getElementById('toggle-retake').checked = data.allowRetakes === true;
-                    document.getElementById('toggle-maint').checked = data.maintenanceMode === true;
-                }
-            });
-
-            loadQuestionsForView();
-        }
-
-        // UI UPDATES
-        function updateUI() {
-            document.getElementById('d-total').innerText = allStudents.length;
-            document.getElementById('d-pass').innerText = allStudents.filter(s => s.score >= 45).length;
-            document.getElementById('d-flag').innerText = allStudents.filter(s => s.status === 'Cheated').length;
-
-            const recent = document.getElementById('recent-list');
-            recent.innerHTML = '';
-            allStudents.slice(0, 5).forEach(s => recent.innerHTML += createStudentCard(s));
-
-            renderStudentList();
-            renderFlagList();
-        }
-
-        function renderStudentList(filter = "") {
-            const list = document.getElementById('students-list');
-            list.innerHTML = '';
-            const filtered = allStudents.filter(s => (s.name || "").toLowerCase().includes(filter));
-            filtered.forEach(s => list.innerHTML += createStudentCard(s));
-        }
-
-        function renderFlagList() {
-            const list = document.getElementById('flag-list');
-            list.innerHTML = '';
-            const flags = allStudents.filter(s => s.status === 'Cheated');
-            if(flags.length === 0) list.innerHTML = `<div style="text-align:center; color:#666; margin-top:50px;">Clean Record.</div>`;
-            else flags.forEach(s => list.innerHTML += createStudentCard(s));
-        }
-
-        function createStudentCard(s) {
-            const initials = s.name ? s.name.substring(0, 2).toUpperCase() : "NA";
-            let color = '#fff';
-            let dotClass = 'dot-green';
-            if (s.status === 'Cheated') { color = 'var(--danger)'; dotClass = 'dot-red'; }
-            else if (s.status === 'In Progress') { dotClass = 'dot-yellow'; }
-
-            const dataStr = encodeURIComponent(JSON.stringify(s));
-            return `
-            <div class="generic-card student-card" onclick="openStudentSheet('${dataStr}')">
-                <div style="display:flex; align-items:center; flex:1;">
-                    <div class="s-avatar">${initials}</div>
-                    <div>
-                        <div class="s-name">${s.name}</div>
-                        <div class="s-sub"><span class="status-dot ${dotClass}"></span> ${s.course}</div>
+            <div class="two-col">
+                <div>
+                    <div class="section-head"><h3>Course Distribution</h3></div>
+                    <div class="chart-card">
+                        <div class="bar-wrap" id="course-bars">
+                            <div style="color:var(--text-dim); font-size:13px;">No data yet</div>
+                        </div>
                     </div>
                 </div>
-                <div class="s-score" style="color:${color}">${s.score || 0}</div>
-            </div>`;
-        }
+                <div>
+                    <div class="section-head"><h3>Status Breakdown</h3></div>
+                    <div class="chart-card">
+                        <div id="status-donut"></div>
+                    </div>
+                </div>
+            </div>
 
-        // =========================================
-        // QUESTION MANAGER LOGIC
-        // =========================================
-        window.loadQuestionsForView = async () => {
-            const course = document.getElementById('q-filter').value;
-            const list = document.getElementById('questions-list');
-            list.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">Loading...</div>';
+            <div>
+                <div class="section-head">
+                    <div><h3>Recent Activity</h3><p>Last 8 exam attempts</p></div>
+                    <button class="btn btn-blue" onclick="showSection('students', null)"><i class="fa-solid fa-arrow-right"></i> View All</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr>
+                            <th style="padding-left:22px;">Student</th>
+                            <th>Course</th>
+                            <th>Status</th>
+                            <th>Score</th>
+                            <th style="text-align:right; padding-right:22px;">Action</th>
+                        </tr></thead>
+                        <tbody id="recent-list"><tr><td colspan="5" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i></td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-            try {
-                const q = query(collection(db, "questions"), where("course", "==", course));
-                const snapshot = await getDocs(q);
-                
-                list.innerHTML = '';
-                if(snapshot.empty) {
-                    list.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">No questions found. Tap + to add.</div>';
-                    return;
-                }
+        <!-- ===== STUDENTS ===== -->
+        <div class="section" id="sec-students">
+            <div class="section-head">
+                <div><h3>All Students</h3><p id="student-count-label">Loading...</p></div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <select id="status-filter" onchange="applyFilters()" style="width:140px;">
+                        <option value="">All Status</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cheated">Red Flagged</option>
+                    </select>
+                    <select id="course-filter" onchange="applyFilters()" style="width:160px;">
+                        <option value="">All Courses</option>
+                        <option value="web">Web Dev</option>
+                        <option value="ai">AI & ML</option>
+                        <option value="app">App Dev</option>
+                    </select>
+                    <button class="btn" onclick="exportCSV()"><i class="fa-solid fa-download"></i> Export</button>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <div class="table-toolbar">
+                    <h3>Student Records</h3>
+                    <input type="text" class="search-bar" placeholder="Search name, email, city..." onkeyup="applyFilters()" id="search-box">
+                </div>
+                <table>
+                    <thead><tr>
+                        <th style="padding-left:22px;">Student</th>
+                        <th>Course</th>
+                        <th>City</th>
+                        <th>Status</th>
+                        <th>Score</th>
+                        <th style="text-align:right; padding-right:22px;">Actions</th>
+                    </tr></thead>
+                    <tbody id="students-tbody">
+                        <tr><td colspan="6" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><br>Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                let questionsData = [];
-                snapshot.forEach(doc => questionsData.push({ id: doc.id, ...doc.data() }));
-                questionsData.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+        <!-- ===== RED FLAGS ===== -->
+        <div class="section" id="sec-redflag">
+            <div class="section-head">
+                <div><h3 class="text-red">Red Flags</h3><p>Students with security violations</p></div>
+                <button class="btn btn-red" onclick="exportFlaggedCSV()"><i class="fa-solid fa-download"></i> Export Flagged</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr>
+                        <th style="padding-left:22px;">Student</th>
+                        <th>Course</th>
+                        <th>Violation</th>
+                        <th>IP Address</th>
+                        <th style="text-align:right; padding-right:22px;">Actions</th>
+                    </tr></thead>
+                    <tbody id="flag-tbody">
+                        <tr><td colspan="5" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                questionsData.forEach(data => {
-                    const dataStr = encodeURIComponent(JSON.stringify(data));
-                    // Create Options String with Highlight
-                    const opts = data.opts.map((o, i) => i === data.ans ? `<span class="correct-opt">${o}</span>` : o).join(', ');
-                    
-                    list.innerHTML += `
-                    <div class="generic-card question-card" onclick="openEditModal('${dataStr}')">
-                        <div class="q-header">
-                            <div class="q-badge">${data.course}</div>
-                            <i class="fa-solid fa-pen-to-square q-edit-icon"></i>
+        <!-- ===== QUESTION BANK ===== -->
+        <div class="section" id="sec-questions">
+            <div class="section-head">
+                <div><h3>Question Bank</h3><p>Manage exam questions per course</p></div>
+                <button class="btn btn-primary" onclick="openEditModal(null)"><i class="fa-solid fa-plus"></i> Add Question</button>
+            </div>
+            <div class="card" style="margin-bottom:20px;">
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <label class="field-label" style="margin:0; white-space:nowrap;">Select Course:</label>
+                    <select id="q-filter" style="width:240px; margin:0;" onchange="loadQuestionsForView()">
+                        <option value="web">💻 Full Stack Web Dev (MERN)</option>
+                        <option value="ai">🤖 AI & Machine Learning</option>
+                        <option value="app">📱 Mobile App Development</option>
+                    </select>
+                    <span id="q-count-label" class="text-dim" style="font-size:13px; margin-left:4px;"></span>
+                </div>
+            </div>
+            <div id="questions-list">
+                <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><br>Loading...</div>
+            </div>
+        </div>
+
+        <!-- ===== ANALYTICS ===== -->
+        <div class="section" id="sec-analytics">
+            <div class="section-head">
+                <div><h3>Analytics</h3><p>Performance insights across all exams</p></div>
+            </div>
+
+            <div class="stats-grid" style="margin-bottom:28px;">
+                <div class="stat-card">
+                    <div class="label">Pass Rate</div>
+                    <div class="val text-green" id="a-passrate">0%</div>
+                    <i class="fa-solid fa-percent icon" style="color:var(--success);"></i>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Avg Score</div>
+                    <div class="val" id="a-avg">0</div>
+                    <i class="fa-solid fa-chart-line icon"></i>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Completion Rate</div>
+                    <div class="val text-blue" id="a-comprate">0%</div>
+                    <i class="fa-solid fa-circle-check icon" style="color:var(--blue);"></i>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Cheat Rate</div>
+                    <div class="val text-red" id="a-cheatrate">0%</div>
+                    <i class="fa-solid fa-shield-halved icon" style="color:var(--danger);"></i>
+                </div>
+            </div>
+
+            <div class="analytics-grid">
+                <div class="chart-card">
+                    <h4><i class="fa-solid fa-chart-bar text-blue"></i> Score Distribution</h4>
+                    <div class="score-dist" id="score-dist-chart">
+                        <div class="text-dim" style="font-size:12px;">No data</div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h4><i class="fa-solid fa-layer-group text-blue"></i> Course Popularity</h4>
+                    <div class="bar-wrap" id="course-pop-bars">
+                        <div class="text-dim" style="font-size:12px;">No data</div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h4><i class="fa-solid fa-trophy text-yellow"></i> Top Performers</h4>
+                    <div id="top-performers-list">
+                        <div class="text-dim" style="font-size:12px;">No data</div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h4><i class="fa-solid fa-shield-halved text-red"></i> Violation Analysis</h4>
+                    <div id="violation-analysis">
+                        <div class="text-dim" style="font-size:12px;">No data</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== REPORTS ===== -->
+        <div class="section" id="sec-reports">
+            <div class="section-head">
+                <div><h3>Reports & Export</h3><p>Download exam data and generate reports</p></div>
+            </div>
+
+            <div class="report-card" onclick="exportCSV()">
+                <div class="report-icon" style="background:rgba(10,132,255,0.15); color:var(--blue);"><i class="fa-solid fa-table"></i></div>
+                <div class="report-info">
+                    <h4>Full Student Report (CSV)</h4>
+                    <p>Export all student records with scores, status, and contact info</p>
+                </div>
+                <i class="fa-solid fa-chevron-right text-dim"></i>
+            </div>
+            <div class="report-card" onclick="exportFlaggedCSV()">
+                <div class="report-icon" style="background:rgba(255,69,58,0.15); color:var(--danger);"><i class="fa-solid fa-flag"></i></div>
+                <div class="report-info">
+                    <h4>Flagged Students Report (CSV)</h4>
+                    <p>Export only red-flagged students with violation reasons</p>
+                </div>
+                <i class="fa-solid fa-chevron-right text-dim"></i>
+            </div>
+            <div class="report-card" onclick="exportTopCSV()">
+                <div class="report-icon" style="background:rgba(255,214,10,0.15); color:var(--warning);"><i class="fa-solid fa-trophy"></i></div>
+                <div class="report-info">
+                    <h4>Top Scorers Report (CSV)</h4>
+                    <p>Export students who scored 45 or above (scholarship qualified)</p>
+                </div>
+                <i class="fa-solid fa-chevron-right text-dim"></i>
+            </div>
+            <div class="report-card" onclick="copyEmailList()">
+                <div class="report-icon" style="background:rgba(48,209,88,0.15); color:var(--success);"><i class="fa-solid fa-envelope"></i></div>
+                <div class="report-info">
+                    <h4>Copy Email List</h4>
+                    <p>Copy all student email addresses to clipboard for bulk mailing</p>
+                </div>
+                <i class="fa-solid fa-chevron-right text-dim"></i>
+            </div>
+            <div class="report-card" onclick="printSummary()">
+                <div class="report-icon" style="background:rgba(191,90,242,0.15); color:var(--purple);"><i class="fa-solid fa-print"></i></div>
+                <div class="report-info">
+                    <h4>Print Summary Report</h4>
+                    <p>Open a print-ready summary of exam statistics</p>
+                </div>
+                <i class="fa-solid fa-chevron-right text-dim"></i>
+            </div>
+        </div>
+
+        <!-- ===== SETTINGS ===== -->
+        <div class="section" id="sec-settings">
+            <div class="section-head">
+                <div><h3>Exam Settings</h3><p>Configure exam parameters and system controls</p></div>
+            </div>
+
+            <div class="two-col">
+                <div>
+                    <div class="card">
+                        <div class="card-title text-blue"><i class="fa-solid fa-gear"></i> Exam Configuration</div>
+                        <div class="info-row">
+                            <div class="info-label">Duration (minutes)</div>
+                            <input type="number" id="setting-timer" value="30" style="width:90px; text-align:center; margin:0; padding:8px 12px;">
                         </div>
-                        <div class="q-text">${data.q}</div>
-                        <div class="q-options">${opts}</div>
-                    </div>`;
-                });
-            } catch (error) { console.error(error); }
-        };
+                        <div class="info-row">
+                            <div class="info-label">Pass Marks (out of 50)</div>
+                            <input type="number" id="setting-pass" value="45" style="width:90px; text-align:center; margin:0; padding:8px 12px;">
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Tab Switch Limit</div>
+                            <input type="number" id="setting-tab-limit" value="2" style="width:90px; text-align:center; margin:0; padding:8px 12px;">
+                        </div>
+                        <div class="info-row" style="border:none;">
+                            <div class="info-label">Face Warning Limit</div>
+                            <input type="number" id="setting-face-limit" value="10" style="width:90px; text-align:center; margin:0; padding:8px 12px;">
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="card">
+                        <div class="card-title" style="color:var(--purple);"><i class="fa-solid fa-shield-halved"></i> System Control</div>
+                        <div class="switch-row">
+                            <div><div class="switch-label">Registration Open</div><div class="switch-sub">Allow new students to register</div></div>
+                            <label class="switch"><input type="checkbox" checked id="toggle-reg"><span class="slider"></span></label>
+                        </div>
+                        <div class="switch-row">
+                            <div><div class="switch-label">Allow Retakes</div><div class="switch-sub">Students can attempt again</div></div>
+                            <label class="switch"><input type="checkbox" id="toggle-retake"><span class="slider"></span></label>
+                        </div>
+                        <div class="switch-row">
+                            <div><div class="switch-label">Maintenance Mode</div><div class="switch-sub">Block all exam access</div></div>
+                            <label class="switch"><input type="checkbox" id="toggle-maint"><span class="slider"></span></label>
+                        </div>
+                        <div class="switch-row" style="border:none;">
+                            <div><div class="switch-label">Face Detection Required</div><div class="switch-sub">Enforce webcam proctoring</div></div>
+                            <label class="switch"><input type="checkbox" checked id="toggle-face"><span class="slider"></span></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        // OPEN EDIT MODAL
-        window.openEditModal = (dataStr) => {
-            const overlay = document.getElementById('edit-overlay');
-            const modal = document.getElementById('edit-modal');
-            const delBtn = document.getElementById('btn-delete-q');
+            <div class="card">
+                <div class="card-title" style="color:var(--warning);"><i class="fa-solid fa-bullhorn"></i> Announcement Banner</div>
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label class="field-label">Banner Message (shown on exam intro page)</label>
+                    <textarea id="setting-banner" rows="3" placeholder="e.g. Exam window closes on March 30, 2026."></textarea>
+                </div>
+            </div>
 
-            overlay.classList.add('active');
-            modal.classList.add('active');
+            <button class="btn btn-primary" style="padding:14px 28px; font-size:15px;" onclick="saveSettings()">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Save & Apply All Settings
+            </button>
+        </div>
 
-            if (dataStr) {
-                // EDIT MODE
-                const q = JSON.parse(decodeURIComponent(dataStr));
-                document.getElementById('edit-title').innerText = "Edit Question";
-                document.getElementById('edit-id').value = q.id;
-                document.getElementById('edit-q').value = q.q;
-                document.getElementById('edit-opt0').value = q.opts[0];
-                document.getElementById('edit-opt1').value = q.opts[1];
-                document.getElementById('edit-opt2').value = q.opts[2];
-                document.getElementById('edit-opt3').value = q.opts[3];
-                document.getElementById('edit-ans').value = q.ans;
-                delBtn.style.display = 'block';
-            } else {
-                // ADD NEW MODE
-                document.getElementById('edit-title').innerText = "Add Question";
-                document.getElementById('edit-id').value = "";
-                document.getElementById('edit-q').value = "";
-                document.getElementById('edit-opt0').value = "";
-                document.getElementById('edit-opt1').value = "";
-                document.getElementById('edit-opt2').value = "";
-                document.getElementById('edit-opt3').value = "";
-                document.getElementById('edit-ans').value = "";
-                delBtn.style.display = 'none';
-            }
-        };
+    </div><!-- end content-area -->
+</div><!-- end main -->
 
-        window.closeEditModal = () => {
-            document.getElementById('edit-overlay').classList.remove('active');
-            document.getElementById('edit-modal').classList.remove('active');
-        };
+<!-- ===== STUDENT DETAIL DRAWER ===== -->
+<div class="drawer-overlay" id="student-overlay" onclick="closeStudentDrawer()"></div>
+<div class="drawer" id="student-drawer">
+    <div class="drawer-handle" onclick="closeStudentDrawer()"></div>
+    <div id="m-avatar" class="big-avatar">AB</div>
+    <h2 id="m-name" style="text-align:center; margin-bottom:4px;">Student Name</h2>
+    <div id="m-status-pill" style="text-align:center; margin-bottom:20px;"></div>
 
-        // SAVE QUESTION
-        window.saveQuestion = async () => {
-            const id = document.getElementById('edit-id').value;
-            const course = document.getElementById('q-filter').value;
-            
-            const data = {
-                course: course,
-                q: document.getElementById('edit-q').value,
-                opts: [
-                    document.getElementById('edit-opt0').value,
-                    document.getElementById('edit-opt1').value,
-                    document.getElementById('edit-opt2').value,
-                    document.getElementById('edit-opt3').value
-                ],
-                ans: parseInt(document.getElementById('edit-ans').value),
-                timestamp: new Date()
-            };
+    <div class="info-row"><span class="info-label">Email</span><span class="info-val" id="m-email">...</span></div>
+    <div class="info-row"><span class="info-label">Phone</span><span class="info-val" id="m-phone">...</span></div>
+    <div class="info-row"><span class="info-label">City / State</span><span class="info-val" id="m-city">...</span></div>
+    <div class="info-row"><span class="info-label">Course</span><span class="info-val" id="m-course">...</span></div>
+    <div class="info-row"><span class="info-label">Score</span><span class="info-val" id="m-score">...</span></div>
+    <div class="info-row"><span class="info-label">IP Address</span><span class="info-val" id="m-ip">...</span></div>
+    <div class="info-row"><span class="info-label">Tab Warnings</span><span class="info-val" id="m-tabwarn">...</span></div>
+    <div class="info-row"><span class="info-label">Face Warnings</span><span class="info-val" id="m-facewarn">...</span></div>
 
-            if (!data.q) return showToast("Question Required", "red");
+    <div id="violation-box" style="display:none; background:rgba(255,69,58,0.1); padding:14px 16px; border-radius:14px; margin-top:14px; border:1px solid var(--danger);">
+        <div style="color:var(--danger); font-size:11px; font-weight:700; text-transform:uppercase; margin-bottom:5px;">Violation Reason</div>
+        <div id="m-violation" style="font-size:14px;">...</div>
+    </div>
 
-            try {
-                if (id) {
-                    await updateDoc(doc(db, "questions", id), data);
-                    showToast("Question Updated");
-                } else {
-                    await addDoc(collection(db, "questions"), data);
-                    showToast("New Question Added");
-                }
-                closeEditModal();
-                loadQuestionsForView();
-            } catch(e) { console.error(e); showToast("Error Saving", "red"); }
-        };
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:24px;">
+        <button class="btn btn-orange" onclick="resetStudent()"><i class="fa-solid fa-rotate-left"></i> Allow Retake</button>
+        <button class="btn btn-red" onclick="deleteStudent()"><i class="fa-solid fa-trash"></i> Delete User</button>
+    </div>
+</div>
 
-        // DELETE QUESTION
-        window.deleteQuestion = async () => {
-            const id = document.getElementById('edit-id').value;
-            openConfirm("Delete Question?", "This cannot be undone.", "var(--danger)", async () => {
-                await deleteDoc(doc(db, "questions", id));
-                closeEditModal();
-                loadQuestionsForView();
-                showToast("Question Deleted");
-            });
-        };
+<!-- ===== EDIT QUESTION MODAL ===== -->
+<div class="modal" id="edit-modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="edit-title">Add Question</h3>
+            <button class="close-btn" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <input type="hidden" id="edit-id">
 
-        // =========================================
-        // STUDENT ACTIONS
-        // =========================================
-        window.openStudentSheet = (dataStr) => {
-            const s = JSON.parse(decodeURIComponent(dataStr));
-            currentStudentId = s.id;
-            
-            document.getElementById('m-name').innerText = s.name;
-            document.getElementById('m-avatar').innerText = s.name.substring(0,2).toUpperCase();
-            document.getElementById('m-email').innerText = s.email;
-            document.getElementById('m-phone').innerText = s.phone;
-            document.getElementById('m-city').innerText = s.city || '-';
-            document.getElementById('m-course').innerText = s.course;
-            document.getElementById('m-score').innerText = s.score || 0;
-            document.getElementById('m-ip').innerText = s.ipAddress;
-            document.getElementById('m-status').innerText = s.status;
+        <div class="form-group" style="margin-bottom:14px;">
+            <label class="field-label">Course</label>
+            <select id="edit-course">
+                <option value="web">💻 Full Stack Web Dev</option>
+                <option value="ai">🤖 AI & Machine Learning</option>
+                <option value="app">📱 Mobile App Dev</option>
+            </select>
+        </div>
 
-            const vBox = document.getElementById('violation-box');
-            if(s.status === 'Cheated') {
-                vBox.style.display = 'block';
-                document.getElementById('m-violation').innerText = s.lastViolation || "N/A";
-            } else { vBox.style.display = 'none'; }
+        <div class="form-group" style="margin-bottom:14px;">
+            <label class="field-label">Question Text</label>
+            <textarea id="edit-q" rows="3" placeholder="Enter the question..."></textarea>
+        </div>
 
-            document.getElementById('student-overlay').classList.add('active');
-            document.getElementById('student-sheet').classList.add('active');
-        };
+        <label class="field-label">Options</label>
+        <div class="form-grid" style="margin-top:6px;">
+            <div class="form-group"><label class="field-label">A</label><input type="text" id="edit-opt0" placeholder="Option A"></div>
+            <div class="form-group"><label class="field-label">B</label><input type="text" id="edit-opt1" placeholder="Option B"></div>
+            <div class="form-group"><label class="field-label">C</label><input type="text" id="edit-opt2" placeholder="Option C"></div>
+            <div class="form-group"><label class="field-label">D</label><input type="text" id="edit-opt3" placeholder="Option D"></div>
+        </div>
 
-        window.closeStudentSheet = () => {
-            document.getElementById('student-overlay').classList.remove('active');
-            document.getElementById('student-sheet').classList.remove('active');
-        };
+        <div class="form-group" style="margin-bottom:20px;">
+            <label class="field-label">Correct Answer Index (0=A, 1=B, 2=C, 3=D)</label>
+            <input type="number" id="edit-ans" min="0" max="3" placeholder="Enter 0, 1, 2, or 3" class="correct-field">
+        </div>
 
-        window.resetStudent = async () => {
-            openConfirm("Allow Retake?", "Deletes current record.", "var(--warning)", async () => {
-                await deleteDoc(doc(db, "students", currentStudentId));
-                closeStudentSheet();
-                showToast("Retake Allowed");
-            });
-        };
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <button class="btn btn-red" id="btn-delete-q" onclick="deleteQuestion()" style="display:none;"><i class="fa-solid fa-trash"></i> Delete</button>
+            <button class="btn btn-primary" onclick="saveQuestion()" id="btn-save-q" style="grid-column:span 2;"><i class="fa-solid fa-floppy-disk"></i> Save Question</button>
+        </div>
+    </div>
+</div>
 
-        window.deleteStudent = async () => {
-            openConfirm("Delete User?", "Permanently remove this record?", "var(--danger)", async () => {
-                await deleteDoc(doc(db, "students", currentStudentId));
-                closeStudentSheet();
-                showToast("Record Deleted");
-            });
-        };
+<!-- ===== CONFIRM MODAL ===== -->
+<div class="modal" id="confirm-modal">
+    <div class="modal-box" style="max-width:360px; text-align:center;">
+        <div style="font-size:44px; margin-bottom:16px;" id="c-icon">⚠️</div>
+        <h3 id="c-title" style="margin-bottom:10px;">Confirm</h3>
+        <p id="c-msg" style="color:var(--text-dim); font-size:14px; margin-bottom:26px; line-height:1.5;">This cannot be undone.</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <button class="btn" onclick="closeConfirm()" style="justify-content:center;">Cancel</button>
+            <button class="btn btn-red" id="c-yes-btn" style="justify-content:center;">Yes, Confirm</button>
+        </div>
+    </div>
+</div>
 
-        // =========================================
-        // PWA INSTALLATION LOGIC
-        // =========================================
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            // Check if app is not installed
-            if (!window.matchMedia('(display-mode: standalone)').matches) {
-                document.getElementById('pwa-install-btn').style.display = 'block';
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, onSnapshot, query, orderBy, where, addDoc, doc, deleteDoc, updateDoc, setDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+        authDomain: "unibolt-f7005.firebaseapp.com",
+        projectId: "unibolt-f7005",
+        storageBucket: "unibolt-f7005.appspot.com",
+        messagingSenderId: "121987854250",
+        appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let allStudents = [];
+    let currentStudentId = null;
+
+    // ===== AUTH GUARD =====
+    onAuthStateChanged(auth, (user) => {
+        if (user && user.email === "admin@unibolt.in") {
+            document.getElementById('loading-screen').style.display = 'none';
+            initData();
+        } else {
+            window.location.href = "login.html";
+        }
+    });
+
+    // ===== INIT DATA =====
+    function initData() {
+        const q = query(collection(db, "students"), orderBy("startTime", "desc"));
+        onSnapshot(q, (snapshot) => {
+            allStudents = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            updateAllUI();
+        });
+
+        getDoc(doc(db, "settings", "config")).then(docSnap => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.timer) document.getElementById('setting-timer').value = data.timer;
+                if (data.passMarks) document.getElementById('setting-pass').value = data.passMarks;
+                if (data.tabLimit) document.getElementById('setting-tab-limit').value = data.tabLimit;
+                if (data.faceLimit) document.getElementById('setting-face-limit').value = data.faceLimit;
+                if (data.banner) document.getElementById('setting-banner').value = data.banner;
+                document.getElementById('toggle-reg').checked = data.registrationOpen !== false;
+                document.getElementById('toggle-retake').checked = data.allowRetakes === true;
+                document.getElementById('toggle-maint').checked = data.maintenanceMode === true;
+                document.getElementById('toggle-face').checked = data.faceDetection !== false;
             }
         });
 
-        window.installPWA = async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    document.getElementById('pwa-install-btn').style.display = 'none';
-                }
-                deferredPrompt = null;
+        loadQuestionsForView();
+    }
+
+    // ===== UI UPDATES =====
+    function updateAllUI() {
+        const total = allStudents.length;
+        const active = allStudents.filter(s => s.status === 'In Progress').length;
+        const done = allStudents.filter(s => s.status === 'Completed').length;
+        const pass = allStudents.filter(s => s.score >= 45).length;
+        const flags = allStudents.filter(s => s.status === 'Cheated').length;
+
+        const completedStudents = allStudents.filter(s => s.status === 'Completed');
+        const avgScore = completedStudents.length
+            ? Math.round(completedStudents.reduce((s, x) => s + (x.score || 0), 0) / completedStudents.length)
+            : 0;
+        const topScore = allStudents.length ? Math.max(...allStudents.map(s => s.score || 0)) : 0;
+
+        // Overview stats
+        setText('d-total', total); setText('d-active', active); setText('d-done', done);
+        setText('d-pass', pass); setText('d-flag', flags);
+        setText('d-avg', avgScore); setText('d-top', topScore);
+
+        // Sidebar badges
+        setText('nb-total', total); setText('nb-flags', flags);
+
+        // Analytics
+        const passRate = done ? Math.round((pass / done) * 100) : 0;
+        const compRate = total ? Math.round((done / total) * 100) : 0;
+        const cheatRate = total ? Math.round((flags / total) * 100) : 0;
+        setText('a-passrate', passRate + '%'); setText('a-avg', avgScore);
+        setText('a-comprate', compRate + '%'); setText('a-cheatrate', cheatRate + '%');
+
+        renderCourseDistribution();
+        renderStatusDonut(active, done, flags);
+        renderScoreDist();
+        renderTopPerformers();
+        renderViolationAnalysis();
+        renderRecentList();
+        renderStudentsTable();
+        renderFlagTable();
+
+        setText('student-count-label', `${total} total students found`);
+    }
+
+    function setText(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.innerText = val;
+    }
+
+    // ===== COURSE DISTRIBUTION =====
+    function renderCourseDistribution() {
+        const courses = { web: 0, ai: 0, app: 0 };
+        allStudents.forEach(s => { if (s.course && courses[s.course] !== undefined) courses[s.course]++; });
+        const total = allStudents.length || 1;
+
+        const labels = { web: '💻 Web Dev', ai: '🤖 AI & ML', app: '📱 App Dev' };
+        const colors = { web: 'var(--blue)', ai: 'var(--purple)', app: 'var(--orange)' };
+
+        const el = document.getElementById('course-bars');
+        el.innerHTML = Object.keys(courses).map(k => `
+            <div class="bar-row">
+                <div class="bar-label"><span>${labels[k]}</span><span>${courses[k]}</span></div>
+                <div class="bar-track"><div class="bar-fill" style="width:${Math.round((courses[k]/total)*100)}%; background:${colors[k]};"></div></div>
+            </div>`).join('');
+
+        const el2 = document.getElementById('course-pop-bars');
+        el2.innerHTML = el.innerHTML;
+    }
+
+    // ===== STATUS DONUT =====
+    function renderStatusDonut(active, done, flags) {
+        const el = document.getElementById('status-donut');
+        const data = [
+            { label: 'In Progress', val: active, color: 'var(--warning)' },
+            { label: 'Completed', val: done, color: 'var(--success)' },
+            { label: 'Red Flagged', val: flags, color: 'var(--danger)' }
+        ];
+        el.innerHTML = data.map(d => `
+            <div class="donut-row">
+                <div class="donut-dot" style="background:${d.color};"></div>
+                <span class="donut-label">${d.label}</span>
+                <span class="donut-val">${d.val}</span>
+            </div>`).join('');
+    }
+
+    // ===== SCORE DISTRIBUTION =====
+    function renderScoreDist() {
+        const ranges = [
+            { label: '0–9', min: 0, max: 9 }, { label: '10–19', min: 10, max: 19 },
+            { label: '20–29', min: 20, max: 29 }, { label: '30–44', min: 30, max: 44 },
+            { label: '45+', min: 45, max: 50 }
+        ];
+        const counts = ranges.map(r => allStudents.filter(s => (s.score || 0) >= r.min && (s.score || 0) <= r.max).length);
+        const maxCount = Math.max(...counts, 1);
+
+        const el = document.getElementById('score-dist-chart');
+        el.innerHTML = counts.map((c, i) => `
+            <div class="dist-col">
+                <div class="dist-bar-wrap">
+                    <div class="dist-bar" style="height:${Math.round((c/maxCount)*100)}%; background:${i===4?'var(--success)':'var(--blue)'};"></div>
+                </div>
+                <div class="dist-label">${ranges[i].label}</div>
+                <div class="dist-count">${c}</div>
+            </div>`).join('');
+    }
+
+    // ===== TOP PERFORMERS =====
+    function renderTopPerformers() {
+        const top = [...allStudents].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 5);
+        const el = document.getElementById('top-performers-list');
+        if (!top.length) { el.innerHTML = '<div class="text-dim" style="font-size:13px;">No data</div>'; return; }
+        el.innerHTML = top.map((s, i) => `
+            <div class="donut-row">
+                <div class="donut-dot" style="background:${i===0?'var(--warning)':'var(--text-dim)'};"></div>
+                <span class="donut-label" style="font-weight:500;">${s.name || 'Unknown'}</span>
+                <span class="donut-val text-green">${s.score || 0}/50</span>
+            </div>`).join('');
+    }
+
+    // ===== VIOLATION ANALYSIS =====
+    function renderViolationAnalysis() {
+        const tabV = allStudents.reduce((s, x) => s + (x.tabWarnings || 0), 0);
+        const faceV = allStudents.reduce((s, x) => s + (x.faceWarnings || 0), 0);
+        const el = document.getElementById('violation-analysis');
+        el.innerHTML = `
+            <div class="donut-row"><div class="donut-dot" style="background:var(--orange);"></div><span class="donut-label">Tab/Focus Violations</span><span class="donut-val">${tabV}</span></div>
+            <div class="donut-row"><div class="donut-dot" style="background:var(--purple);"></div><span class="donut-label">Face Detection Warnings</span><span class="donut-val">${faceV}</span></div>
+            <div class="donut-row"><div class="donut-dot" style="background:var(--danger);"></div><span class="donut-label">Terminated Sessions</span><span class="donut-val">${allStudents.filter(s => s.status === 'Cheated').length}</span></div>`;
+    }
+
+    // ===== RENDER RECENT LIST =====
+    function renderRecentList() {
+        const el = document.getElementById('recent-list');
+        const students = allStudents.slice(0, 8);
+        if (!students.length) {
+            el.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-inbox"></i><br>No students yet</td></tr>';
+            return;
+        }
+        el.innerHTML = students.map(s => buildStudentRow(s, true)).join('');
+    }
+
+    // ===== RENDER STUDENTS TABLE =====
+    function renderStudentsTable() {
+        const searchVal = (document.getElementById('search-box')?.value || '').toLowerCase();
+        const statusVal = document.getElementById('status-filter')?.value || '';
+        const courseVal = document.getElementById('course-filter')?.value || '';
+
+        let filtered = allStudents.filter(s => {
+            const matchSearch = !searchVal ||
+                (s.name || '').toLowerCase().includes(searchVal) ||
+                (s.email || '').toLowerCase().includes(searchVal) ||
+                (s.city || '').toLowerCase().includes(searchVal);
+            const matchStatus = !statusVal || s.status === statusVal;
+            const matchCourse = !courseVal || s.course === courseVal;
+            return matchSearch && matchStatus && matchCourse;
+        });
+
+        const el = document.getElementById('students-tbody');
+        setText('student-count-label', `${filtered.length} of ${allStudents.length} students`);
+        if (!filtered.length) {
+            el.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fa-solid fa-magnifying-glass"></i><br>No results found</td></tr>';
+            return;
+        }
+        el.innerHTML = filtered.map(s => buildStudentRow(s, false)).join('');
+    }
+
+    function buildStudentRow(s, compact) {
+        const initials = (s.name || 'NA').substring(0, 2).toUpperCase();
+        const statusPill = s.status === 'Cheated'
+            ? '<span class="status-pill pill-red"><span class="dot"></span> Flagged</span>'
+            : s.status === 'Completed'
+            ? '<span class="status-pill pill-green"><span class="dot"></span> Completed</span>'
+            : '<span class="status-pill pill-yellow"><span class="dot"></span> In Progress</span>';
+        const scoreColor = s.score >= 45 ? 'color:var(--success)' : s.score >= 30 ? 'color:var(--warning)' : '';
+        const courseLabel = s.course === 'web' ? 'Web Dev' : s.course === 'ai' ? 'AI & ML' : s.course === 'app' ? 'App Dev' : s.course || '-';
+        const dataStr = encodeURIComponent(JSON.stringify(s));
+
+        if (compact) return `
+        <tr>
+            <td style="padding-left:22px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="avatar">${initials}</div>
+                    <div><div style="font-weight:600; font-size:14px;">${s.name || 'Unknown'}</div><div style="font-size:12px; color:var(--text-dim);">${s.email || ''}</div></div>
+                </div>
+            </td>
+            <td><span style="font-size:13px; color:var(--text-dim);">${courseLabel}</span></td>
+            <td>${statusPill}</td>
+            <td><span class="score-badge" style="${scoreColor}">${s.score || 0}/50</span></td>
+            <td style="text-align:right; padding-right:22px;">
+                <button class="btn-icon" onclick="openStudentDrawer('${dataStr}')" title="View Details"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+            </td>
+        </tr>`;
+
+        return `
+        <tr>
+            <td style="padding-left:22px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="avatar">${initials}</div>
+                    <div><div style="font-weight:600; font-size:14px;">${s.name || 'Unknown'}</div><div style="font-size:12px; color:var(--text-dim);">${s.email || ''}</div></div>
+                </div>
+            </td>
+            <td><span style="font-size:13px;">${courseLabel}</span></td>
+            <td><span style="font-size:13px; color:var(--text-dim);">${s.city || '-'}</span></td>
+            <td>${statusPill}</td>
+            <td><span class="score-badge" style="${scoreColor}">${s.score || 0}/50</span></td>
+            <td style="text-align:right; padding-right:22px;">
+                <div style="display:flex; gap:8px; justify-content:flex-end;">
+                    <button class="btn-icon" onclick="openStudentDrawer('${dataStr}')" title="View Details" style="color:var(--blue);"><i class="fa-solid fa-eye"></i></button>
+                    <button class="btn-icon" onclick="doDeleteStudent('${s.id}')" title="Delete" style="color:var(--danger);"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </td>
+        </tr>`;
+    }
+
+    // ===== FLAG TABLE =====
+    function renderFlagTable() {
+        const flags = allStudents.filter(s => s.status === 'Cheated');
+        const el = document.getElementById('flag-tbody');
+        if (!flags.length) {
+            el.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-shield-check" style="color:var(--success);"></i><br>No violations detected</td></tr>';
+            return;
+        }
+        el.innerHTML = flags.map(s => {
+            const initials = (s.name || 'NA').substring(0, 2).toUpperCase();
+            const dataStr = encodeURIComponent(JSON.stringify(s));
+            const courseLabel = s.course === 'web' ? 'Web Dev' : s.course === 'ai' ? 'AI & ML' : s.course === 'app' ? 'App Dev' : s.course || '-';
+            return `
+            <tr>
+                <td style="padding-left:22px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div class="avatar" style="background:rgba(255,69,58,0.2); color:var(--danger);">${initials}</div>
+                        <div><div style="font-weight:600; font-size:14px; color:var(--danger);">${s.name || 'Unknown'}</div><div style="font-size:12px; color:var(--text-dim);">${s.email || ''}</div></div>
+                    </div>
+                </td>
+                <td><span style="font-size:13px;">${courseLabel}</span></td>
+                <td><span style="font-size:13px; color:var(--danger);">${s.lastViolation || s.finalReason || 'Security Violation'}</span></td>
+                <td><span style="font-size:12px; font-family:monospace; color:var(--text-dim);">${s.ipAddress || '-'}</span></td>
+                <td style="text-align:right; padding-right:22px;">
+                    <div style="display:flex; gap:8px; justify-content:flex-end;">
+                        <button class="btn btn-orange" style="padding:7px 12px; font-size:12px;" onclick="doResetStudent('${s.id}')"><i class="fa-solid fa-rotate-left"></i> Retake</button>
+                        <button class="btn btn-red" style="padding:7px 12px; font-size:12px;" onclick="doDeleteStudent('${s.id}')"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    // ===== APPLY FILTERS =====
+    window.applyFilters = () => { renderStudentsTable(); };
+
+    // ===== QUESTION BANK =====
+    window.loadQuestionsForView = async () => {
+        const course = document.getElementById('q-filter').value;
+        const list = document.getElementById('questions-list');
+        list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><br>Loading questions...</div>';
+
+        try {
+            const q = query(collection(db, "questions"), where("course", "==", course));
+            const snapshot = await getDocs(q);
+            list.innerHTML = '';
+
+            const label = document.getElementById('q-count-label');
+
+            if (snapshot.empty) {
+                list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><br>No questions found for this course.<br><small>Use the <strong>Add Question</strong> button above to create the first one.</small></div>';
+                if (label) label.innerText = '(0 questions)';
+                return;
             }
-        };
 
-        // =========================================
-        // GENERAL UTILS
-        // =========================================
-        window.saveSettings = async () => {
-            try {
-                await setDoc(doc(db, "settings", "config"), { 
-                    timer: document.getElementById('setting-timer').value,
-                    passMarks: document.getElementById('setting-pass').value,
-                    registrationOpen: document.getElementById('toggle-reg').checked,
-                    allowRetakes: document.getElementById('toggle-retake').checked,
-                    maintenanceMode: document.getElementById('toggle-maint').checked,
-                    updatedAt: new Date()
-                }, { merge: true });
-                showToast("Configuration Saved");
-            } catch(e) { showToast("Error Saving", "red"); }
-        };
+            let qs = [];
+            snapshot.forEach(d => qs.push({ id: d.id, ...d.data() }));
+            qs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+            if (label) label.innerText = `(${qs.length} questions)`;
 
-        window.openConfirm = (title, msg, color, action) => {
-            document.getElementById('c-title').innerText = title;
-            document.getElementById('c-msg').innerText = msg;
-            document.getElementById('c-icon').style.color = color;
-            const btn = document.getElementById('c-yes-btn');
-            btn.style.background = color === 'var(--warning)' ? 'rgba(255,214,10,0.2)' : 'rgba(255,69,58,0.2)';
-            btn.style.color = color;
-            btn.onclick = () => { action(); closeConfirm(); };
-            document.getElementById('confirm-modal').classList.add('active');
-        };
+            qs.forEach(data => {
+                const dataStr = encodeURIComponent(JSON.stringify(data));
+                const opts = (data.opts || []).map((o, i) =>
+                    i === data.ans ? `<span class="correct-opt">✓ ${o}</span>` : o
+                ).join(' &nbsp;·&nbsp; ');
+                list.innerHTML += `
+                <div class="q-card" onclick="openEditModal('${dataStr}')">
+                    <div class="q-card-header">
+                        <span class="q-course-badge">${data.course || course}</span>
+                        <i class="fa-solid fa-pen-to-square" style="color:var(--blue); font-size:13px;"></i>
+                    </div>
+                    <div class="q-text">${data.q}</div>
+                    <div class="q-opts">${opts}</div>
+                </div>`;
+            });
+        } catch (e) { console.error(e); showToast("Error loading questions", "error"); }
+    };
 
-        window.closeConfirm = () => { document.getElementById('confirm-modal').classList.remove('active'); };
-        
-        window.logout = () => { signOut(auth).then(() => window.location.href = "login.html"); };
-        
-        window.filterStudents = () => {
-            renderStudentList(document.getElementById('search-box').value.toLowerCase());
-        };
+    // ===== EDIT MODAL =====
+    window.openEditModal = (dataStr) => {
+        const modal = document.getElementById('edit-modal');
+        const delBtn = document.getElementById('btn-delete-q');
+        const saveBtn = document.getElementById('btn-save-q');
 
-        window.switchTab = (tabId, el) => {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById('page-' + tabId).classList.add('active');
-            if(el) {
-                document.querySelectorAll('.tab-item').forEach(i => i.classList.remove('active'));
-                el.classList.add('active');
-            }
-        };
+        if (dataStr) {
+            const q = JSON.parse(decodeURIComponent(dataStr));
+            document.getElementById('edit-title').innerText = "Edit Question";
+            document.getElementById('edit-id').value = q.id;
+            document.getElementById('edit-course').value = q.course || 'web';
+            document.getElementById('edit-q').value = q.q || '';
+            document.getElementById('edit-opt0').value = (q.opts || [])[0] || '';
+            document.getElementById('edit-opt1').value = (q.opts || [])[1] || '';
+            document.getElementById('edit-opt2').value = (q.opts || [])[2] || '';
+            document.getElementById('edit-opt3').value = (q.opts || [])[3] || '';
+            document.getElementById('edit-ans').value = q.ans ?? '';
+            delBtn.style.display = 'block';
+            saveBtn.style.gridColumn = '2';
+        } else {
+            document.getElementById('edit-title').innerText = "Add New Question";
+            document.getElementById('edit-id').value = '';
+            document.getElementById('edit-course').value = document.getElementById('q-filter')?.value || 'web';
+            document.getElementById('edit-q').value = '';
+            ['edit-opt0','edit-opt1','edit-opt2','edit-opt3','edit-ans'].forEach(id => document.getElementById(id).value = '');
+            delBtn.style.display = 'none';
+            saveBtn.style.gridColumn = 'span 2';
+        }
+        modal.classList.add('active');
+    };
 
-        window.showToast = (msg, color) => {
-            const t = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = msg;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
-        };
+    window.closeEditModal = () => document.getElementById('edit-modal').classList.remove('active');
 
-        if ('serviceWorker' in navigator) navigator.serviceWorker.register('exam-sw.js');
-    </script>
+    window.saveQuestion = async () => {
+        const id = document.getElementById('edit-id').value;
+        const course = document.getElementById('edit-course').value;
+        const data = {
+            course,
+            q: document.getElementById('edit-q').value.trim(),
+            opts: [
+                document.getElementById('edit-opt0').value.trim(),
+                document.getElementById('edit-opt1').value.trim(),
+                document.getElementById('edit-opt2').value.trim(),
+                document.getElementById('edit-opt3').value.trim()
+            ],
+            ans: parseInt(document.getElementById('edit-ans').value),
+            timestamp: new Date()
+        };
+        if (!data.q) { showToast("Question text is required", "error"); return; }
+        if (data.opts.some(o => !o)) { showToast("All 4 options are required", "error"); return; }
+        if (isNaN(data.ans) || data.ans < 0 || data.ans > 3) { showToast("Correct answer must be 0, 1, 2, or 3", "error"); return; }
+
+        try {
+            if (id) { await updateDoc(doc(db, "questions", id), data); showToast("Question updated"); }
+            else { await addDoc(collection(db, "questions"), data); showToast("Question added"); }
+            closeEditModal();
+            // Sync filter to edited course
+            const qFilter = document.getElementById('q-filter');
+            if (qFilter) qFilter.value = course;
+            loadQuestionsForView();
+        } catch(e) { console.error(e); showToast("Error saving question", "error"); }
+    };
+
+    window.deleteQuestion = () => {
+        const id = document.getElementById('edit-id').value;
+        openConfirm("Delete Question?", "This question will be permanently removed.", "var(--danger)", async () => {
+            await deleteDoc(doc(db, "questions", id));
+            closeEditModal();
+            loadQuestionsForView();
+            showToast("Question deleted");
+        });
+    };
+
+    // ===== STUDENT ACTIONS =====
+    window.openStudentDrawer = (dataStr) => {
+        const s = JSON.parse(decodeURIComponent(dataStr));
+        currentStudentId = s.id;
+        const initials = (s.name || 'NA').substring(0, 2).toUpperCase();
+        const statusPill = s.status === 'Cheated'
+            ? '<span class="status-pill pill-red"><span class="dot"></span> Red Flagged</span>'
+            : s.status === 'Completed'
+            ? '<span class="status-pill pill-green"><span class="dot"></span> Completed</span>'
+            : '<span class="status-pill pill-yellow"><span class="dot"></span> In Progress</span>';
+
+        document.getElementById('m-avatar').innerText = initials;
+        document.getElementById('m-name').innerText = s.name || 'Unknown';
+        document.getElementById('m-status-pill').innerHTML = statusPill;
+        document.getElementById('m-email').innerText = s.email || '-';
+        document.getElementById('m-phone').innerText = s.phone || '-';
+        document.getElementById('m-city').innerText = [s.city, s.state].filter(Boolean).join(', ') || '-';
+        document.getElementById('m-course').innerText = s.course === 'web' ? 'Full Stack Web Dev' : s.course === 'ai' ? 'AI & Machine Learning' : s.course === 'app' ? 'Mobile App Dev' : s.course || '-';
+        document.getElementById('m-score').innerText = (s.score || 0) + ' / 50';
+        document.getElementById('m-ip').innerText = s.ipAddress || '-';
+        document.getElementById('m-tabwarn').innerText = s.tabWarnings || 0;
+        document.getElementById('m-facewarn').innerText = s.faceWarnings || 0;
+
+        const vBox = document.getElementById('violation-box');
+        if (s.status === 'Cheated') {
+            vBox.style.display = 'block';
+            document.getElementById('m-violation').innerText = s.lastViolation || s.finalReason || 'N/A';
+        } else { vBox.style.display = 'none'; }
+
+        document.getElementById('student-overlay').classList.add('active');
+        document.getElementById('student-drawer').classList.add('active');
+    };
+
+    window.closeStudentDrawer = () => {
+        document.getElementById('student-overlay').classList.remove('active');
+        document.getElementById('student-drawer').classList.remove('active');
+    };
+
+    window.resetStudent = () => {
+        openConfirm("Allow Retake?", "This will delete the student's current record so they can attempt again.", "var(--warning)", async () => {
+            await deleteDoc(doc(db, "students", currentStudentId));
+            closeStudentDrawer();
+            showToast("Retake allowed");
+        });
+    };
+
+    window.deleteStudent = () => {
+        openConfirm("Delete User?", "This will permanently remove this student record.", "var(--danger)", async () => {
+            await deleteDoc(doc(db, "students", currentStudentId));
+            closeStudentDrawer();
+            showToast("Record deleted");
+        });
+    };
+
+    window.doDeleteStudent = (id) => {
+        openConfirm("Delete User?", "This will permanently remove this student record.", "var(--danger)", async () => {
+            await deleteDoc(doc(db, "students", id));
+            showToast("Record deleted");
+        });
+    };
+
+    window.doResetStudent = (id) => {
+        openConfirm("Allow Retake?", "This will delete the current record.", "var(--warning)", async () => {
+            await deleteDoc(doc(db, "students", id));
+            showToast("Retake allowed");
+        });
+    };
+
+    // ===== SETTINGS =====
+    window.saveSettings = async () => {
+        try {
+            await setDoc(doc(db, "settings", "config"), {
+                timer: document.getElementById('setting-timer').value,
+                passMarks: document.getElementById('setting-pass').value,
+                tabLimit: document.getElementById('setting-tab-limit').value,
+                faceLimit: document.getElementById('setting-face-limit').value,
+                banner: document.getElementById('setting-banner').value,
+                registrationOpen: document.getElementById('toggle-reg').checked,
+                allowRetakes: document.getElementById('toggle-retake').checked,
+                maintenanceMode: document.getElementById('toggle-maint').checked,
+                faceDetection: document.getElementById('toggle-face').checked,
+                updatedAt: new Date()
+            }, { merge: true });
+            showToast("Settings saved and applied");
+        } catch(e) { showToast("Error saving settings", "error"); }
+    };
+
+    // ===== EXPORT FUNCTIONS =====
+    function toCSV(rows, headers) {
+        const escape = v => `"${String(v || '').replace(/"/g, '""')}"`;
+        return [headers.join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
+    }
+
+    function downloadCSV(content, filename) {
+        const blob = new Blob([content], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename; a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    window.exportCSV = () => {
+        const headers = ['Name','Email','Phone','City','State','Course','Status','Score','Tab Warnings','Face Warnings','IP Address'];
+        const rows = allStudents.map(s => [s.name, s.email, s.phone, s.city, s.state, s.course, s.status, s.score || 0, s.tabWarnings || 0, s.faceWarnings || 0, s.ipAddress]);
+        downloadCSV(toCSV(rows, headers), 'unibolt_exam_students.csv');
+        showToast("CSV downloaded");
+    };
+
+    window.exportFlaggedCSV = () => {
+        const flags = allStudents.filter(s => s.status === 'Cheated');
+        const headers = ['Name','Email','Course','Violation','Tab Warnings','Face Warnings','IP Address'];
+        const rows = flags.map(s => [s.name, s.email, s.course, s.lastViolation || s.finalReason || '', s.tabWarnings || 0, s.faceWarnings || 0, s.ipAddress]);
+        downloadCSV(toCSV(rows, headers), 'unibolt_flagged_students.csv');
+        showToast("Flagged students CSV downloaded");
+    };
+
+    window.exportTopCSV = () => {
+        const top = allStudents.filter(s => (s.score || 0) >= 45);
+        const headers = ['Name','Email','Phone','Course','Score'];
+        const rows = top.map(s => [s.name, s.email, s.phone, s.course, s.score || 0]);
+        downloadCSV(toCSV(rows, headers), 'unibolt_top_scorers.csv');
+        showToast("Top scorers CSV downloaded");
+    };
+
+    window.copyEmailList = () => {
+        const emails = allStudents.map(s => s.email).filter(Boolean).join(', ');
+        navigator.clipboard.writeText(emails).then(() => showToast("Emails copied to clipboard")).catch(() => showToast("Copy failed", "error"));
+    };
+
+    window.printSummary = () => {
+        const total = allStudents.length;
+        const done = allStudents.filter(s => s.status === 'Completed').length;
+        const pass = allStudents.filter(s => (s.score || 0) >= 45).length;
+        const flags = allStudents.filter(s => s.status === 'Cheated').length;
+        const avg = done ? Math.round(allStudents.filter(s => s.status === 'Completed').reduce((a, s) => a + (s.score || 0), 0) / done) : 0;
+        const w = window.open('', '_blank');
+        w.document.write(`<html><body style="font-family:sans-serif;padding:30px;"><h1>UniBolt Exam Summary Report</h1><p>Generated: ${new Date().toLocaleString()}</p><hr><table border="1" cellpadding="10"><tr><th>Metric</th><th>Value</th></tr><tr><td>Total Enrolled</td><td>${total}</td></tr><tr><td>Completed</td><td>${done}</td></tr><tr><td>Qualified (45+)</td><td>${pass}</td></tr><tr><td>Red Flagged</td><td>${flags}</td></tr><tr><td>Average Score</td><td>${avg}/50</td></tr></table></body></html>`);
+        w.print();
+    };
+
+    // ===== NAVIGATION =====
+    const sectionMeta = {
+        overview: { title: 'Exam Overview', sub: 'Real-time exam monitoring and management' },
+        students: { title: 'All Students', sub: 'Browse, search, and manage all exam participants' },
+        redflag: { title: 'Red Flags', sub: 'Students who triggered security violations' },
+        questions: { title: 'Question Bank', sub: 'Create and manage exam questions per course' },
+        analytics: { title: 'Analytics', sub: 'Insights and performance metrics' },
+        reports: { title: 'Reports & Export', sub: 'Download exam data as CSV or print summary' },
+        settings: { title: 'Exam Settings', sub: 'Configure exam parameters and system controls' }
+    };
+
+    window.showSection = (id, el) => {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('sec-' + id).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        if (el) el.classList.add('active');
+        const meta = sectionMeta[id] || {};
+        setText('page-title', meta.title || id);
+        setText('page-sub', meta.sub || '');
+        if (window.innerWidth <= 900) toggleSidebar();
+    };
+
+    window.toggleSidebar = () => {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('sb-overlay').classList.toggle('active');
+    };
+
+    // ===== CONFIRM =====
+    window.openConfirm = (title, msg, color, action) => {
+        document.getElementById('c-title').innerText = title;
+        document.getElementById('c-msg').innerText = msg;
+        document.getElementById('c-icon').style.color = color;
+        const btn = document.getElementById('c-yes-btn');
+        btn.style.color = color;
+        btn.onclick = () => { action(); closeConfirm(); };
+        document.getElementById('confirm-modal').classList.add('active');
+    };
+    window.closeConfirm = () => document.getElementById('confirm-modal').classList.remove('active');
+
+    // ===== TOAST =====
+    window.showToast = (msg, type = 'success') => {
+        const t = document.getElementById('toast');
+        const icon = document.getElementById('toast-icon');
+        document.getElementById('toast-msg').innerText = msg;
+        icon.className = type === 'error'
+            ? 'fa-solid fa-circle-xmark'
+            : 'fa-solid fa-circle-check';
+        icon.style.color = type === 'error' ? 'var(--danger)' : 'var(--success)';
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3500);
+    };
+
+    // ===== LOGOUT =====
+    window.logout = () => signOut(auth).then(() => { window.location.href = "login.html"; });
+
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('exam-sw.js');
+</script>
 </body>
 </html>
