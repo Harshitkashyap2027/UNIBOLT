@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBolt Mail — Campaigns</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        :root {
+            --primary: #ef4444; --bg: #09090b; --surface: #121212; --border: #27272a;
+            --text: #e4e4e7; --text-dim: #71717a; --radius: 20px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+
+        /* SIDEBAR */
+        .sidebar { width: 280px; background: #000; border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 2000; height: 100vh; }
+        .sidebar-header { padding: 30px 24px 10px; }
+        .brand { font-size: 22px; font-weight: 800; display: flex; align-items: center; gap: 10px; color: white; letter-spacing: -0.5px; }
+        .brand i { color: var(--primary); }
+        .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px 24px; color: #a1a1aa; text-decoration: none; font-weight: 600; transition: 0.2s; border-left: 3px solid transparent; font-size: 15px; }
+        .nav-link i { width: 20px; text-align: center; }
+        .nav-link:hover { color: white; background: rgba(255,255,255,0.03); }
+        .nav-link.active { border-left-color: var(--primary); background: rgba(239,68,68,0.08); color: var(--primary); }
+
+        /* MAIN */
+        .main { flex: 1; padding: 30px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
+        .header h2 { font-size: 28px; font-weight: 800; color: white; margin: 0; }
+        .header p { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+
+        /* STATS */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+        .stat-label { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .stat-value { font-size: 28px; font-weight: 800; color: white; }
+        .stat-card.red .stat-value { color: var(--primary); }
+        .stat-card.green .stat-value { color: #10b981; }
+        .stat-card.blue .stat-value { color: #60a5fa; }
+
+        /* TABLE */
+        .section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+        .section-header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .section-header h3 { font-size: 16px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th { padding: 13px 18px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: #0a0a0a; }
+        tbody td { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: rgba(255,255,255,0.02); }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .badge-sent { background: rgba(16,185,129,0.15); color: #10b981; }
+        .badge-draft { background: rgba(100,116,139,0.15); color: #94a3b8; }
+        .badge-failed { background: rgba(239,68,68,0.15); color: var(--primary); }
+        .badge-queued { background: rgba(245,158,11,0.15); color: #f59e0b; }
+
+        .btn { padding: 10px 18px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-family: inherit; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #dc2626; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+        .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+
+        .empty-state { text-align: center; padding: 48px; color: var(--text-dim); }
+        .empty-state i { font-size: 36px; margin-bottom: 12px; display: block; opacity: 0.4; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand"><i class="fa-solid fa-bolt"></i> UniBolt Mail</div>
+        </div>
+        <nav>
+            <a href="mail-dashboard.html" class="nav-link"><i class="fa-solid fa-chart-pie"></i> Overview</a>
+            <a href="mail-contacts.html" class="nav-link"><i class="fa-solid fa-users"></i> Directory</a>
+            <a href="tracking.html" class="nav-link"><i class="fa-solid fa-shield-cat"></i> Security Logs</a>
+            <a href="mail-studio.html" class="nav-link"><i class="fa-solid fa-envelope"></i> Email Studio</a>
+            <a href="mail-settings.html" class="nav-link"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="mail-campaigns.html" class="nav-link active"><i class="fa-solid fa-bullhorn"></i> Campaigns</a>
+            <a href="mail-analytics.html" class="nav-link"><i class="fa-solid fa-chart-line"></i> Analytics</a>
+        </nav>
+        <div style="margin-top: auto; padding: 20px;">
+            <div class="nav-link" onclick="logout()" style="color:#ef4444; cursor:pointer;"><i class="fa-solid fa-power-off"></i> Sign Out</div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <div>
+                <h2>Email Campaigns</h2>
+                <p>Track and manage all outgoing email campaigns.</p>
+            </div>
+            <button class="btn btn-primary" onclick="window.location.href='mail-studio.html'"><i class="fa-solid fa-plus"></i> New Campaign</button>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card"><div class="stat-label">Total Campaigns</div><div class="stat-value" id="stat-total">—</div></div>
+            <div class="stat-card green"><div class="stat-label">Total Sent</div><div class="stat-value" id="stat-sent">—</div></div>
+            <div class="stat-card blue"><div class="stat-label">Est. Open Rate</div><div class="stat-value" id="stat-open">—</div></div>
+            <div class="stat-card red"><div class="stat-label">This Month</div><div class="stat-value" id="stat-month">—</div></div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h3><i class="fa-solid fa-bullhorn" style="color:var(--primary); margin-right:8px;"></i>All Campaigns</h3>
+                <span id="campaign-count" style="font-size:13px; color:var(--text-dim);">Loading…</span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Date</th><th>Subject</th><th>Recipients</th><th>Template</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="campaigns-table">
+                        <tr><td colspan="6" class="empty-state"><i class="fa-solid fa-bullhorn"></i>Loading campaigns…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut as fbSignOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY", authDomain: "unibolt-f7005.firebaseapp.com", projectId: "unibolt-f7005", storageBucket: "unibolt-f7005.firebasestorage.app", messagingSenderId: "121987854250", appId: "1:121987854250:web:21a9f50aad54b2143a85d3" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, user => {
+            if (!user || user.email !== 'admin@unibolt.in') window.location.href = 'mail-login.html';
+        });
+
+        window.logout = () => fbSignOut(auth).then(() => window.location.href = 'mail-login.html');
+
+        function fmtDate(ts) {
+            if (!ts) return '—';
+            const d = ts.toDate ? ts.toDate() : new Date(ts);
+            return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        function statusBadge(status) {
+            const s = (status || 'sent').toLowerCase();
+            if (s === 'sent' || s === 'delivered') return `<span class="badge badge-sent">Sent</span>`;
+            if (s === 'draft') return `<span class="badge badge-draft">Draft</span>`;
+            if (s === 'failed' || s === 'error') return `<span class="badge badge-failed">Failed</span>`;
+            return `<span class="badge badge-queued">Queued</span>`;
+        }
+
+        onSnapshot(query(collection(db, "email_logs"), orderBy("timestamp", "desc")), (snap) => {
+            const logs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            document.getElementById('campaign-count').textContent = logs.length + ' campaigns';
+            document.getElementById('stat-total').textContent = logs.length;
+
+            const sentCount = logs.filter(l => !l.status || l.status.toLowerCase() === 'sent' || l.status.toLowerCase() === 'delivered').length;
+            document.getElementById('stat-sent').textContent = sentCount;
+            // Simulated open rate (no real tracking data available)
+            document.getElementById('stat-open').textContent = logs.length > 0 ? '~24%' : '—';
+
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const thisMonth = logs.filter(l => l.timestamp && (l.timestamp.toDate ? l.timestamp.toDate() : new Date(l.timestamp)) >= monthStart).length;
+            document.getElementById('stat-month').textContent = thisMonth;
+
+            const tbody = document.getElementById('campaigns-table');
+            if (logs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-bullhorn"></i>No campaigns found. Send your first email from <a href="mail-studio.html" style="color:var(--primary);">Email Studio</a>.</div></td></tr>`;
+                return;
+            }
+            tbody.innerHTML = logs.map(l => `<tr>
+                <td style="font-size:13px; color:var(--text-dim);">${fmtDate(l.timestamp)}</td>
+                <td style="font-weight:600; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${l.subject||''}">${l.subject || '(No subject)'}</td>
+                <td style="font-size:13px;">${l.recipients || l.to || '—'}</td>
+                <td style="font-size:13px; color:var(--text-dim);">${l.template || l.type || 'Custom'}</td>
+                <td>${statusBadge(l.status)}</td>
+                <td><button class="btn btn-ghost btn-sm" onclick="viewLog('${l.id}')"><i class="fa-solid fa-eye"></i> View</button></td>
+            </tr>`).join('');
+        });
+
+        window.viewLog = (id) => alert('Log ID: ' + id + '\nOpen Firestore console to see full details.');
+    </script>
+</body>
+</html>

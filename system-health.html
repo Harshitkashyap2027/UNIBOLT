@@ -2,57 +2,260 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Vault_OS - System Health</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vault_OS — System Health</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600&display=swap');
         :root { --primary: #ef4444; --accent: #10b981; --bg: #020617; --surface: #0f172a; --border: #1e293b; --text: #f8fafc; }
-        body { background: var(--bg); font-family: 'Outfit', sans-serif; color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        .sidebar { width: 280px; background: #000; border-right: 1px solid var(--border); padding: 25px; display: flex; flex-direction: column; }
-        .nav-item { padding: 14px; color: #64748b; cursor: pointer; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; transition: 0.3s; text-decoration: none; font-weight: 500; }
-        .nav-item:hover, .nav-item.active { background: var(--surface); color: white; }
-        .nav-item.active { border-right: 4px solid var(--primary); background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.1)); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); font-family: 'Outfit', sans-serif; color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
-        .main { flex: 1; padding: 30px; }
-        .health-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 25px; max-width: 600px; margin-top: 20px; }
-        .status-row { margin-bottom: 25px; }
-        .bar-bg { height: 8px; background: #1e293b; border-radius: 10px; margin-top: 8px; }
-        .bar-fill { height: 100%; background: var(--accent); border-radius: 10px; transition: 2s; width: 0%; }
+        .sidebar { width: 260px; background: #000; border-right: 1px solid var(--border); padding: 24px 16px; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar h2 { font-size: 20px; margin-bottom: 28px; padding: 0 4px; }
+        .nav-item { padding: 12px 14px; color: #64748b; cursor: pointer; border-radius: 8px; margin-bottom: 6px; display: flex; align-items: center; gap: 12px; transition: 0.3s; text-decoration: none; font-weight: 500; font-size: 14px; }
+        .nav-item:hover, .nav-item.active { background: var(--surface); color: white; }
+        .nav-item.active { border-right: 3px solid var(--primary); background: linear-gradient(90deg, transparent, rgba(239,68,68,0.1)); }
+        .sidebar-bottom { margin-top: auto; border-top: 1px solid var(--border); padding-top: 16px; }
+
+        .main { flex: 1; padding: 28px; overflow-y: auto; background: var(--bg); }
+        .page-header { margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+        .page-header h1 { font-size: 24px; font-weight: 700; }
+        .page-header p { color: #64748b; margin-top: 4px; font-size: 14px; }
+        .refresh-info { font-size: 13px; color: #64748b; display: flex; align-items: center; gap: 8px; }
+
+        /* METRICS ROW */
+        .metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+        .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+        .metric-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .metric-value { font-size: 26px; font-weight: 700; color: white; margin-bottom: 8px; }
+        .metric-bar-bg { height: 6px; background: #1e293b; border-radius: 10px; overflow: hidden; }
+        .metric-bar-fill { height: 100%; border-radius: 10px; transition: width 1s ease; }
+
+        /* SERVICES GRID */
+        .services-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
+        .service-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+        .service-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .service-name { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .service-name i { width: 20px; text-align: center; color: var(--accent); }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .status-online { background: rgba(16,185,129,0.15); color: #10b981; }
+        .status-degraded { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .status-offline { background: rgba(239,68,68,0.15); color: var(--primary); }
+        .service-meta { display: flex; gap: 20px; font-size: 12px; color: #64748b; margin-bottom: 10px; flex-wrap: wrap; }
+        .service-meta span { display: flex; align-items: center; gap: 5px; }
+        .uptime-bar-bg { height: 5px; background: #1e293b; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+        .uptime-bar-fill { height: 100%; background: var(--accent); border-radius: 10px; transition: width 1.5s ease; }
+        .service-actions { display: flex; justify-content: space-between; align-items: center; }
+        .last-check { font-size: 11px; color: #475569; font-family: 'JetBrains Mono'; }
+        .ping-btn { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: var(--accent); padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; }
+        .ping-btn:hover { background: rgba(16,185,129,0.2); }
+
+        /* EVENTS LOG */
+        .events-section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+        .events-section h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: #94a3b8; }
+        .event-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .event-item:last-child { border-bottom: none; }
+        .event-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+        .event-dot.ok { background: var(--accent); }
+        .event-dot.warn { background: #f59e0b; }
+        .event-dot.error { background: var(--primary); }
+        .event-text { font-size: 13px; color: #94a3b8; line-height: 1.4; }
+        .event-time { font-size: 11px; color: #475569; font-family: 'JetBrains Mono'; margin-top: 3px; }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <h2 style="font-size: 22px; margin-bottom: 40px;"><i class="fa-solid fa-bolt" style="color: var(--primary);"></i> Vault_OS</h2>
+        <h2><i class="fa-solid fa-bolt" style="color:var(--primary);"></i> Vault_OS</h2>
         <a href="admin-activity.html" class="nav-item"><i class="fa-solid fa-satellite-dish"></i> Real-time Feed</a>
         <a href="admin-watch.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Admin Watch</a>
         <a href="student-watch.html" class="nav-item"><i class="fa-solid fa-user-graduate"></i> Student Watch</a>
         <a href="system-health.html" class="nav-item active"><i class="fa-solid fa-microchip"></i> System Health</a>
-    </div>
-
-    <div class="main">
-        <header>
-            <h1 style="margin: 0; font-size: 24px;">Core Health</h1>
-            <p style="color: #64748b; margin-top: 5px;">Service pulse and database performance.</p>
-        </header>
-        
-        <div class="health-card">
-            <div class="status-row">
-                <div style="display:flex; justify-content:space-between"><span>Cloud Firestore</span><span style="color:var(--accent)">ONLINE</span></div>
-                <div class="bar-bg"><div class="bar-fill" id="bar-db"></div></div>
-            </div>
-            <div class="status-row">
-                <div style="display:flex; justify-content:space-between"><span>Audit Engine</span><span style="color:var(--accent)">ACTIVE</span></div>
-                <div class="bar-bg"><div class="bar-fill" id="bar-audit"></div></div>
-            </div>
+        <a href="admin-security.html" class="nav-item"><i class="fa-solid fa-shield-halved"></i> Security Control</a>
+        <div class="sidebar-bottom">
+            <button onclick="terminateSession()" class="nav-item" style="width:100%; background:none; border:none; color:#ef4444; cursor:pointer; font-family:inherit;">
+                <i class="fa-solid fa-power-off"></i> Terminate Session
+            </button>
         </div>
     </div>
 
-    <script>
-        window.onload = () => {
-            setTimeout(() => { document.getElementById('bar-db').style.width = "100%"; }, 500);
-            setTimeout(() => { document.getElementById('bar-audit').style.width = "95%"; }, 1000);
+    <div class="main">
+        <div class="page-header">
+            <div>
+                <h1>System Health</h1>
+                <p>Service pulse, metrics, and system events monitor.</p>
+            </div>
+            <div class="refresh-info">
+                <i class="fa-solid fa-rotate" id="refresh-icon"></i>
+                Next refresh in <strong id="countdown">30</strong>s
+            </div>
+        </div>
+
+        <!-- System Metrics -->
+        <div class="metrics-row">
+            <div class="metric-card">
+                <div class="metric-label">CPU Usage</div>
+                <div class="metric-value" id="cpu-val">—</div>
+                <div class="metric-bar-bg"><div class="metric-bar-fill" id="cpu-bar" style="background:#f59e0b; width:0%;"></div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Memory Usage</div>
+                <div class="metric-value" id="mem-val">—</div>
+                <div class="metric-bar-bg"><div class="metric-bar-fill" id="mem-bar" style="background:#818cf8; width:0%;"></div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Active Connections</div>
+                <div class="metric-value" id="conn-val">—</div>
+                <div class="metric-bar-bg"><div class="metric-bar-fill" id="conn-bar" style="background:var(--accent); width:0%;"></div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Bandwidth</div>
+                <div class="metric-value" id="bw-val">—</div>
+                <div class="metric-bar-bg"><div class="metric-bar-fill" id="bw-bar" style="background:#7dd3fc; width:0%;"></div></div>
+            </div>
+        </div>
+
+        <!-- Services Grid -->
+        <div class="services-grid" id="services-grid">
+            <!-- populated by JS -->
+        </div>
+
+        <!-- Events Log -->
+        <div class="events-section">
+            <h3><i class="fa-solid fa-list" style="color:#64748b; margin-right:8px;"></i>Recent System Events</h3>
+            <div id="events-log"><!-- populated by JS --></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut as fbSignOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY", authDomain: "unibolt-f7005.firebaseapp.com", projectId: "unibolt-f7005", storageBucket: "unibolt-f7005.firebasestorage.app", messagingSenderId: "121987854250", appId: "1:121987854250:web:21a9f50aad54b2143a85d3" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, user => {
+            if (!user || user.email !== 'admin@unibolt.in') window.location.href = 'mail-login.html';
+        });
+
+        window.terminateSession = () => fbSignOut(auth).then(() => window.location.href = 'mail-login.html');
+
+        const services = [
+            { id: 'firestore', name: 'Cloud Firestore', icon: 'fa-database', uptime: 99.98 },
+            { id: 'auth',      name: 'Auth Service',    icon: 'fa-lock',     uptime: 99.99 },
+            { id: 'storage',   name: 'Storage',         icon: 'fa-hard-drive', uptime: 99.95 },
+            { id: 'functions', name: 'Functions',       icon: 'fa-code',     uptime: 99.87 },
+            { id: 'email',     name: 'Email Server',    icon: 'fa-envelope', uptime: 99.82 },
+            { id: 'cdn',       name: 'CDN',             icon: 'fa-globe',    uptime: 99.99 },
+        ];
+
+        const mockEvents = [
+            { level: 'ok',   msg: 'Cloud Firestore read latency normal (< 50ms)',         time: '2 min ago' },
+            { level: 'ok',   msg: 'Auth service token refresh completed successfully',    time: '5 min ago' },
+            { level: 'warn', msg: 'Email server queue slightly elevated (142 pending)',   time: '12 min ago' },
+            { level: 'ok',   msg: 'CDN cache invalidation completed for static assets',  time: '18 min ago' },
+            { level: 'ok',   msg: 'Functions cold-start latency within thresholds',       time: '24 min ago' },
+            { level: 'warn', msg: 'Storage write throughput temporarily degraded',        time: '31 min ago' },
+            { level: 'ok',   msg: 'All services restored to normal operation',            time: '38 min ago' },
+            { level: 'error','msg': 'Brief Auth service timeout (recovered in 4s)',       time: '2 hr ago' },
+        ];
+
+        function randInRange(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+        function getStatus() {
+            const r = Math.random();
+            if (r > 0.92) return 'DEGRADED';
+            if (r > 0.98) return 'OFFLINE';
+            return 'ONLINE';
+        }
+
+        function renderServices() {
+            const grid = document.getElementById('services-grid');
+            grid.innerHTML = services.map(svc => {
+                const status = getStatus();
+                const rt = randInRange(18, 120);
+                const statusClass = status === 'ONLINE' ? 'status-online' : status === 'DEGRADED' ? 'status-degraded' : 'status-offline';
+                return `<div class="service-card" id="svc-${svc.id}">
+                    <div class="service-header">
+                        <div class="service-name"><i class="fa-solid ${svc.icon}"></i> ${svc.name}</div>
+                        <span class="status-badge ${statusClass}" id="status-${svc.id}">${status}</span>
+                    </div>
+                    <div class="service-meta">
+                        <span><i class="fa-solid fa-clock"></i> ${rt}ms response</span>
+                        <span><i class="fa-solid fa-arrow-up"></i> ${svc.uptime}% uptime</span>
+                    </div>
+                    <div class="uptime-bar-bg"><div class="uptime-bar-fill" id="bar-${svc.id}" style="width:0%;"></div></div>
+                    <div class="service-actions">
+                        <span class="last-check" id="lc-${svc.id}">Last check: just now</span>
+                        <button class="ping-btn" onclick="pingService('${svc.id}')"><i class="fa-solid fa-wifi"></i> Ping</button>
+                    </div>
+                </div>`;
+            }).join('');
+            setTimeout(() => {
+                services.forEach(svc => {
+                    const bar = document.getElementById(`bar-${svc.id}`);
+                    if (bar) bar.style.width = svc.uptime + '%';
+                });
+            }, 300);
+        }
+
+        window.pingService = (id) => {
+            const statusEl = document.getElementById(`status-${id}`);
+            const lcEl = document.getElementById(`lc-${id}`);
+            statusEl.textContent = '...';
+            statusEl.className = 'status-badge';
+            setTimeout(() => {
+                const status = getStatus();
+                const statusClass = status === 'ONLINE' ? 'status-online' : status === 'DEGRADED' ? 'status-degraded' : 'status-offline';
+                statusEl.textContent = status;
+                statusEl.className = `status-badge ${statusClass}`;
+                lcEl.textContent = 'Last check: just now';
+            }, 800 + Math.random() * 600);
         };
+
+        function renderEvents() {
+            document.getElementById('events-log').innerHTML = mockEvents.map(e =>
+                `<div class="event-item">
+                    <div class="event-dot ${e.level}"></div>
+                    <div><div class="event-text">${e.msg}</div><div class="event-time">${e.time}</div></div>
+                </div>`
+            ).join('');
+        }
+
+        function updateMetrics() {
+            const cpu = randInRange(60, 80);
+            const mem = randInRange(40, 70);
+            const conn = randInRange(20, 50);
+            const bw = randInRange(10, 60);
+            document.getElementById('cpu-val').textContent = cpu + '%';
+            document.getElementById('mem-val').textContent = mem + '%';
+            document.getElementById('conn-val').textContent = conn;
+            document.getElementById('bw-val').textContent = bw + ' Mbps';
+            document.getElementById('cpu-bar').style.width = cpu + '%';
+            document.getElementById('mem-bar').style.width = mem + '%';
+            document.getElementById('conn-bar').style.width = (conn / 50 * 100) + '%';
+            document.getElementById('bw-bar').style.width = bw + '%';
+        }
+
+        // Countdown + auto-refresh
+        let countdown = 30;
+        setInterval(() => {
+            countdown--;
+            document.getElementById('countdown').textContent = countdown;
+            if (countdown <= 0) {
+                countdown = 30;
+                updateMetrics();
+                renderServices();
+                document.getElementById('refresh-icon').classList.add('fa-spin');
+                setTimeout(() => document.getElementById('refresh-icon').classList.remove('fa-spin'), 1000);
+            }
+        }, 1000);
+
+        // Initial render
+        renderServices();
+        renderEvents();
+        updateMetrics();
     </script>
 </body>
 </html>

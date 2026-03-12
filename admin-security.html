@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBolt Admin — Security Control</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        :root {
+            --bg: #09090b; --surface: #121212; --surface2: #1c1c1e; --border: #27272a;
+            --primary: #ef4444; --accent: #10b981; --text: #e4e4e7; --text-dim: #71717a;
+            --radius: 14px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+
+        /* SIDEBAR */
+        .sidebar { width: 260px; background: #000; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; height: 100vh; overflow: hidden; }
+        .sidebar-header { padding: 24px 20px 10px; flex-shrink: 0; }
+        .brand { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; color: white; letter-spacing: -0.5px; }
+        .brand i { color: var(--primary); }
+        .sidebar-scroll { flex: 1; overflow-y: auto; padding: 8px 12px; }
+        .nav-item { padding: 12px 14px; color: #71717a; cursor: pointer; border-radius: 10px; margin-bottom: 2px; display: flex; align-items: center; gap: 12px; transition: 0.2s; text-decoration: none; font-size: 14px; font-weight: 500; }
+        .nav-item:hover { background: var(--surface); color: white; }
+        .nav-item.active { background: var(--surface2); color: white; font-weight: 600; }
+        .nav-item i { width: 18px; text-align: center; }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); background: #000; flex-shrink: 0; }
+        .sidebar-footer button { background: none; border: none; color: var(--primary); display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; cursor: pointer; padding: 8px 0; width: 100%; }
+
+        /* MAIN */
+        .main { flex: 1; overflow-y: auto; padding: 28px 32px; background: var(--bg); }
+        .page-header { margin-bottom: 24px; }
+        .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+        .page-header p { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+
+        /* STATS */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+        .stat-label { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .stat-value { font-size: 28px; font-weight: 700; color: white; }
+        .stat-card.danger .stat-value { color: var(--primary); }
+        .stat-card.warn .stat-value { color: #f59e0b; }
+        .stat-card.accent .stat-value { color: var(--accent); }
+
+        /* SECTIONS */
+        .section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 24px; overflow: hidden; }
+        .section-header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .section-header h2 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .section-body { padding: 24px; }
+
+        /* TABLES */
+        table { width: 100%; border-collapse: collapse; }
+        thead th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: #0a0a0a; }
+        tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: rgba(255,255,255,0.02); }
+        .empty-row td { text-align: center; padding: 32px; color: var(--text-dim); }
+
+        /* FORM */
+        .form-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input, .form-group select, .form-group textarea { background: #1a1a1a; border: 1px solid var(--border); color: white; padding: 12px 14px; border-radius: 10px; font-size: 14px; font-family: inherit; outline: none; transition: 0.2s; }
+        .form-group input:focus, .form-group select:focus { border-color: #555; }
+        .form-group input::placeholder { color: var(--text-dim); }
+
+        /* BUTTONS */
+        .btn { padding: 10px 18px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #dc2626; }
+        .btn-danger { background: rgba(239,68,68,0.15); color: var(--primary); border: 1px solid rgba(239,68,68,0.3); }
+        .btn-danger:hover { background: rgba(239,68,68,0.25); }
+        .btn-outline { background: var(--surface2); border: 1px solid var(--border); color: white; }
+        .btn-outline:hover { background: #27272a; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+        .btn-accent { background: rgba(16,185,129,0.15); color: var(--accent); border: 1px solid rgba(16,185,129,0.3); }
+        .btn-accent:hover { background: rgba(16,185,129,0.25); }
+
+        /* BADGES */
+        .badge { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .badge-danger { background: rgba(239,68,68,0.15); color: var(--primary); }
+        .badge-warn { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .badge-success { background: rgba(16,185,129,0.15); color: var(--accent); }
+        .badge-info { background: rgba(99,102,241,0.15); color: #818cf8; }
+
+        /* EMERGENCY */
+        .emergency-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .emergency-card { background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 20px; }
+        .emergency-card h3 { font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+        .emergency-card p { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.5; }
+
+        /* TOAST */
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; min-width: 260px; }
+        .toast.success { border-left: 3px solid var(--accent); color: var(--accent); }
+        .toast.error { border-left: 3px solid var(--primary); color: var(--primary); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        code { font-family: monospace; font-size: 13px; color: #a78bfa; background: rgba(167,139,250,0.1); padding: 2px 6px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand"><i class="fa-solid fa-bolt"></i> UniBolt</div>
+        </div>
+        <div class="sidebar-scroll">
+            <a href="admin.html" class="nav-item"><i class="fa-solid fa-grid-2"></i> Overview</a>
+            <a href="admin-tickets.html" class="nav-item"><i class="fa-solid fa-ticket"></i> Tickets</a>
+            <a href="admin-analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="admin-reports.html" class="nav-item"><i class="fa-solid fa-file-contract"></i> Reports</a>
+            <a href="admin-content.html" class="nav-item"><i class="fa-solid fa-book-open"></i> Content</a>
+            <a href="admin-activity.html" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Activity</a>
+            <a href="admin-registrations.html" class="nav-item"><i class="fa-solid fa-address-card"></i> Registrations</a>
+            <a href="admin-submissions.html" class="nav-item"><i class="fa-solid fa-list-check"></i> Submissions</a>
+            <a href="admin-settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="admin-notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications</a>
+            <a href="admin-team.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Team</a>
+            <a href="admin-faq.html" class="nav-item"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+            <a href="admin-exam.html" class="nav-item"><i class="fa-solid fa-file-pen"></i> Exam Manager</a>
+            <a href="mail-dashboard.html" class="nav-item"><i class="fa-solid fa-envelope"></i> Mail Center</a>
+            <a href="admin-students.html" class="nav-item"><i class="fa-solid fa-users"></i> Students</a>
+            <a href="admin-security.html" class="nav-item active"><i class="fa-solid fa-shield-halved"></i> Security Control</a>
+        </div>
+        <div class="sidebar-footer">
+            <button onclick="signOut()"><i class="fa-solid fa-power-off"></i> Sign Out</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="page-header">
+            <h1><i class="fa-solid fa-shield-halved" style="color:var(--primary); margin-right:10px;"></i>Security Control</h1>
+            <p>Manage blocked IPs, security incidents, user bans, and emergency controls.</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card danger">
+                <div class="stat-label"><i class="fa-solid fa-ban"></i> Blocked IPs</div>
+                <div class="stat-value" id="stat-blocked">—</div>
+            </div>
+            <div class="stat-card warn">
+                <div class="stat-label"><i class="fa-solid fa-triangle-exclamation"></i> Login Attempts</div>
+                <div class="stat-value" id="stat-logins">—</div>
+            </div>
+            <div class="stat-card danger">
+                <div class="stat-label"><i class="fa-solid fa-bug"></i> Suspicious Activities</div>
+                <div class="stat-value" id="stat-suspicious">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label"><i class="fa-solid fa-user-slash"></i> Active Bans</div>
+                <div class="stat-value" id="stat-bans">—</div>
+            </div>
+        </div>
+
+        <!-- Blocked IPs -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-ban" style="color:var(--primary);"></i> Blocked IPs</h2>
+                <span id="blocked-count" style="font-size:13px; color:var(--text-dim);">Loading…</span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>IP Address</th><th>Reason</th><th>Blocked At</th><th>Blocked By</th><th>Action</th></tr></thead>
+                    <tbody id="blocked-ips-table"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Block New IP -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-plus" style="color:var(--accent);"></i> Block New IP</h2>
+            </div>
+            <div class="section-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>IP Address</label>
+                        <input type="text" id="new-ip" placeholder="e.g. 192.168.1.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Reason</label>
+                        <input type="text" id="new-ip-reason" placeholder="Reason for blocking">
+                    </div>
+                    <button class="btn btn-primary" onclick="blockIP()"><i class="fa-solid fa-ban"></i> Block IP</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Incidents Log -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-circle-exclamation" style="color:#f59e0b;"></i> Security Incidents</h2>
+                <span id="incidents-count" style="font-size:13px; color:var(--text-dim);">Loading…</span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Timestamp</th><th>Type</th><th>IP Address</th><th>Email</th><th>Details</th></tr></thead>
+                    <tbody id="incidents-table"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- User Bans -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-user-slash" style="color:var(--primary);"></i> User Bans</h2>
+                <span id="bans-count" style="font-size:13px; color:var(--text-dim);">Loading…</span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Email</th><th>Reason</th><th>Banned At</th><th>Banned By</th><th>Action</th></tr></thead>
+                    <tbody id="bans-table"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Rate Limit Violations -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-gauge-high" style="color:#f59e0b;"></i> Rate Limit Violations &amp; Breaches</h2>
+                <span id="violations-count" style="font-size:13px; color:var(--text-dim);">Loading…</span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Timestamp</th><th>Type</th><th>User</th><th>IP</th><th>Details</th></tr></thead>
+                    <tbody id="violations-table"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Emergency Controls -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-radiation" style="color:var(--primary);"></i> Emergency Controls</h2>
+            </div>
+            <div class="section-body">
+                <div class="emergency-grid">
+                    <div class="emergency-card">
+                        <h3><i class="fa-solid fa-lock"></i> Lock All Logins</h3>
+                        <p>Immediately enable maintenance mode. All login attempts will be blocked until disabled. Use only in emergencies.</p>
+                        <button class="btn btn-danger" onclick="lockAllLogins()"><i class="fa-solid fa-lock"></i> Enable Maintenance Mode</button>
+                    </div>
+                    <div class="emergency-card">
+                        <h3><i class="fa-solid fa-broom"></i> Clear All Blocks</h3>
+                        <p>Remove all IP blocks from the system. This will restore access for all previously blocked addresses.</p>
+                        <button class="btn btn-outline" onclick="clearAllBlocks()"><i class="fa-solid fa-broom"></i> Clear All IP Blocks</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut as fbSignOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, query, orderBy, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY", authDomain: "unibolt-f7005.firebaseapp.com", projectId: "unibolt-f7005", storageBucket: "unibolt-f7005.firebasestorage.app", messagingSenderId: "121987854250", appId: "1:121987854250:web:21a9f50aad54b2143a85d3" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, user => {
+            if (!user || user.email !== 'admin@unibolt.in') window.location.href = 'mail-login.html';
+        });
+
+        window.signOut = () => fbSignOut(auth).then(() => window.location.href = 'mail-login.html');
+
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-circle-xmark'}"></i> ${msg}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+
+        function fmtDate(ts) {
+            if (!ts) return '—';
+            const d = ts.toDate ? ts.toDate() : new Date(ts);
+            return d.toLocaleString();
+        }
+
+        // Blocked IPs
+        onSnapshot(collection(db, "blocked_ips"), (snap) => {
+            const rows = document.getElementById('blocked-ips-table');
+            document.getElementById('blocked-count').textContent = snap.size + ' entries';
+            document.getElementById('stat-blocked').textContent = snap.size;
+            if (snap.empty) { rows.innerHTML = '<tr class="empty-row"><td colspan="5">No blocked IPs.</td></tr>'; return; }
+            rows.innerHTML = snap.docs.map(d => {
+                const ip = d.data();
+                return `<tr>
+                    <td><code>${ip.ip || d.id}</code></td>
+                    <td style="color:var(--text-dim);">${ip.reason || '—'}</td>
+                    <td style="color:var(--text-dim); font-size:12px;">${fmtDate(ip.blockedAt)}</td>
+                    <td style="color:var(--text-dim);">${ip.blockedBy || 'system'}</td>
+                    <td><button class="btn btn-accent btn-sm" onclick="window.unblockIP('${d.id}')"><i class="fa-solid fa-unlock"></i> Unblock</button></td>
+                </tr>`;
+            }).join('');
+        });
+
+        // Security Incidents
+        onSnapshot(query(collection(db, "security_incidents"), orderBy("timestamp", "desc")), (snap) => {
+            const rows = document.getElementById('incidents-table');
+            document.getElementById('incidents-count').textContent = snap.size + ' incidents';
+            document.getElementById('stat-suspicious').textContent = snap.size;
+            if (snap.empty) { rows.innerHTML = '<tr class="empty-row"><td colspan="5">No incidents recorded.</td></tr>'; return; }
+            rows.innerHTML = snap.docs.map(d => {
+                const inc = d.data();
+                const typeColor = inc.type && inc.type.includes('BREACH') ? 'badge-danger' : 'badge-warn';
+                return `<tr>
+                    <td style="font-size:12px; color:var(--text-dim);">${fmtDate(inc.timestamp)}</td>
+                    <td><span class="badge ${typeColor}">${inc.type || 'UNKNOWN'}</span></td>
+                    <td><code>${inc.ip || '—'}</code></td>
+                    <td style="font-size:13px;">${inc.email || '—'}</td>
+                    <td style="font-size:13px; color:var(--text-dim);">${inc.details || '—'}</td>
+                </tr>`;
+            }).join('');
+        });
+
+        // User Bans
+        onSnapshot(collection(db, "banned_users"), (snap) => {
+            const rows = document.getElementById('bans-table');
+            document.getElementById('bans-count').textContent = snap.size + ' active';
+            document.getElementById('stat-bans').textContent = snap.size;
+            if (snap.empty) { rows.innerHTML = '<tr class="empty-row"><td colspan="5">No banned users.</td></tr>'; return; }
+            rows.innerHTML = snap.docs.map(d => {
+                const ban = d.data();
+                return `<tr>
+                    <td style="font-weight:600;">${ban.email || d.id}</td>
+                    <td style="color:var(--text-dim);">${ban.reason || '—'}</td>
+                    <td style="font-size:12px; color:var(--text-dim);">${fmtDate(ban.bannedAt)}</td>
+                    <td style="color:var(--text-dim);">${ban.bannedBy || 'admin'}</td>
+                    <td><button class="btn btn-accent btn-sm" onclick="window.unbanUser('${d.id}')"><i class="fa-solid fa-user-check"></i> Unban</button></td>
+                </tr>`;
+            }).join('');
+        });
+
+        // Rate Limit Violations
+        onSnapshot(query(collection(db, "audit_logs"), orderBy("timestamp", "desc")), (snap) => {
+            const violations = snap.docs.filter(d => {
+                const t = (d.data().type || '').toUpperCase();
+                return t.includes('BREACH') || t.includes('INTRUSION') || t.includes('RATE');
+            });
+            const rows = document.getElementById('violations-table');
+            document.getElementById('violations-count').textContent = violations.length + ' violations';
+            document.getElementById('stat-logins').textContent = snap.docs.filter(d => (d.data().type || '').toUpperCase().includes('LOGIN')).length;
+            if (violations.length === 0) { rows.innerHTML = '<tr class="empty-row"><td colspan="5">No violations detected.</td></tr>'; return; }
+            rows.innerHTML = violations.map(d => {
+                const log = d.data();
+                return `<tr>
+                    <td style="font-size:12px; color:var(--text-dim);">${fmtDate(log.timestamp)}</td>
+                    <td><span class="badge badge-danger">${log.type || 'UNKNOWN'}</span></td>
+                    <td style="font-size:13px;">${log.userName || log.email || '—'}</td>
+                    <td><code>${log.ip || '—'}</code></td>
+                    <td style="font-size:13px; color:var(--text-dim);">${log.message || log.details || '—'}</td>
+                </tr>`;
+            }).join('');
+        });
+
+        window.unblockIP = async (id) => {
+            if (!confirm('Unblock this IP address?')) return;
+            try { await deleteDoc(doc(db, "blocked_ips", id)); showToast("IP unblocked", "success"); }
+            catch (e) { showToast("Error unblocking IP", "error"); }
+        };
+
+        window.unbanUser = async (id) => {
+            if (!confirm('Unban this user?')) return;
+            try { await deleteDoc(doc(db, "banned_users", id)); showToast("User unbanned", "success"); }
+            catch (e) { showToast("Error unbanning user", "error"); }
+        };
+
+        window.blockIP = async () => {
+            const ip = document.getElementById('new-ip').value.trim();
+            const reason = document.getElementById('new-ip-reason').value.trim();
+            if (!ip) { showToast("Enter an IP address", "error"); return; }
+            // Document ID uses dots replaced with underscores; the 'ip' field stores the original address
+            const docId = ip.replace(/\./g, '_');
+            try {
+                await setDoc(doc(db, "blocked_ips", docId), { ip, reason, blockedAt: new Date().toISOString(), blockedBy: auth.currentUser?.email || 'admin' });
+                document.getElementById('new-ip').value = '';
+                document.getElementById('new-ip-reason').value = '';
+                showToast("IP blocked successfully", "success");
+            } catch (e) { showToast("Error blocking IP", "error"); }
+        };
+
+        window.lockAllLogins = async () => {
+            if (!confirm('WARNING: This will enable maintenance mode and block all logins. Continue?')) return;
+            try {
+                await setDoc(doc(db, "system_config", "maintenance"), { mode: true, enabledAt: new Date().toISOString(), enabledBy: auth.currentUser?.email || 'admin' }, { merge: true });
+                showToast("Maintenance mode enabled — all logins blocked", "success");
+            } catch (e) { showToast("Error enabling maintenance mode", "error"); }
+        };
+
+        window.clearAllBlocks = async () => {
+            if (!confirm('WARNING: This will remove ALL IP blocks. Continue?')) return;
+            try {
+                const snap = await getDocs(collection(db, "blocked_ips"));
+                const batch = writeBatch(db);
+                snap.forEach(d => batch.delete(d.ref));
+                await batch.commit();
+                showToast(`Cleared ${snap.size} IP blocks`, "success");
+            } catch (e) { showToast("Error clearing blocks", "error"); }
+        };
+    </script>
+</body>
+</html>

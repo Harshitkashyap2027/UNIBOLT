@@ -2,71 +2,305 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Vault_OS - Admin Watch</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vault_OS — Admin Watch</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600&display=swap');
         :root { --primary: #ef4444; --accent: #10b981; --bg: #020617; --surface: #0f172a; --border: #1e293b; --text: #f8fafc; }
-        body { background: var(--bg); font-family: 'Outfit', sans-serif; color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* Sidebar Styles */
-        .sidebar { width: 280px; background: #000; border-right: 1px solid var(--border); padding: 25px; display: flex; flex-direction: column; }
-        .nav-item { padding: 14px; color: #64748b; cursor: pointer; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; transition: 0.3s; text-decoration: none; font-weight: 500; }
-        .nav-item:hover, .nav-item.active { background: var(--surface); color: white; }
-        .nav-item.active { border-right: 4px solid var(--primary); background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.1)); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); font-family: 'Outfit', sans-serif; color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
-        .main { flex: 1; padding: 30px; overflow-y: auto; }
-        .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+        .sidebar { width: 260px; background: #000; border-right: 1px solid var(--border); padding: 24px 16px; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar h2 { font-size: 20px; margin-bottom: 28px; padding: 0 4px; }
+        .nav-item { padding: 12px 14px; color: #64748b; cursor: pointer; border-radius: 8px; margin-bottom: 6px; display: flex; align-items: center; gap: 12px; transition: 0.3s; text-decoration: none; font-weight: 500; font-size: 14px; }
+        .nav-item:hover, .nav-item.active { background: var(--surface); color: white; }
+        .nav-item.active { border-right: 3px solid var(--primary); background: linear-gradient(90deg, transparent, rgba(239,68,68,0.1)); }
+        .sidebar-bottom { margin-top: auto; border-top: 1px solid var(--border); padding-top: 16px; }
+
+        .main { flex: 1; padding: 28px; overflow-y: auto; background: var(--bg); }
+        .page-header { margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+        .page-header h1 { font-size: 24px; font-weight: 700; margin: 0; }
+        .page-header p { color: #64748b; margin-top: 4px; font-size: 14px; }
+        .header-right { display: flex; gap: 10px; align-items: center; }
+
+        /* STATS */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+        .stat-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .stat-value { font-size: 26px; font-weight: 700; color: white; }
+        .stat-card.red .stat-value { color: var(--primary); }
+        .stat-card.green .stat-value { color: var(--accent); }
+        .stat-card.yellow .stat-value { color: #f59e0b; }
+
+        /* FILTER BAR */
+        .filter-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 22px; }
+        .filter-bar .fg { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px; }
+        .filter-bar label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        .filter-bar input, .filter-bar select { background: var(--bg); border: 1px solid var(--border); color: white; padding: 9px 12px; border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; }
+        .filter-bar input::placeholder { color: #475569; }
+        .filter-bar input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+
+        /* TABLE */
+        .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 24px; }
+        .table-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .table-header span { font-size: 13px; color: #64748b; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #0f172a; padding: 15px; text-align: left; color: #64748b; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
-        td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; font-family: 'JetBrains Mono'; }
+        thead th { padding: 13px 16px; text-align: left; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: #0a1020; }
+        tbody td { padding: 13px 16px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+        /* BADGES */
+        .mut-badge { padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono'; }
+        .mut-UPDATE { background: rgba(99,102,241,0.2); color: #818cf8; }
+        .mut-DELETE { background: rgba(239,68,68,0.2); color: #f87171; }
+        .mut-CREATE { background: rgba(16,185,129,0.2); color: #34d399; }
+        .mut-LOGIN { background: rgba(100,116,139,0.2); color: #94a3b8; }
+        .mut-BREACH, .mut-INTRUSION { background: rgba(239,68,68,0.3); color: #fca5a5; }
+
+        .risk-badge { padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        .risk-Low { background: rgba(16,185,129,0.15); color: #10b981; }
+        .risk-Medium { background: rgba(234,179,8,0.15); color: #eab308; }
+        .risk-High { background: rgba(249,115,22,0.15); color: #f97316; }
+        .risk-Critical { background: rgba(239,68,68,0.2); color: #ef4444; }
+
+        /* CHART */
+        .chart-section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 24px; }
+        .chart-section h3 { font-size: 15px; font-weight: 700; margin-bottom: 18px; color: #94a3b8; }
+
+        /* BUTTONS */
+        .btn { padding: 9px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-family: inherit; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #dc2626; }
+        .btn-outline { background: var(--surface); border: 1px solid var(--border); color: white; }
+        .btn-outline:hover { background: #1e293b; }
+
+        code { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7dd3fc; background: rgba(125,211,252,0.1); padding: 2px 6px; border-radius: 4px; }
+        .empty-msg { text-align: center; padding: 40px; color: #475569; }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <h2 style="font-size: 22px; margin-bottom: 40px;"><i class="fa-solid fa-bolt" style="color: var(--primary);"></i> Vault_OS</h2>
+        <h2 style="padding:0 4px;"><i class="fa-solid fa-bolt" style="color:var(--primary);"></i> Vault_OS</h2>
         <a href="admin-activity.html" class="nav-item"><i class="fa-solid fa-satellite-dish"></i> Real-time Feed</a>
         <a href="admin-watch.html" class="nav-item active"><i class="fa-solid fa-user-shield"></i> Admin Watch</a>
         <a href="student-watch.html" class="nav-item"><i class="fa-solid fa-user-graduate"></i> Student Watch</a>
         <a href="system-health.html" class="nav-item"><i class="fa-solid fa-microchip"></i> System Health</a>
+        <a href="admin-security.html" class="nav-item"><i class="fa-solid fa-shield-halved"></i> Security Control</a>
+        <div class="sidebar-bottom">
+            <button onclick="terminateSession()" class="nav-item" style="width:100%; background:none; border:none; color:#ef4444; cursor:pointer; font-family:inherit;">
+                <i class="fa-solid fa-power-off"></i> Terminate Session
+            </button>
+        </div>
     </div>
 
     <div class="main">
-        <header style="margin-bottom: 30px;">
-            <h1 style="margin: 0; font-size: 24px;">Admin Watch</h1>
-            <p style="color: #64748b; margin-top: 5px;">Surveillance of Master Admin mutations.</p>
-        </header>
+        <div class="page-header">
+            <div>
+                <h1>Admin Watch</h1>
+                <p>Enhanced surveillance of all admin mutations and access logs.</p>
+            </div>
+            <div class="header-right">
+                <span id="live-counter" style="color:#64748b; font-size:13px; font-family:'JetBrains Mono';"></span>
+                <button class="btn btn-outline" onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card"><div class="stat-label">Total Mutations</div><div class="stat-value" id="stat-total">0</div></div>
+            <div class="stat-card yellow"><div class="stat-label">Today's Actions</div><div class="stat-value" id="stat-today">0</div></div>
+            <div class="stat-card red"><div class="stat-label">Critical Operations</div><div class="stat-value" id="stat-critical">0</div></div>
+            <div class="stat-card green"><div class="stat-label">Admin Sessions</div><div class="stat-value" id="stat-sessions">0</div></div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar">
+            <div class="fg" style="flex:2; min-width:200px;">
+                <label>Keyword Search</label>
+                <input type="text" id="f-search" placeholder="Search logs…" oninput="applyFilters()">
+            </div>
+            <div class="fg">
+                <label>Mutation Type</label>
+                <select id="f-type" onchange="applyFilters()">
+                    <option value="ALL">All Types</option>
+                    <option value="UPDATE">UPDATE</option>
+                    <option value="DELETE">DELETE</option>
+                    <option value="CREATE">CREATE</option>
+                    <option value="LOGIN">LOGIN</option>
+                    <option value="BREACH">BREACH / INTRUSION</option>
+                </select>
+            </div>
+            <div class="fg">
+                <label>From Date</label>
+                <input type="date" id="f-from" onchange="applyFilters()">
+            </div>
+            <div class="fg">
+                <label>To Date</label>
+                <input type="date" id="f-to" onchange="applyFilters()">
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-section">
+            <h3><i class="fa-solid fa-chart-pie" style="color:var(--primary); margin-right:8px;"></i>Mutation Type Distribution</h3>
+            <div style="max-width:300px; margin:0 auto;">
+                <canvas id="mutation-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Table -->
         <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>Time</th><th>Admin Email</th><th>Action Log</th><th>Mutation</th></tr>
-                </thead>
-                <tbody id="admin-feed"></tbody>
-            </table>
+            <div class="table-header">
+                <span>Admin Mutations Log</span>
+                <span id="results-count" style="color:#64748b; font-size:13px;"></span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Admin Email</th>
+                            <th>Action Details</th>
+                            <th>Mutation Type</th>
+                            <th>IP Address</th>
+                            <th>Risk Level</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-feed"><tr><td colspan="6" class="empty-msg">Loading…</td></tr></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut as fbSignOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY", authDomain: "unibolt-f7005.firebaseapp.com", projectId: "unibolt-f7005", storageBucket: "unibolt-f7005.appspot.com", messagingSenderId: "121987854250", appId: "1:121987854250:web:21a9f50aad54b2143a85d3" };
+        const firebaseConfig = { apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY", authDomain: "unibolt-f7005.firebaseapp.com", projectId: "unibolt-f7005", storageBucket: "unibolt-f7005.firebasestorage.app", messagingSenderId: "121987854250", appId: "1:121987854250:web:21a9f50aad54b2143a85d3" };
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
+
+        onAuthStateChanged(auth, user => {
+            if (!user || user.email !== 'admin@unibolt.in') window.location.href = 'mail-login.html';
+        });
+
+        window.terminateSession = () => fbSignOut(auth).then(() => window.location.href = 'mail-login.html');
+
+        let allLogs = [];
+        let chartInstance = null;
+
+        function getRisk(type) {
+            if (!type) return 'Low';
+            const t = type.toUpperCase();
+            if (t.includes('BREACH') || t.includes('INTRUSION')) return 'Critical';
+            if (t.includes('DELETE')) return 'High';
+            if (t.includes('UPDATE') || t.includes('CREATE')) return 'Medium';
+            return 'Low';
+        }
+
+        function fmtDate(ts) {
+            if (!ts) return '—';
+            const d = ts.toDate ? ts.toDate() : new Date(ts);
+            return d.toLocaleString();
+        }
 
         const q = query(collection(db, "audit_logs"), where("role", "==", "Admin"), orderBy("timestamp", "desc"));
         onSnapshot(q, (snap) => {
-            const feed = document.getElementById('admin-feed');
-            feed.innerHTML = snap.docs.map(doc => {
-                const log = doc.data();
+            allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            updateStats();
+            updateChart();
+            applyFilters();
+        });
+
+        function updateStats() {
+            const today = new Date(); today.setHours(0,0,0,0);
+            document.getElementById('stat-total').textContent = allLogs.length;
+            document.getElementById('live-counter').textContent = allLogs.length + ' logs loaded';
+            document.getElementById('stat-today').textContent = allLogs.filter(l => {
+                if (!l.timestamp) return false;
+                const d = l.timestamp.toDate ? l.timestamp.toDate() : new Date(l.timestamp);
+                return d >= today;
+            }).length;
+            document.getElementById('stat-critical').textContent = allLogs.filter(l => getRisk(l.type) === 'Critical' || getRisk(l.type) === 'High').length;
+            document.getElementById('stat-sessions').textContent = new Set(allLogs.filter(l => (l.type||'').toUpperCase().includes('LOGIN')).map(l => l.userName)).size;
+        }
+
+        function updateChart() {
+            const counts = { UPDATE: 0, DELETE: 0, CREATE: 0, LOGIN: 0, OTHER: 0 };
+            allLogs.forEach(l => {
+                const t = (l.type || '').toUpperCase();
+                if (t.includes('UPDATE')) counts.UPDATE++;
+                else if (t.includes('DELETE')) counts.DELETE++;
+                else if (t.includes('CREATE')) counts.CREATE++;
+                else if (t.includes('LOGIN')) counts.LOGIN++;
+                else counts.OTHER++;
+            });
+            const ctx = document.getElementById('mutation-chart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(counts),
+                    datasets: [{ data: Object.values(counts), backgroundColor: ['#818cf8','#f87171','#34d399','#94a3b8','#f59e0b'], borderColor: '#0f172a', borderWidth: 2 }]
+                },
+                options: { plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Outfit' } } } } }
+            });
+        }
+
+        window.applyFilters = function() {
+            const search = document.getElementById('f-search').value.toLowerCase();
+            const typeFilter = document.getElementById('f-type').value;
+            const fromDate = document.getElementById('f-from').value ? new Date(document.getElementById('f-from').value) : null;
+            const toDate = document.getElementById('f-to').value ? new Date(document.getElementById('f-to').value + 'T23:59:59') : null;
+
+            const filtered = allLogs.filter(l => {
+                const t = (l.type || '').toUpperCase();
+                const matchType = typeFilter === 'ALL' || t.includes(typeFilter);
+                const matchSearch = !search || (l.userName||'').toLowerCase().includes(search) || (l.message||'').toLowerCase().includes(search) || (l.type||'').toLowerCase().includes(search);
+                let matchDate = true;
+                if (l.timestamp && (fromDate || toDate)) {
+                    const d = l.timestamp.toDate ? l.timestamp.toDate() : new Date(l.timestamp);
+                    if (fromDate && d < fromDate) matchDate = false;
+                    if (toDate && d > toDate) matchDate = false;
+                }
+                return matchType && matchSearch && matchDate;
+            });
+
+            const tbody = document.getElementById('admin-feed');
+            document.getElementById('results-count').textContent = filtered.length + ' results';
+            if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">No logs match your filters.</td></tr>'; return; }
+            tbody.innerHTML = filtered.map(l => {
+                const risk = getRisk(l.type);
+                const mutType = (l.type || 'UNKNOWN').toUpperCase();
+                const mutClass = Object.keys({UPDATE:1,DELETE:1,CREATE:1,LOGIN:1,BREACH:1,INTRUSION:1}).find(k => mutType.includes(k)) || '';
                 return `<tr>
-                    <td>${log.timestamp?.toDate().toLocaleTimeString()}</td>
-                    <td style="color:white">${log.userName}</td>
-                    <td>${log.message}</td>
-                    <td style="color:var(--primary)">${log.type}</td>
+                    <td style="font-family:'JetBrains Mono'; font-size:12px; color:#64748b;">${fmtDate(l.timestamp)}</td>
+                    <td style="font-weight:600; color:white;">${l.userName || '—'}</td>
+                    <td style="color:#94a3b8; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${l.message||''}">${l.message || '—'}</td>
+                    <td><span class="mut-badge mut-${mutClass || mutType}">${mutType}</span></td>
+                    <td><code>${l.ip || '—'}</code></td>
+                    <td><span class="risk-badge risk-${risk}">${risk}</span></td>
                 </tr>`;
             }).join('');
-        });
+        };
+
+        window.exportCSV = () => {
+            if (allLogs.length === 0) return;
+            let csv = "Timestamp,Admin Email,Action,Mutation Type,IP,Risk\n";
+            allLogs.forEach(l => {
+                const row = [fmtDate(l.timestamp), l.userName||'', l.message||'', l.type||'', l.ip||'', getRisk(l.type)];
+                csv += row.map(v => `"${v}"`).join(',') + '\n';
+            });
+            const link = document.createElement('a');
+            link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+            link.download = 'admin_watch_logs.csv';
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        };
     </script>
 </body>
 </html>
