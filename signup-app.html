@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UniBolt - App Development Registration</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="icon" type="image/png" href="UniBolt.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { 
+            background: #09090b; 
+            display: none;
+            align-items: center; justify-content: center; 
+            min-height: 100vh; font-family: 'Outfit', sans-serif; 
+            color: white; padding: 20px;
+            overflow-y: auto; 
+        }
+        .signup-container { 
+            width: 100%; max-width: 950px; 
+            min-height: 600px; 
+            background: #111; border: 1px solid #222; 
+            border-radius: 20px; box-shadow: 0 0 50px rgba(0,0,0,0.5); 
+            display: flex; overflow: hidden; position: relative;
+        }
+        .sidebar-progress { 
+            width: 300px; background: #18181b; padding: 40px; 
+            display: flex; flex-direction: column; justify-content: space-between; 
+            border-right: 1px solid #222; flex-shrink: 0; z-index: 2;
+        }
+        .brand { font-size: 24px; font-weight: 800; margin-bottom: 40px; letter-spacing: -1px; }
+        .brand i { color: #0ea5e9; }
+        .step-item { display: flex; gap: 15px; margin-bottom: 30px; opacity: 0.4; transition: 0.3s; align-items: center; }
+        .step-item.active { opacity: 1; }
+        .step-item.done .step-num { background: #10b981; color: black; border-color: #10b981; }
+        .step-num { width: 35px; height: 35px; border: 2px solid #555; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; transition: 0.3s; }
+        .step-text h4 { margin: 0; font-size: 14px; color: white; }
+        .step-text p { margin: 2px 0 0; font-size: 11px; color: #888; }
+        .form-area { flex: 1; padding: 50px; position: relative; overflow-y: auto; height: 600px; }
+        .form-step { display: none; animation: fadeIn 0.5s ease; flex-direction: column; padding-bottom: 50px; }
+        .form-step.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        h2 { margin-bottom: 10px; font-size: 24px; }
+        p.desc { color: #888; font-size: 13px; margin-bottom: 30px; line-height: 1.5; }
+        .input-group { margin-bottom: 20px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        label { display: block; font-size: 11px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        input, select { width: 100%; padding: 12px 15px; background: #09090b; border: 1px solid #333; color: white; border-radius: 8px; outline: none; transition: 0.3s; font-size: 14px; }
+        input:focus, select:focus { border-color: #0ea5e9; background: #000; }
+        input.error, select.error { border-color: #ef4444; animation: shake 0.3s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        
+        /* App Dev Banner (Blue Theme) */
+        .course-banner {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            padding: 15px; border-radius: 12px; display: flex; align-items: center; gap: 15px; margin-bottom: 25px;
+        }
+        .banner-icon {
+            width: 45px; height: 45px;
+            background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white;
+            box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3); flex-shrink: 0;
+        }
+
+        /* Features List */
+        .feature-list { list-style: none; margin: 0; padding: 0; }
+        .feature-list li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #222; color: #a1a1aa; font-size: 13px; }
+        .feature-list li:last-child { border-bottom: none; }
+        .feature-list li i { color: #0ea5e9; width: 16px; }
+
+        /* Payment */
+        .payment-split { display: flex; gap: 20px; align-items: stretch; margin-bottom: 25px; }
+        .qr-section { background: #fff; padding: 15px; border-radius: 12px; text-align: center; width: 170px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .qr-img { width: 100%; display: block; }
+        .mobile-pay-section { flex: 1; background: #1a1a1a; padding: 20px; border-radius: 12px; border: 1px solid #333; display: flex; flex-direction: column; justify-content: center; }
+        .mobile-only-btn { background: #0ea5e9; color: white; border: none; width: 100%; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; margin-top: 10px; transition: 0.2s; }
+        .mobile-only-btn:hover { background: #0284c7; }
+        .utr-section { background: #111; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
+
+        /* Buttons */
+        .btn-action { margin-top: auto; padding: 15px; background: #0ea5e9; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; font-size: 14px; }
+        .btn-action:hover { background: #0284c7; transform: translateY(-2px); }
+        .btn-back { background: transparent; border: 1px solid #333; color: #888; margin-top: 10px; }
+        .btn-back:hover { background: #222; border-color: #555; color: white; }
+
+        /* Modals */
+        .custom-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 1; transition: 0.3s ease; }
+        .custom-modal.hidden { opacity: 0; pointer-events: none; visibility: hidden; }
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); z-index: 1; }
+        .modal-box { position: relative; z-index: 10; width: 90%; max-width: 400px; background: #18181b; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 30px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8); transform: scale(1); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .custom-modal.hidden .modal-box { transform: scale(0.9) translateY(20px); }
+        .modal-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 28px; position: relative; }
+        .type-success .modal-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 2px solid rgba(16, 185, 129, 0.3); }
+        .type-error .modal-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 2px solid rgba(239, 68, 68, 0.3); }
+        .type-payment .modal-icon { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; border: 2px solid rgba(14, 165, 233, 0.3); }
+        .modal-box h3 { font-size: 20px; font-weight: 800; color: white; margin: 0 0 8px; }
+        .sub-text { font-size: 14px; color: #888; line-height: 1.5; }
+        .modal-btn-primary { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 20px; font-size: 14px; }
+        .modal-btn-success { background: #10b981; color: white; }
+        .modal-btn-error { background: #ef4444; color: white; }
+        .icon-pulse { position: absolute; width: 100%; height: 100%; border-radius: 50%; animation: pulse-ring 1.5s ease-out infinite; }
+        .type-success .icon-pulse { border: 2px solid rgba(16, 185, 129, 0.4); }
+        .type-payment .icon-pulse { border: 2px solid rgba(14, 165, 233, 0.4); }
+        @keyframes pulse-ring { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+        .steps-list { text-align: left; margin: 15px 0; }
+        .step-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; color: #ccc; }
+        .step-num-list { width: 24px; height: 24px; border-radius: 50%; background: rgba(14, 165, 233, 0.2); color: #0ea5e9; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; flex-shrink: 0; }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            body { padding: 15px; }
+            .signup-container { flex-direction: column; min-height: unset; }
+            .sidebar-progress { width: 100%; padding: 20px 25px; border-right: none; border-bottom: 1px solid #222; flex-direction: row; gap: 10px; }
+            .brand { display: none; }
+            .step-text p { display: none; }
+            .sidebar-footer { display: none; }
+            .step-item { margin-bottom: 0; flex: 1; justify-content: center; }
+            .form-area { padding: 25px; height: auto; min-height: 500px; }
+            .grid-2 { grid-template-columns: 1fr; gap: 0; }
+            .payment-split { flex-direction: column; }
+            .qr-section { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="signup-container">
+        <!-- Sidebar Progress -->
+        <div class="sidebar-progress">
+            <div>
+                <div class="brand"><i class="fa-solid fa-layer-group"></i> UniBolt.</div>
+                
+                <div class="step-item active" id="step-1-ind">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                        <h4>Your Details</h4>
+                        <p>Personal information</p>
+                    </div>
+                </div>
+                <div class="step-item" id="step-2-ind">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                        <h4>Registration Fee</h4>
+                        <p>₹200 via UPI</p>
+                    </div>
+                </div>
+                <div class="step-item" id="step-3-ind">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                        <h4>Set Password</h4>
+                        <p>Secure your account</p>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <p style="font-size: 11px; color: #555; line-height: 1.5;">
+                    <i class="fa-solid fa-shield-halved" style="color: #0ea5e9;"></i>
+                    Secure 256-bit encrypted registration
+                </p>
+                <p style="font-size: 11px; color: #555; margin-top: 10px;">Already enrolled? <a href="login.html" style="color: #0ea5e9;">Login</a></p>
+            </div>
+        </div>
+
+        <!-- Form Area -->
+        <div class="form-area">
+
+            <!-- STEP 1: Personal Details -->
+            <div class="form-step active" id="step-1">
+                <h2>Join App Development</h2>
+                <p class="desc">Build cross-platform mobile apps with Flutter. iOS & Android — one codebase.</p>
+
+                <div class="course-banner">
+                    <div class="banner-icon"><i class="fa-brands fa-android"></i></div>
+                    <div>
+                        <strong style="color: white; font-size: 14px;">📱 App Development Track</strong><br>
+                        <span style="font-size: 12px; color: #0ea5e9;">Flutter · 30 Days · Cross-Platform</span>
+                    </div>
+                </div>
+
+                <ul class="feature-list" style="margin-bottom: 25px;">
+                    <li><i class="fa-solid fa-check"></i> Build real Flutter apps from scratch</li>
+                    <li><i class="fa-solid fa-check"></i> Deploy to Android APK & iOS</li>
+                    <li><i class="fa-solid fa-check"></i> Firebase integration & state management</li>
+                    <li><i class="fa-solid fa-check"></i> Verified internship certificate</li>
+                    <li><i class="fa-solid fa-check"></i> Live leaderboard & daily challenges</li>
+                </ul>
+
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" id="inp-name" placeholder="Harshit Kashyap">
+                    </div>
+                    <div class="input-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="inp-phone" placeholder="9XXXXXXXXX" maxlength="10">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label>City</label>
+                        <input type="text" id="inp-city" placeholder="Dehradun">
+                    </div>
+                    <div class="input-group">
+                        <label>State</label>
+                        <input type="text" id="inp-state" placeholder="Uttarakhand">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>College / University</label>
+                    <input type="text" id="inp-college" placeholder="COER University">
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label>Year</label>
+                        <select id="inp-year">
+                            <option value="" disabled selected>Select Year</option>
+                            <option>1st Year</option>
+                            <option>2nd Year</option>
+                            <option>3rd Year</option>
+                            <option>4th Year</option>
+                            <option>Graduated</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Degree / Course</label>
+                        <select id="inp-course">
+                            <option value="" disabled selected>Select course</option>
+                            <optgroup label="B.Tech / B.E.">
+                                <option>B.Tech - CSE</option>
+                                <option>B.Tech - AIML</option>
+                                <option>B.Tech - IT</option>
+                                <option>B.Tech - ECE</option>
+                                <option>B.Tech - Other</option>
+                            </optgroup>
+                            <optgroup label="Computer Applications">
+                                <option>BCA</option>
+                                <option>MCA</option>
+                                <option>B.Sc - CS/IT</option>
+                                <option>M.Sc - CS/IT</option>
+                            </optgroup>
+                            <optgroup label="Others">
+                                <option>BBA</option>
+                                <option>MBA</option>
+                                <option>Diploma / Polytechnic</option>
+                                <option>Other</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn-action" onclick="validateStep1()">Continue <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+
+            <!-- STEP 2: Payment -->
+            <div class="form-step" id="step-2">
+                <h2>Registration Fee</h2>
+                <p class="desc">Pay <strong>₹200</strong> to confirm your seat in the App Development track.</p>
+                <div class="payment-split">
+                    <div class="qr-section">
+                        <h5 style="color: #000; margin: 0 0 10px 0; font-size: 13px;">Scan QR</h5>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi%3A%2F%2Fpay%3Fpa%3D6397774991-2.wallet%40phonepe%26pn%3DUniBolt%26am%3D200%26cu%3DINR" class="qr-img" alt="UPI QR Code">
+                        <div style="color: #059669; font-size: 10px; font-weight: bold; margin-top: 5px;">Verified</div>
+                    </div>
+                    <div class="mobile-pay-section">
+                        <div><h5 style="color: #fff; margin:0;">Pay via App</h5><p style="font-size:11px; color:#888;">GPay / PhonePe / Paytm</p></div>
+                        <div style="margin-top: 15px;"><label style="color:#aaa;">Your UPI ID</label><input type="text" id="inp-payer-upi" placeholder="e.g. 98765@ybl" style="border-color: #333; font-size: 13px;"></div>
+                        <button onclick="handleAppPayment()" class="mobile-only-btn"><i class="fa-solid fa-mobile-screen-button"></i> Pay ₹200</button>
+                    </div>
+                </div>
+                <div class="utr-section">
+                    <div class="input-group" style="margin-bottom: 10px;">
+                        <label>Enter UTR / Transaction ID (12 Digits)</label>
+                        <input type="text" id="inp-txn" placeholder="e.g. 324519384756" maxlength="12" style="font-family: monospace; letter-spacing: 2px;">
+                    </div>
+                    <small id="txn-error" style="color: #ef4444; font-size: 11px; display: none;">Invalid UTR — must be 12 digits</small>
+                </div>
+                <button class="btn-action" id="btn-verify" onclick="verifyPayment()">Verify Payment <i class="fa-solid fa-check"></i></button>
+                <button class="btn-action btn-back" onclick="changeStep(1)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            </div>
+
+            <!-- STEP 3: Account Setup -->
+            <div class="form-step" id="step-3">
+                <h2>Secure Your Account</h2>
+                <p class="desc">Create login credentials for your App Development dashboard.</p>
+                <div class="input-group"><label>Email Address</label><input type="email" id="inp-email" placeholder="you@example.com"></div>
+                <div class="input-group"><label>Create Password (min 8 characters)</label><input type="password" id="inp-pass" placeholder="••••••••" minlength="8"></div>
+                <div class="input-group"><label>Confirm Password</label><input type="password" id="inp-confirm-pass" placeholder="••••••••"></div>
+                <button class="btn-action" id="btn-submit" onclick="registerUser()">Complete Registration <i class="fa-solid fa-rocket"></i></button>
+                <button class="btn-action btn-back" onclick="changeStep(2)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="payment-modal" class="custom-modal hidden">
+        <div class="modal-overlay" onclick="closeModal('payment-modal')"></div>
+        <div class="modal-box type-payment">
+            <div class="modal-icon"><i class="fa-solid fa-mobile-screen-button"></i><div class="icon-pulse"></div></div>
+            <h3>Opening Payment App...</h3>
+            <div class="steps-list">
+                <div class="step-row"><div class="step-num-list">1</div><span>Pay <strong>₹200</strong> to UniBolt.</span></div>
+                <div class="step-row"><div class="step-num-list">2</div><span>Copy <strong>12-digit UTR</strong> from receipt.</span></div>
+                <div class="step-row"><div class="step-num-list">3</div><span>Paste it in the box above.</span></div>
+            </div>
+            <button onclick="closeModal('payment-modal')" class="modal-btn-primary" style="background:#0ea5e9; color:white;">Got it</button>
+        </div>
+    </div>
+
+    <div id="error-modal" class="custom-modal hidden">
+        <div class="modal-overlay" onclick="closeModal('error-modal')"></div>
+        <div class="modal-box type-error">
+            <div class="modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <h3>Required Field</h3>
+            <p id="error-msg" class="sub-text">Please fill all details.</p>
+            <button onclick="closeModal('error-modal')" class="modal-btn-primary modal-btn-error">OK</button>
+        </div>
+    </div>
+
+    <div id="success-modal" class="custom-modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-box type-success">
+            <div class="modal-icon"><i class="fa-solid fa-circle-check"></i><div class="icon-pulse"></div></div>
+            <h3>Registration Successful! 🎉</h3>
+            <p class="sub-text" style="color: #a1a1aa; margin-top: 10px;">
+                Welcome to UniBolt App Development!<br>
+                Admin will verify your payment shortly — usually within a few hours.
+            </p>
+            <button onclick="window.location.href='APP.html'" class="modal-btn-primary modal-btn-success">Go to Dashboard 🚀</button>
+        </div>
+    </div>
+
+    <!-- Gatekeeper Check -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
+            authDomain: "unibolt-f7005.firebaseapp.com",
+            projectId: "unibolt-f7005",
+            storageBucket: "unibolt-f7005.appspot.com",
+            messagingSenderId: "121987854250",
+            appId: "1:121987854250:web:21a9f50aad54b2143a85d3"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function checkGatekeeper() {
+            try {
+                const docSnap = await getDoc(doc(db, "platform_settings", "config"));
+                if (docSnap.exists() && docSnap.data().allowRegistrations === false) {
+                    window.location.href = "registration-closed.html";
+                } else {
+                    document.body.style.display = "flex";
+                }
+            } catch (error) {
+                document.body.style.display = "flex";
+            }
+        }
+        checkGatekeeper();
+    </script>
+
+    <script type="module" src="js/signup-app.js"></script>
+</body>
+</html>

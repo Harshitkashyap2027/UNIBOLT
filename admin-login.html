@@ -113,7 +113,7 @@
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 // Success
-                window.location.href = "/admin";
+                window.location.href = "admin.html";
             } catch (error) {
                 console.error(error);
                 errorMsg.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Invalid Passcode';
