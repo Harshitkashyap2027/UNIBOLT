@@ -56,7 +56,45 @@
                         
                         if (userSnap.exists()) {
                             const data = userSnap.data();
-                            
+
+                            // ---------------------------------------------------------
+                            // 🔒 SECURITY CHECK: IS THIS AN APP DEV STUDENT?
+                            // ---------------------------------------------------------
+                            const enrolledCourse = (data.enrolledProgram || data.course || "").toLowerCase();
+                            const isAppStudent = enrolledCourse.includes("app") || enrolledCourse.includes("flutter") || enrolledCourse.includes("android") || enrolledCourse.includes("mobile");
+
+                            if (!isAppStudent) {
+                                // STOP! User is NOT authorized
+                                const courseNameEl = document.getElementById('security-course-name');
+                                if(courseNameEl) courseNameEl.innerText = data.enrolledProgram || "Another Course";
+
+                                const securityModal = document.getElementById('security-modal');
+                                if(securityModal) securityModal.classList.remove('hidden');
+
+                                // Blur Background & Disable Clicks
+                                const appContainer = document.querySelector('.app-container');
+                                if(appContainer) {
+                                    appContainer.style.filter = "blur(20px)";
+                                    appContainer.style.pointerEvents = "none";
+                                }
+
+                                // Log access violation to Firestore
+                                try {
+                                    const { addDoc, collection: col2, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                                    await addDoc(col2(db, "access_violations"), {
+                                        userId: user.uid,
+                                        userEmail: user.email,
+                                        userName: data.name || "",
+                                        enrolledCourse: data.enrolledProgram || "",
+                                        attemptedPage: "APP.html",
+                                        timestamp: serverTimestamp()
+                                    });
+                                } catch(e) { console.log("Violation log error", e); }
+
+                                return; // Stop execution
+                            }
+                            // ---------------------------------------------------------
+
                             // Display Name
                             const nameDisplay = document.getElementById('dash-name');
                             if(nameDisplay) nameDisplay.innerText = data.name || "Developer";
@@ -235,6 +273,23 @@
         </div>
     </div>
 
+    <div id="security-modal" class="locked-overlay hidden" style="z-index: 99999;">
+        <div class="modal-content" style="text-align: center; width: 420px; padding: 40px; border-radius: 20px;">
+            <div style="font-size: 60px; margin-bottom: 20px;">⚠️</div>
+            <h1 style="color: #ef4444; font-size: 28px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 1px;">Security Alert</h1>
+            <p style="color: #fca5a5; font-size: 15px; margin-bottom: 25px; line-height: 1.6;">
+                You are enrolled in <strong style="color:white;" id="security-course-name">...</strong>.<br>
+                You are not authorized to view the <strong style="color:white;">App Development Dashboard</strong>.
+            </p>
+            <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px dashed #ef4444; color: #ef4444; font-size: 13px; font-weight: bold;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Unauthorized access has been reported to Admin.
+            </div>
+            <button onclick="window.location.href='login.html'" class="btn-primary" style="width: 100%; justify-content: center; background: #ef4444; color: white; border: none;">
+                I Understand, Go Back
+            </button>
+        </div>
+    </div>
+
     <div id="locked-modal" class="locked-overlay hidden">
         <div class="modal-content" style="text-align: center; width: 400px; border: 1px solid #ef4444; background: #09090b; padding: 30px; border-radius: 15px;">
             <div style="width: 60px; height: 60px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
@@ -271,12 +326,12 @@
                 <a href="APP.html" class="nav-item active"><i class="fa-solid fa-mobile-screen"></i> Dashboard</a>
                 <a href="APP-studio.html" class="nav-item"><i class="fa-solid fa-laptop-code"></i> App Studio</a>
                 <a href="APP-components.html" class="nav-item"><i class="fa-solid fa-cubes"></i> Components</a>
-                <a href="leaderboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
+                <a href="app-leaderboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Leaderboard</a>
                 <a href="APP-play.html" class="nav-item"><i class="fa-brands fa-google-play"></i> App Store</a>
                 <a href="app-gallery.html" class="nav-item"><i class="fa-solid fa-trophy"></i> Hall of Fame</a>
-                <a href="research.html" class="nav-item"><i class="fa-solid fa-book-open"></i> Docs</a>
-                <a href="contact.html" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
-                <a href="profile.html" class="nav-item"><i class="fa-solid fa-sliders"></i> Settings</a>
+                <a href="app-research.html" class="nav-item"><i class="fa-solid fa-book-open"></i> Research Hub</a>
+                <a href="app-support.html" class="nav-item"><i class="fa-solid fa-headset"></i> Support</a>
+                <a href="app-settings.html" class="nav-item"><i class="fa-solid fa-sliders"></i> Settings</a>
             </ul>
 
             <div class="sidebar-footer">

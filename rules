@@ -3,17 +3,100 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
+    // Helper: check if the requesting user is the admin
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.email == 'admin@unibolt.in' ||
+        request.auth.token.email == 'harshit@gmail.com'
+      );
+    }
+
+    // Helper: check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Users collection: each user can read/write their own doc; admin can read/write all
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Tasks / course content: any authenticated user can read; only admin can write
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Platform settings: any authenticated user can read; only admin can write
+    match /platform_settings/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Leaderboard / XP entries: authenticated users can read; users can write their own
+    match /leaderboard/{entryId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Certificates: authenticated users can read all; admin can write
+    match /certificates/{certId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Certificate verifications log: public read for verification; authenticated write
+    match /cert_verifications/{logId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Gallery / Hall of Fame submissions: authenticated users can read and submit
+    match /gallery/{submissionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // App submissions (App Dev course store)
+    match /app_submissions/{submissionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Research hub entries
+    match /research/{entryId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Support tickets
+    match /tickets/{ticketId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // Notifications
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Admin-only collections
+    match /admin_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Course access violation logs (for cross-course access warnings)
+    match /access_violations/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+    }
+
+    // Catch-all: deny everything else
     match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2026, 1, 9);
+      allow read, write: if false;
     }
   }
 }
