@@ -35,7 +35,7 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 // Admin Check
-                if(user.email === "harshit@gmail.com") {
+                if(user.email === "harshit@gmail.com" || user.email === "admin@unibolt.in") {
                      window.location.href = "admin.html";
                      return;
                 }
@@ -47,6 +47,19 @@
 
                     if (docSnap.exists()) {
                         const data = docSnap.data();
+
+                        // --- COURSE-SPECIFIC ACCESS CONTROL ---
+                        // This page is for Web Development (Full Stack) students only.
+                        // AI students → AI.html, App students → APP.html
+                        const course = (data.enrolledProgram || data.course || "").toLowerCase();
+                        if (course.includes("ai") || course.includes("data science") || course.includes("python")) {
+                            window.location.href = "AI.html";
+                            return;
+                        }
+                        if (course.includes("app") || course.includes("flutter") || course.includes("android")) {
+                            window.location.href = "APP.html";
+                            return;
+                        }
 
                         // 1. Lock Check
                         if (data.paymentStatus === 'Pending' || data.paymentStatus === 'Rejected') {
@@ -62,6 +75,9 @@
                         
                         // 3. Load Daily Mission
                         loadDailyMission(data);
+
+                        // 4. Load seasonal theme
+                        loadSeasonalTheme();
 
                     } else {
                         console.log("User document missing.");
@@ -298,6 +314,38 @@
                 document.getElementById('notif-dot').style.display = 'none';
             } catch(e) { console.error(e); }
         };
+
+        // --- SEASONAL THEME LOADER ---
+        async function loadSeasonalTheme() {
+            const themes = {
+                january:   { accent: '#64b5f6', accent2: '#1565c0', bg: 'linear-gradient(135deg, #0d1b2a, #1a237e)', emoji: '❄️', label: 'New Year' },
+                february:  { accent: '#f48fb1', accent2: '#c2185b', bg: 'linear-gradient(135deg, #1a0010, #4a0028)', emoji: '💝', label: "Valentine's" },
+                march:     { accent: '#a5d6a7', accent2: '#2e7d32', bg: 'linear-gradient(135deg, #0d1f0d, #1b5e20)', emoji: '🌸', label: 'Holi Spring' },
+                april:     { accent: '#80cbc4', accent2: '#00695c', bg: 'linear-gradient(135deg, #0d1a18, #004d40)', emoji: '🌧️', label: 'Spring Rain' },
+                may:       { accent: '#fff176', accent2: '#f57f17', bg: 'linear-gradient(135deg, #1a1500, #3e2800)', emoji: '☀️', label: 'Early Summer' },
+                june:      { accent: '#ffcc80', accent2: '#e65100', bg: 'linear-gradient(135deg, #1a0e00, #3e1f00)', emoji: '🌤️', label: 'Pre-Monsoon' },
+                july:      { accent: '#4dd0e1', accent2: '#0097a7', bg: 'linear-gradient(135deg, #001520, #002030)', emoji: '⛈️', label: 'Peak Monsoon' },
+                august:    { accent: '#ef9a9a', accent2: '#b71c1c', bg: 'linear-gradient(135deg, #1a0000, #3e0000)', emoji: '🇮🇳', label: 'Independence' },
+                september: { accent: '#ffab40', accent2: '#e65100', bg: 'linear-gradient(135deg, #1a0e00, #3e1800)', emoji: '🍂', label: 'Autumn' },
+                october:   { accent: '#ff7043', accent2: '#bf360c', bg: 'linear-gradient(135deg, #1a0600, #2d0d00)', emoji: '🎃', label: 'Festive' },
+                november:  { accent: '#bcaaa4', accent2: '#4e342e', bg: 'linear-gradient(135deg, #0d0907, #1a1210)', emoji: '🍁', label: 'Pre-Winter' },
+                december:  { accent: '#80cbc4', accent2: '#006064', bg: 'linear-gradient(135deg, #001a1a, #00212121)', emoji: '🎄', label: 'Christmas' },
+            };
+            const fallback = { accent: '#8b5cf6', accent2: '#4c1d95', bg: '#0f0e13', emoji: '🚀', label: '' };
+            try {
+                const { getDoc: gd, doc: docFn } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                const snap = await getDoc(doc(db, "platform_settings", "config"));
+                if (snap.exists() && snap.data().season) {
+                    const t = themes[snap.data().season] || fallback;
+                    document.documentElement.style.setProperty('--accent-primary', t.accent);
+                    document.documentElement.style.setProperty('--accent-secondary', t.accent2);
+                    const body = document.body;
+                    body.style.backgroundImage = t.bg + ', radial-gradient(#2d2b3b 1px, transparent 1px)';
+                    const seasonBadge = document.getElementById('season-badge');
+                    if (seasonBadge) { seasonBadge.textContent = `${t.emoji} ${t.label}`; seasonBadge.style.display = 'inline-flex'; }
+                }
+            } catch(e) {}
+        }
     </script>
 
     <style>
@@ -607,7 +655,11 @@
             </header>
 
             <div class="page-body">
-                <h1 style="margin-bottom: 25px;">Welcome, <span id="dash-name">Student</span>! 👋</h1>
+                <h1 style="margin-bottom: 10px;">Welcome, <span id="dash-name">Student</span>! 👋</h1>
+                <div style="margin-bottom:20px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <span id="season-badge" style="display:none; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); padding:5px 14px; border-radius:20px; font-size:13px; font-weight:600;"></span>
+                    <span style="color:#666; font-size:13px;" id="current-date-label"></span>
+                </div>
 
                 <div class="bento-grid">
                     
@@ -685,12 +737,114 @@
                         </div>
                     </div>
 
+                    <!-- Quick Action Cards -->
+                    <div class="card card-wide" style="background: linear-gradient(135deg, #0c2340, #1a3a5c) !important; border-color: rgba(96,165,250,0.3) !important;">
+                        <h3 style="margin-top:0; font-size:16px; color:#93c5fd;">⚡ Quick Actions</h3>
+                        <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin-top:15px;">
+                            <a href="arena.html" style="text-decoration:none; background:rgba(255,255,255,0.07); border-radius:12px; padding:12px; text-align:center; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+                                <i class="fa-solid fa-code" style="color:#60a5fa; font-size:20px;"></i>
+                                <div style="color:#ddd; font-size:11px; margin-top:6px;">Code Arena</div>
+                            </a>
+                            <a href="practice.html" style="text-decoration:none; background:rgba(255,255,255,0.07); border-radius:12px; padding:12px; text-align:center; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+                                <i class="fa-solid fa-dumbbell" style="color:#a78bfa; font-size:20px;"></i>
+                                <div style="color:#ddd; font-size:11px; margin-top:6px;">Practice</div>
+                            </a>
+                            <a href="leaderboard.html" style="text-decoration:none; background:rgba(255,255,255,0.07); border-radius:12px; padding:12px; text-align:center; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+                                <i class="fa-solid fa-chart-line" style="color:#34d399; font-size:20px;"></i>
+                                <div style="color:#ddd; font-size:11px; margin-top:6px;">Leaderboard</div>
+                            </a>
+                            <a href="contact.html" style="text-decoration:none; background:rgba(255,255,255,0.07); border-radius:12px; padding:12px; text-align:center; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+                                <i class="fa-solid fa-headset" style="color:#f472b6; font-size:20px;"></i>
+                                <div style="color:#ddd; font-size:11px; margin-top:6px;">Support</div>
+                            </a>
+                            <a href="research.html" style="text-decoration:none; background:rgba(255,255,255,0.07); border-radius:12px; padding:12px; text-align:center; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+                                <i class="fa-solid fa-flask" style="color:#fbbf24; font-size:20px;"></i>
+                                <div style="color:#ddd; font-size:11px; margin-top:6px;">Research</div>
+                            </a>
+                            <a href="profile.html" style="text-decoration:none; background:rgba(255,255,255,0.07); border-radius:12px; padding:12px; text-align:center; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+                                <i class="fa-solid fa-gear" style="color:#94a3b8; font-size:20px;"></i>
+                                <div style="color:#ddd; font-size:11px; margin-top:6px;">Settings</div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Goals Card -->
+                    <div class="card card-wide">
+                        <h3 style="margin-top:0; font-size:16px;">🎯 Weekly Goals</h3>
+                        <div style="margin-top:15px; display:flex; flex-direction:column; gap:12px;">
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;"><span style="color:#a1a1aa;">Complete 7 Daily Tasks</span><span id="weekly-tasks-done" style="color:#10b981; font-weight:600;">0/7</span></div>
+                                <div style="background:#2a2a3a; border-radius:4px; height:6px;"><div id="weekly-tasks-bar" style="width:0%; height:100%; background:#10b981; border-radius:4px; transition:1s;"></div></div>
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;"><span style="color:#a1a1aa;">Earn 500 XP</span><span id="weekly-xp-txt" style="color:#8b5cf6; font-weight:600;">0/500</span></div>
+                                <div style="background:#2a2a3a; border-radius:4px; height:6px;"><div id="weekly-xp-bar" style="width:0%; height:100%; background:#8b5cf6; border-radius:4px; transition:1s;"></div></div>
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;"><span style="color:#a1a1aa;">Practice Zone — 3 Sessions</span><span style="color:#f59e0b; font-weight:600;">0/3</span></div>
+                                <div style="background:#2a2a3a; border-radius:4px; height:6px;"><div style="width:0%; height:100%; background:#f59e0b; border-radius:4px;"></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tip of the Day Card -->
+                    <div class="card" style="background: linear-gradient(135deg, rgba(139,92,246,0.12), rgba(236,72,153,0.08)) !important; border-color: rgba(139,92,246,0.2) !important;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <h4 style="margin:0; font-size:14px; color:#c4b5fd;">💡 Tip of the Day</h4>
+                            <i class="fa-solid fa-lightbulb" style="color:#fbbf24;"></i>
+                        </div>
+                        <p id="tip-text" style="font-size:13px; color:#e2e8f0; line-height:1.6; margin:0;"></p>
+                        <small id="tip-category" style="color:#8b5cf6; font-size:11px; margin-top:8px; display:block;"></small>
+                    </div>
+
+                    <!-- Resources Card -->
+                    <div class="card">
+                        <h4 style="margin-top:0; font-size:14px; color:#a1a1aa; margin-bottom:15px;">📚 Study Resources</h4>
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <a href="Resources1.html" style="text-decoration:none; display:flex; align-items:center; gap:10px; padding:8px; background:rgba(255,255,255,0.04); border-radius:10px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+                                <i class="fa-solid fa-book" style="color:#60a5fa;"></i>
+                                <span style="color:#ddd; font-size:13px;">Web Dev Resources</span>
+                                <i class="fa-solid fa-arrow-right" style="color:#666; margin-left:auto; font-size:11px;"></i>
+                            </a>
+                            <a href="research.html" style="text-decoration:none; display:flex; align-items:center; gap:10px; padding:8px; background:rgba(255,255,255,0.04); border-radius:10px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+                                <i class="fa-solid fa-flask" style="color:#a78bfa;"></i>
+                                <span style="color:#ddd; font-size:13px;">Research Papers</span>
+                                <i class="fa-solid fa-arrow-right" style="color:#666; margin-left:auto; font-size:11px;"></i>
+                            </a>
+                            <a href="notebooks.html" style="text-decoration:none; display:flex; align-items:center; gap:10px; padding:8px; background:rgba(255,255,255,0.04); border-radius:10px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+                                <i class="fa-solid fa-notebook" style="color:#34d399;"></i>
+                                <span style="color:#ddd; font-size:13px;">My Notebooks</span>
+                                <i class="fa-solid fa-arrow-right" style="color:#666; margin-left:auto; font-size:11px;"></i>
+                            </a>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </main>
     </div>
 
     <script>
+        // Tip of the Day
+        const tips = [
+            { text: "Break large problems into small functions. Clean code is readable code.", cat: "💻 Clean Code" },
+            { text: "Use browser DevTools daily. The console is your best debugging friend.", cat: "🔧 Debugging" },
+            { text: "Commit code every day, even small changes. Build the habit.", cat: "📦 Git Habits" },
+            { text: "Reading other people's code is as important as writing your own.", cat: "📖 Learning" },
+            { text: "REST APIs: GET = read, POST = create, PUT = update, DELETE = remove.", cat: "🌐 Web Dev" },
+            { text: "CSS Grid and Flexbox: master both, they solve different layout problems.", cat: "🎨 CSS" },
+            { text: "Always validate user input — never trust client-side data alone.", cat: "🔐 Security" },
+        ];
+        const todayTip = tips[new Date().getDay() % tips.length];
+        const tipEl = document.getElementById('tip-text');
+        const tipCat = document.getElementById('tip-category');
+        if (tipEl) tipEl.textContent = todayTip.text;
+        if (tipCat) tipCat.textContent = todayTip.cat;
+
+        // Show current date
+        const dateLabel = document.getElementById('current-date-label');
+        if (dateLabel) dateLabel.textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
         function toggleMobileSidebar() {
             document.getElementById('mobile-sidebar').classList.toggle('active');
             document.getElementById('sidebar-overlay').classList.toggle('active');

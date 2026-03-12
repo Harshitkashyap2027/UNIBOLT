@@ -472,3 +472,27 @@ body.season-monsoon .course-card:hover { box-shadow: 0 0 30px rgba(20, 184, 166,
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.2); opacity: 0.7; }
 }
+
+/* ========================================= */
+/* NEW MONTHLY SEASONAL THEMES (12 months)   */
+/* ========================================= */
+body.season-january  { --primary: #64b5f6; --accent: #1565c0; background: radial-gradient(circle at top, #0d1b2a, #000); }
+body.season-february { --primary: #f48fb1; --accent: #c2185b; background: radial-gradient(circle at top, #1a0010, #000); }
+body.season-march    { --primary: #a5d6a7; --accent: #2e7d32; background: radial-gradient(circle at top, #0d1f0d, #000); }
+body.season-april    { --primary: #80cbc4; --accent: #00695c; background: radial-gradient(circle at top, #0d1a18, #000); }
+body.season-may      { --primary: #fff176; --accent: #f57f17; background: radial-gradient(circle at top, #1a1500, #000); }
+body.season-june     { --primary: #ffcc80; --accent: #e65100; background: radial-gradient(circle at top, #1a0e00, #000); }
+body.season-july     { --primary: #4dd0e1; --accent: #0097a7; background: radial-gradient(circle at top, #001520, #000); }
+body.season-august   { --primary: #ef9a9a; --accent: #b71c1c; background: radial-gradient(circle at top, #1a0000, #000); }
+body.season-september{ --primary: #ffab40; --accent: #e65100; background: radial-gradient(circle at top, #1a0e00, #000); }
+body.season-october  { --primary: #ff7043; --accent: #bf360c; background: radial-gradient(circle at top, #1a0600, #000); }
+body.season-november { --primary: #bcaaa4; --accent: #4e342e; background: radial-gradient(circle at top, #0d0907, #000); }
+body.season-december { --primary: #80cbc4; --accent: #006064; background: radial-gradient(circle at top, #001a1a, #000); }
+
+/* ========================================= */
+/* ACHIEVEMENT STATS & TESTIMONIALS          */
+/* ========================================= */
+@media (max-width: 768px) {
+    .stats-achievement-grid { grid-template-columns: 1fr 1fr !important; }
+    .testimonials-grid { grid-template-columns: 1fr !important; }
+}

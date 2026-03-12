@@ -74,9 +74,56 @@
         </div>
     </div>
 
+    <!-- IP Lockout check runs FIRST, before Firebase loads -->
+    <script>
+        (function() {
+            const LOCKOUT_KEY = 'admin_login_lockout';
+            const ATTEMPT_KEY = 'admin_login_attempts';
+            const MAX_ATTEMPTS = 5;
+            const LOCKOUT_DURATION_MS = 30 * 60 * 1000;
+
+            const lockoutUntil = parseInt(localStorage.getItem(LOCKOUT_KEY) || '0');
+            if (Date.now() < lockoutUntil) {
+                const remaining = Math.ceil((lockoutUntil - Date.now()) / 60000);
+                document.addEventListener('DOMContentLoaded', function() {
+                    const card = document.querySelector('.admin-card');
+                    if (card) {
+                        card.innerHTML = `
+                            <div style="font-size:40px; color:#ef4444; margin-bottom:20px;">🔒</div>
+                            <h1 style="color:#ef4444;">Access Locked</h1>
+                            <p style="color:#888; margin-bottom:20px; font-size:13px; line-height:1.5;">
+                                Too many failed login attempts.<br>
+                                This device has been temporarily blocked.
+                            </p>
+                            <div style="background:#111; border:1px solid #ef4444; padding:15px; border-radius:8px; font-size:12px; color:#ef4444; margin-bottom:20px;">
+                                <div style="color:#fff; margin-bottom:5px;">⏱ Lockout expires in: <span id="lockout-timer" style="font-weight:bold; color:#ef4444;">${remaining} min</span></div>
+                                <div>Max attempts (${MAX_ATTEMPTS}) exceeded.</div>
+                            </div>
+                            <div style="font-size:10px; color:#444; margin-top:15px;">If this is an error, contact the system administrator.</div>
+                        `;
+                    }
+                    const interval = setInterval(function() {
+                        const lu = parseInt(localStorage.getItem(LOCKOUT_KEY) || '0');
+                        const rem = lu - Date.now();
+                        if (rem <= 0) {
+                            clearInterval(interval);
+                            localStorage.removeItem(LOCKOUT_KEY);
+                            localStorage.removeItem(ATTEMPT_KEY);
+                            location.reload();
+                        } else {
+                            const t = document.getElementById('lockout-timer');
+                            if (t) t.textContent = Math.ceil(rem / 60000) + ' min';
+                        }
+                    }, 10000);
+                });
+            }
+        })();
+    </script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY",
@@ -89,38 +136,138 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
-        const loginForm = document.getElementById('admin-login-form');
-        const errorMsg = document.getElementById('error-msg');
-        const btn = document.getElementById('login-btn');
+        // --- IP LOCKOUT CONSTANTS ---
+        const MAX_ATTEMPTS = 5;
+        const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+        const ATTEMPT_KEY = 'admin_login_attempts';
+        const LOCKOUT_KEY = 'admin_login_lockout';
 
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            btn.innerText = "Verifying...";
-            errorMsg.style.display = 'none';
+        // --- CHECK LOCKOUT ON PAGE LOAD ---
+        function checkLockout() {
+            const lockoutUntil = parseInt(localStorage.getItem(LOCKOUT_KEY) || '0');
+            if (Date.now() < lockoutUntil) {
+                const remaining = Math.ceil((lockoutUntil - Date.now()) / 60000);
+                showLockoutScreen(remaining);
+                return true;
+            }
+            return false;
+        }
 
-            const email = document.getElementById('adm-email').value;
-            const password = document.getElementById('adm-pass').value;
+        function showLockoutScreen(minutesLeft) {
+            document.querySelector('.admin-card').innerHTML = `
+                <div style="font-size:40px; color:#ef4444; margin-bottom:20px;">🔒</div>
+                <h1 style="color:#ef4444;">Access Locked</h1>
+                <p style="color:#888; margin-bottom:20px; font-size:13px; line-height:1.5;">
+                    Too many failed login attempts.<br>
+                    This device has been temporarily blocked.
+                </p>
+                <div style="background:#111; border:1px solid #ef4444; padding:15px; border-radius:8px; font-size:12px; color:#ef4444; margin-bottom:20px;">
+                    <div style="color:#fff; margin-bottom:5px;">⏱ Lockout expires in: <span id="lockout-timer" style="font-weight:bold; color:#ef4444;">${minutesLeft} min</span></div>
+                    <div>Max attempts (${MAX_ATTEMPTS}) exceeded.</div>
+                </div>
+                <div style="font-size:10px; color:#444; margin-top:15px;">If this is an error, contact the system administrator.</div>
+            `;
+            // Live countdown
+            const interval = setInterval(() => {
+                const lockoutUntil = parseInt(localStorage.getItem(LOCKOUT_KEY) || '0');
+                const remaining = lockoutUntil - Date.now();
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    localStorage.removeItem(LOCKOUT_KEY);
+                    localStorage.removeItem(ATTEMPT_KEY);
+                    location.reload();
+                } else {
+                    const timerEl = document.getElementById('lockout-timer');
+                    if (timerEl) timerEl.textContent = Math.ceil(remaining / 60000) + ' min';
+                }
+            }, 10000);
+        }
 
-            // ⛔ STRICT SECURITY CHECK: ONLY ADMIN@UNIBOLT.IN ALLOWED
-            if (email !== "admin@unibolt.in") {
-                errorMsg.innerHTML = '<i class="fa-solid fa-ban"></i> UNAUTHORIZED ID DETECTED';
+        function recordFailedAttempt() {
+            const now = Date.now();
+            let attempts = JSON.parse(localStorage.getItem(ATTEMPT_KEY) || '[]');
+            // Remove attempts older than the lockout window
+            attempts = attempts.filter(t => now - t < LOCKOUT_DURATION_MS);
+            attempts.push(now);
+            localStorage.setItem(ATTEMPT_KEY, JSON.stringify(attempts));
+
+            if (attempts.length >= MAX_ATTEMPTS) {
+                const lockoutUntil = now + LOCKOUT_DURATION_MS;
+                localStorage.setItem(LOCKOUT_KEY, lockoutUntil.toString());
+                // Log to Firestore
+                try {
+                    setDoc(doc(db, "admin_lockouts", "latest"), {
+                        lockedAt: serverTimestamp(),
+                        attempts: attempts.length,
+                        userAgent: navigator.userAgent
+                    });
+                } catch(e) {}
+                showLockoutScreen(30);
+            }
+            return attempts.length;
+        }
+
+        // Run lockout check immediately
+        if (!checkLockout()) {
+            const loginForm = document.getElementById('admin-login-form');
+            const errorMsg = document.getElementById('error-msg');
+            const btn = document.getElementById('login-btn');
+
+            // Show remaining attempts if any
+            const existingAttempts = JSON.parse(localStorage.getItem(ATTEMPT_KEY) || '[]');
+            const validAttempts = existingAttempts.filter(t => Date.now() - t < LOCKOUT_DURATION_MS);
+            if (validAttempts.length > 0) {
+                const remaining = MAX_ATTEMPTS - validAttempts.length;
+                errorMsg.innerHTML = `<i class="fa-solid fa-shield-halved"></i> ${remaining} attempt(s) remaining before lockout`;
                 errorMsg.style.display = 'block';
-                btn.innerText = "Authenticate";
-                return;
             }
 
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                // Success
-                window.location.href = "admin.html";
-            } catch (error) {
-                console.error(error);
-                errorMsg.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Invalid Passcode';
-                errorMsg.style.display = 'block';
-                btn.innerText = "Authenticate";
-            }
-        });
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (checkLockout()) return;
+
+                btn.innerText = "Verifying...";
+                btn.disabled = true;
+                errorMsg.style.display = 'none';
+
+                const email = document.getElementById('adm-email').value;
+                const password = document.getElementById('adm-pass').value;
+
+                // ⛔ STRICT SECURITY CHECK: ONLY ADMIN@UNIBOLT.IN ALLOWED
+                if (email !== "admin@unibolt.in") {
+                    const used = recordFailedAttempt();
+                    const rem = MAX_ATTEMPTS - used;
+                    if (rem > 0) {
+                        errorMsg.innerHTML = `<i class="fa-solid fa-ban"></i> UNAUTHORIZED ID — ${rem} attempt(s) left`;
+                        errorMsg.style.display = 'block';
+                    }
+                    btn.innerText = "Authenticate";
+                    btn.disabled = false;
+                    return;
+                }
+
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    // Clear attempts on success
+                    localStorage.removeItem(ATTEMPT_KEY);
+                    localStorage.removeItem(LOCKOUT_KEY);
+                    window.location.href = "admin.html";
+                } catch (error) {
+                    const used = recordFailedAttempt();
+                    const rem = MAX_ATTEMPTS - used;
+                    if (rem > 0) {
+                        errorMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Invalid Passcode — ${rem} attempt(s) left`;
+                    } else {
+                        errorMsg.innerHTML = `<i class="fa-solid fa-lock"></i> Device Locked`;
+                    }
+                    errorMsg.style.display = 'block';
+                    btn.innerText = "Authenticate";
+                    btn.disabled = false;
+                }
+            });
+        }
     </script>
 </body>
 </html>
