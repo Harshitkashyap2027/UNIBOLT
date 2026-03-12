@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBolt Admin — Students</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        :root {
+            --bg: #000000; --surface: #1c1c1e; --surface2: #2c2c2e; --border: #3a3a3c;
+            --primary: #ef4444; --accent: #10b981; --text: #f5f5f7; --text-dim: #8e8e93;
+            --text-main: #ffffff; --text-secondary: #ebebf5cc; --text-muted: #8e8e93;
+            --accent-color: #30d158; --radius: 14px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+
+        /* SIDEBAR */
+        .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; height: 100vh; overflow: hidden; }
+        .sidebar-header { padding: 24px 20px 10px; flex-shrink: 0; }
+        .brand { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; color: white; letter-spacing: -0.5px; }
+        .brand i { color: var(--primary); }
+        .sidebar-scroll { flex: 1; overflow-y: auto; padding: 8px 12px; }
+        .nav-item { padding: 12px 14px; color: var(--text-dim); cursor: pointer; border-radius: 10px; margin-bottom: 2px; display: flex; align-items: center; gap: 12px; transition: 0.2s; text-decoration: none; font-size: 14px; font-weight: 500; }
+        .nav-item:hover { background: var(--surface); color: white; }
+        .nav-item.active { background: var(--surface2); color: white; font-weight: 600; }
+        .nav-item i { width: 18px; text-align: center; }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); background: #111; flex-shrink: 0; }
+        .sidebar-footer button { background: none; border: none; color: #ef4444; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; cursor: pointer; padding: 8px 0; width: 100%; }
+
+        /* MAIN */
+        .main { flex: 1; overflow-y: auto; padding: 28px 32px; background: var(--bg); }
+        .page-header { margin-bottom: 24px; }
+        .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+        .page-header p { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+
+        /* STATS */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+        .stat-label { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .stat-value { font-size: 28px; font-weight: 700; color: white; }
+        .stat-card.accent .stat-value { color: var(--accent); }
+        .stat-card.warn .stat-value { color: #f59e0b; }
+        .stat-card.primary .stat-value { color: var(--primary); }
+
+        /* TOOLBAR */
+        .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .toolbar input, .toolbar select { background: var(--surface); border: 1px solid var(--border); color: white; padding: 10px 14px; border-radius: 10px; font-size: 14px; outline: none; transition: 0.2s; }
+        .toolbar input { flex: 1; min-width: 200px; }
+        .toolbar input::placeholder { color: var(--text-dim); }
+        .toolbar input:focus, .toolbar select:focus { border-color: #555; }
+        .toolbar select option { background: #1c1c1e; }
+        .btn { padding: 10px 18px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #dc2626; }
+        .btn-outline { background: var(--surface); border: 1px solid var(--border); color: white; }
+        .btn-outline:hover { background: var(--surface2); }
+
+        /* TABLE */
+        .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th { background: #111; padding: 14px 16px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+        tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: rgba(255,255,255,0.02); }
+        .table-avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), #7c3aed); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .status-success { background: rgba(16,185,129,0.15); color: #10b981; }
+        .status-pending { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .action-btn { width: 32px; height: 32px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: 0.2s; }
+        .action-btn.edit { background: rgba(99,102,241,0.15); color: #818cf8; }
+        .action-btn.edit:hover { background: rgba(99,102,241,0.3); }
+        .action-btn.verify { background: rgba(16,185,129,0.15); color: #10b981; }
+        .action-btn.verify:hover { background: rgba(16,185,129,0.3); }
+        .action-btn.delete { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .action-btn.delete:hover { background: rgba(239,68,68,0.3); }
+
+        /* EDIT MODAL */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #1c1c1e; border: 1px solid var(--border); border-radius: 20px; padding: 30px; width: 520px; max-height: 90vh; overflow-y: auto; }
+        .modal h3 { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input, .form-group select, .form-group textarea { background: #2c2c2e; border: 1px solid var(--border); color: white; padding: 12px 14px; border-radius: 10px; font-size: 14px; font-family: inherit; outline: none; transition: 0.2s; resize: vertical; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #555; }
+        .form-group input[readonly] { opacity: 0.6; cursor: not-allowed; }
+        .form-group select option { background: #2c2c2e; }
+        .modal-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+
+        /* TOAST */
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: #1c1c1e; border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; min-width: 260px; }
+        .toast.success { border-left: 3px solid #10b981; color: #10b981; }
+        .toast.error { border-left: 3px solid #ef4444; color: #ef4444; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand"><i class="fa-solid fa-bolt"></i> UniBolt</div>
+        </div>
+        <div class="sidebar-scroll">
+            <a href="admin.html" class="nav-item"><i class="fa-solid fa-grid-2"></i> Overview</a>
+            <a href="admin-tickets.html" class="nav-item"><i class="fa-solid fa-ticket"></i> Tickets</a>
+            <a href="admin-analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+            <a href="admin-reports.html" class="nav-item"><i class="fa-solid fa-file-contract"></i> Reports</a>
+            <a href="admin-content.html" class="nav-item"><i class="fa-solid fa-book-open"></i> Content</a>
+            <a href="admin-activity.html" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Activity</a>
+            <a href="admin-registrations.html" class="nav-item"><i class="fa-solid fa-address-card"></i> Registrations</a>
+            <a href="admin-submissions.html" class="nav-item"><i class="fa-solid fa-list-check"></i> Submissions</a>
+            <a href="admin-settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="admin-notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications</a>
+            <a href="admin-team.html" class="nav-item"><i class="fa-solid fa-user-shield"></i> Team</a>
+            <a href="admin-faq.html" class="nav-item"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+            <a href="admin-exam.html" class="nav-item"><i class="fa-solid fa-file-pen"></i> Exam Manager</a>
+            <a href="mail-dashboard.html" class="nav-item"><i class="fa-solid fa-envelope"></i> Mail Center</a>
+            <a href="admin-students.html" class="nav-item active"><i class="fa-solid fa-users"></i> Students</a>
+            <a href="admin-security.html" class="nav-item"><i class="fa-solid fa-shield-halved"></i> Security Control</a>
+        </div>
+        <div class="sidebar-footer">
+            <button onclick="signOut()"><i class="fa-solid fa-power-off"></i> Sign Out</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="page-header">
+            <h1>Students</h1>
+            <p>Manage registered students, verify payments, and edit profiles.</p>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card"><div class="stat-label">Total Students</div><div class="stat-value" id="stat-total">—</div></div>
+            <div class="stat-card accent"><div class="stat-label">Verified</div><div class="stat-value" id="stat-verified">—</div></div>
+            <div class="stat-card warn"><div class="stat-label">Pending</div><div class="stat-value" id="stat-pending">—</div></div>
+            <div class="stat-card primary"><div class="stat-label">This Week</div><div class="stat-value" id="stat-week">—</div></div>
+        </div>
+
+        <div class="toolbar">
+            <input type="text" id="student-search" placeholder="Search by name, email or transaction ID…">
+            <select id="filter-status">
+                <option value="all">All Status</option>
+                <option value="Verified">Verified</option>
+                <option value="Pending">Pending</option>
+            </select>
+            <select id="filter-course">
+                <option value="all">All Courses</option>
+                <option value="General">General</option>
+                <option value="Web Dev">Web Dev</option>
+                <option value="Data Science">Data Science</option>
+                <option value="AI/ML">AI/ML</option>
+                <option value="Flutter">Flutter</option>
+            </select>
+            <button class="btn btn-outline" onclick="window.exportCSV()"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Course</th>
+                        <th>Status</th>
+                        <th>Transaction ID</th>
+                        <th>Joined</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="student-table-body">
+                    <tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-dim);">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal">
+            <h3><i class="fa-solid fa-pen" style="color:var(--primary); margin-right:8px;"></i> Edit Student</h3>
+            <input type="hidden" id="edit-id">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="edit-name" placeholder="Full name">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="edit-email" placeholder="Email" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="text" id="edit-phone" placeholder="Phone number">
+                </div>
+                <div class="form-group">
+                    <label>Program</label>
+                    <input type="text" id="edit-program" placeholder="Enrolled program">
+                </div>
+                <div class="form-group">
+                    <label>Transaction ID</label>
+                    <input type="text" id="edit-txid" placeholder="Transaction ID">
+                </div>
+                <div class="form-group">
+                    <label>Payment Status</label>
+                    <select id="edit-status">
+                        <option value="Pending">Pending</option>
+                        <option value="Verified">Verified</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Certificate ID</label>
+                    <input type="text" id="edit-cert" placeholder="Certificate ID (optional)">
+                </div>
+                <div class="form-group full">
+                    <label>Notes</label>
+                    <textarea id="edit-notes" rows="3" placeholder="Admin notes…"></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="window.closeEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="window.saveEditStudent()"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut as fbSignOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCLaf8yGis2vT0DA4HlGlXXBKgFoCNGfDY", authDomain: "unibolt-f7005.firebaseapp.com", projectId: "unibolt-f7005", storageBucket: "unibolt-f7005.firebasestorage.app", messagingSenderId: "121987854250", appId: "1:121987854250:web:21a9f50aad54b2143a85d3" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, user => {
+            if (!user || user.email !== 'admin@unibolt.in') window.location.href = 'mail-login.html';
+        });
+
+        window.signOut = () => fbSignOut(auth).then(() => window.location.href = 'mail-login.html');
+
+        const tbody = document.getElementById("student-table-body");
+        const searchInput = document.getElementById('student-search');
+        const statusFilter = document.getElementById('filter-status');
+        const courseFilter = document.getElementById('filter-course');
+        let studentsData = [];
+
+        const fmtDate = (ts) => ts ? new Date(ts.seconds * 1000).toLocaleDateString() : '—';
+
+        onSnapshot(query(collection(db, "users"), orderBy("createdAt", "desc")), (snap) => {
+            studentsData = [];
+            snap.forEach(d => { studentsData.push({ id: d.id, ...d.data() }); });
+            updateStats();
+            applyFilters();
+        });
+
+        function updateStats() {
+            const now = Date.now();
+            const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+            document.getElementById('stat-total').textContent = studentsData.length;
+            document.getElementById('stat-verified').textContent = studentsData.filter(s => s.paymentStatus === 'Verified').length;
+            document.getElementById('stat-pending').textContent = studentsData.filter(s => s.paymentStatus !== 'Verified').length;
+            document.getElementById('stat-week').textContent = studentsData.filter(s => s.createdAt && fmtDate(s.createdAt) && new Date(s.createdAt.seconds * 1000).getTime() > weekAgo).length;
+        }
+
+        function renderTable(data) {
+            tbody.innerHTML = "";
+            if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-dim);">No students found.</td></tr>`; return; }
+            data.forEach(s => {
+                const tr = document.createElement("tr");
+                const isVerified = s.paymentStatus === "Verified";
+                const statusClass = isVerified ? 'status-success' : 'status-pending';
+                const statusText = isVerified ? 'Verified' : 'Pending';
+                const initial = s.name ? s.name.charAt(0).toUpperCase() : "?";
+                const joined = fmtDate(s.createdAt);
+                tr.innerHTML = `
+                    <td><div style="display:flex; align-items:center; gap:12px;"><div class="table-avatar">${initial}</div><div><div style="font-weight:600;">${s.name || "Unknown"}</div><div style="color:var(--text-muted); font-size:0.82rem;">${s.email}</div></div></div></td>
+                    <td style="color:var(--text-secondary);">${s.enrolledProgram || "General"}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td style="font-family:monospace; color:var(--accent-color); font-size:13px;">${s.transactionId || "—"}</td>
+                    <td style="color:var(--text-dim); font-size:13px;">${joined}</td>
+                    <td><div style="display:flex; gap:6px;">
+                        <button class="action-btn edit" onclick="window.editStudent('${s.id}')" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                        ${!isVerified ? `<button class="action-btn verify" onclick="window.verifyUser('${s.id}')" title="Verify Payment"><i class="fa-solid fa-check"></i></button>` : ''}
+                        <button class="action-btn delete" onclick="window.deleteUser('${s.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                    </div></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function applyFilters() {
+            const search = searchInput.value.toLowerCase();
+            const status = statusFilter.value;
+            const course = courseFilter.value;
+            const filtered = studentsData.filter(s => {
+                const matchSearch = !search || (s.name && s.name.toLowerCase().includes(search)) || (s.email && s.email.toLowerCase().includes(search)) || (s.transactionId && s.transactionId.toLowerCase().includes(search));
+                const matchStatus = status === 'all' || (s.paymentStatus || 'Pending') === status;
+                const matchCourse = course === 'all' || (s.enrolledProgram || 'General') === course;
+                return matchSearch && matchStatus && matchCourse;
+            });
+            renderTable(filtered);
+        }
+        searchInput.addEventListener('input', applyFilters);
+        statusFilter.addEventListener('change', applyFilters);
+        courseFilter.addEventListener('change', applyFilters);
+
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-circle-xmark'}"></i> ${msg}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+
+        window.editStudent = (id) => {
+            const s = studentsData.find(x => x.id === id);
+            if (!s) return;
+            document.getElementById('edit-id').value = s.id;
+            document.getElementById('edit-name').value = s.name || '';
+            document.getElementById('edit-email').value = s.email || '';
+            document.getElementById('edit-phone').value = s.phone || '';
+            document.getElementById('edit-program').value = s.enrolledProgram || '';
+            document.getElementById('edit-txid').value = s.transactionId || '';
+            document.getElementById('edit-status').value = s.paymentStatus || 'Pending';
+            document.getElementById('edit-notes').value = s.notes || '';
+            document.getElementById('edit-cert').value = s.certificateId || '';
+            document.getElementById('edit-modal').classList.add('active');
+        };
+
+        window.saveEditStudent = async () => {
+            const id = document.getElementById('edit-id').value;
+            if (!id) return;
+            const updates = {
+                name: document.getElementById('edit-name').value,
+                phone: document.getElementById('edit-phone').value,
+                enrolledProgram: document.getElementById('edit-program').value,
+                transactionId: document.getElementById('edit-txid').value,
+                paymentStatus: document.getElementById('edit-status').value,
+                notes: document.getElementById('edit-notes').value,
+                certificateId: document.getElementById('edit-cert').value,
+                updatedAt: new Date().toISOString()
+            };
+            try {
+                await updateDoc(doc(db, "users", id), updates);
+                showToast("Student updated successfully", "success");
+                document.getElementById('edit-modal').classList.remove('active');
+            } catch (e) {
+                showToast("Error updating student", "error");
+            }
+        };
+
+        window.closeEditModal = () => document.getElementById('edit-modal').classList.remove('active');
+
+        window.verifyUser = async (id) => {
+            if (confirm("Verify this student's payment?")) {
+                try { await updateDoc(doc(db, "users", id), { paymentStatus: "Verified", verifiedAt: new Date().toISOString() }); showToast("Student verified", "success"); }
+                catch (e) { showToast("Error verifying", "error"); }
+            }
+        };
+
+        window.deleteUser = async (id) => {
+            if (confirm("WARNING: Delete this student? This cannot be undone.")) {
+                try { await deleteDoc(doc(db, "users", id)); showToast("Student deleted", "success"); }
+                catch (e) { showToast("Error deleting", "error"); }
+            }
+        };
+
+        window.exportCSV = () => {
+            if (studentsData.length === 0) { showToast("No data to export", "error"); return; }
+            let csv = "Name,Email,Course,Status,Transaction ID,Phone,Joined\n";
+            studentsData.forEach(s => {
+                const row = [s.name||"Unknown", s.email||"", s.enrolledProgram||"General", s.paymentStatus||"Pending", s.transactionId||"N/A", s.phone||"", fmtDate(s.createdAt)];
+                csv += row.map(v => `"${v}"`).join(",") + "\n";
+            });
+            const link = document.createElement("a");
+            link.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+            link.download = "unibolt_students.csv";
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        };
+
+        document.getElementById('edit-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('edit-modal')) window.closeEditModal();
+        });
+    </script>
+</body>
+</html>
