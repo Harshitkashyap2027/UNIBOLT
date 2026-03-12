@@ -87,11 +87,11 @@ if(form) {
                 avatarIcon: avatarInput.value
             }, { merge: true });
 
-            // --- FIX IS HERE ---
-            // Directly target the display style to ensure it opens
+            // Show success modal — supports both inline-display and CSS-class approaches
             const modal = document.getElementById('success-modal');
             if(modal) {
-                modal.style.display = 'block';
+                modal.classList.remove('hidden');
+                if (modal.style.display === 'none') modal.style.display = '';
             }
 
             saveBtn.innerText = "Save Changes";
