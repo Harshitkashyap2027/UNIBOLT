@@ -1,6 +1,9 @@
 import { db, requireAdmin, showToast } from "./admin-core.js";
 import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 requireAdmin();
+
+const fmtDate = (ts) => ts ? new Date(ts.seconds * 1000).toLocaleDateString() : '—';
+
 const tbody = document.getElementById("student-table-body");
 const searchInput = document.getElementById('student-search');
 const statusFilter = document.getElementById('filter-status');
@@ -108,7 +111,7 @@ window.exportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += "Name,Email,Course,Status,Transaction ID,Phone,Date Joined\n";
     studentsData.forEach(s => {
-        const joined = s.createdAt ? new Date(s.createdAt.seconds * 1000).toLocaleDateString() : "";
+        const joined = fmtDate(s.createdAt);
         const row = [
             s.name || "Unknown",
             s.email || "",

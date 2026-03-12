@@ -250,6 +250,8 @@
         const courseFilter = document.getElementById('filter-course');
         let studentsData = [];
 
+        const fmtDate = (ts) => ts ? new Date(ts.seconds * 1000).toLocaleDateString() : '—';
+
         onSnapshot(query(collection(db, "users"), orderBy("createdAt", "desc")), (snap) => {
             studentsData = [];
             snap.forEach(d => { studentsData.push({ id: d.id, ...d.data() }); });
@@ -263,7 +265,7 @@
             document.getElementById('stat-total').textContent = studentsData.length;
             document.getElementById('stat-verified').textContent = studentsData.filter(s => s.paymentStatus === 'Verified').length;
             document.getElementById('stat-pending').textContent = studentsData.filter(s => s.paymentStatus !== 'Verified').length;
-            document.getElementById('stat-week').textContent = studentsData.filter(s => s.createdAt && new Date(s.createdAt.seconds * 1000).getTime() > weekAgo).length;
+            document.getElementById('stat-week').textContent = studentsData.filter(s => s.createdAt && fmtDate(s.createdAt) && new Date(s.createdAt.seconds * 1000).getTime() > weekAgo).length;
         }
 
         function renderTable(data) {
@@ -275,7 +277,7 @@
                 const statusClass = isVerified ? 'status-success' : 'status-pending';
                 const statusText = isVerified ? 'Verified' : 'Pending';
                 const initial = s.name ? s.name.charAt(0).toUpperCase() : "?";
-                const joined = s.createdAt ? new Date(s.createdAt.seconds * 1000).toLocaleDateString() : '—';
+                const joined = fmtDate(s.createdAt);
                 tr.innerHTML = `
                     <td><div style="display:flex; align-items:center; gap:12px;"><div class="table-avatar">${initial}</div><div><div style="font-weight:600;">${s.name || "Unknown"}</div><div style="color:var(--text-muted); font-size:0.82rem;">${s.email}</div></div></div></td>
                     <td style="color:var(--text-secondary);">${s.enrolledProgram || "General"}</td>
@@ -373,7 +375,7 @@
             if (studentsData.length === 0) { showToast("No data to export", "error"); return; }
             let csv = "Name,Email,Course,Status,Transaction ID,Phone,Joined\n";
             studentsData.forEach(s => {
-                const row = [s.name||"Unknown", s.email||"", s.enrolledProgram||"General", s.paymentStatus||"Pending", s.transactionId||"N/A", s.phone||"", s.createdAt ? new Date(s.createdAt.seconds * 1000).toLocaleDateString() : ""];
+                const row = [s.name||"Unknown", s.email||"", s.enrolledProgram||"General", s.paymentStatus||"Pending", s.transactionId||"N/A", s.phone||"", fmtDate(s.createdAt)];
                 csv += row.map(v => `"${v}"`).join(",") + "\n";
             });
             const link = document.createElement("a");
